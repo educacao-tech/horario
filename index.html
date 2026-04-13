@@ -21,8 +21,12 @@
     <button class="btn btn-primary" onclick="window.print()">🖨️ Imprimir PDF</button>
     <button class="btn btn-success" onclick="exportToJson()">💾 Exportar Backup</button>
     <button class="btn btn-primary" onclick="document.getElementById('importFile').click()">📂 Importar Backup</button>
+    <button class="btn btn-success" onclick="exportToCsv()">📊 Exportar CSV</button>
     <input type="file" id="importFile" style="display:none" onchange="importFromJson(this)">
-    <input type="text" id="search-input" class="search-field" placeholder="🔍 Pesquisar professor ou turma..." oninput="highlightOccurrences(this.value)">
+    <div class="search-wrapper">
+      <input type="text" id="search-input" class="search-field" placeholder="🔍 Pesquisar professor ou turma..." oninput="highlightOccurrences(this.value)">
+      <button class="clear-search-btn" onclick="clearSearch()">✖</button>
+    </div>
     <span id="time-counter" class="time-counter"></span>
     <button id="lock-btn" class="btn btn-primary" onclick="toggleLockMode()">🔓 Modo Edição</button>
     <span id="save-indicator">✅ Salvo</span>
@@ -42,11 +46,11 @@
       <th colspan="5">Sexta</th>
     </tr>
     <tr>
-      <th title="Artes - Silvia">A(S)</th><th title="Artes - Mauro">A(M)</th><th title="Ed. Física - Marcelo">EF(M)</th><th title="Ciência e Tecnologia - Daniela">CT(D)</th><th>EL</th><th>MTF</th>
-      <th title="Artes - Silvia">A(S)</th><th title="Artes - Mauro">A(M)</th><th title="Ed. Física - Marcelo">EF(M)</th><th title="EDM - Letícia" class="pd">EDM(L)</th><th class="el" title="Elefante Letrado">EL</th>
-      <th title="Artes - Silvia">A(S)</th><th title="Ed. Física - Marcelo">EF(M)</th><th title="EDM - Letícia" class="pd">EDM(L)</th><th class="mtf" title="Matific">MTF</th>
-      <th title="Artes - Silvia">A(S)</th><th title="Ed. Física - Marcelo">EF(M)</th><th class="el" title="Elefante Letrado">EL</th><th class="mtf" title="Matific">MTF</th>
-      <th title="Artes - Silvia">A(S)</th><th title="Ed. Física - Marcelo">EF(M)</th><th>EDM</th><th class="el" title="Elefante Letrado">EL</th><th class="mtf" title="Matific">MTF</th>
+      <th title="Artes - Silvia">A(S)</th><th title="Artes - Michelle">A(M)</th><th title="Ed. Física - Marcela">EF(M)</th><th title="Composta - Danilo">CT(D)</th><th>EL</th><th>MTF</th>
+      <th title="Artes - Silvia">A(S)</th><th title="Artes - Michelle">A(M)</th><th title="Ed. Física - Marcela">EF(M)</th><th title="EDM - Letícia" class="pd">EDM(L)</th><th class="el" title="Elefante Letrado">EL</th>
+      <th title="Artes - Silvia">A(S)</th><th title="Ed. Física - Marcela">EF(M)</th><th title="EDM - Letícia" class="pd">EDM(L)</th><th class="mtf" title="Matific">MTF</th>
+      <th title="Artes - Silvia">A(S)</th><th title="Ed. Física - Marcela">EF(M)</th><th class="el" title="Elefante Letrado">EL</th><th class="mtf" title="Matific">MTF</th>
+      <th title="Artes - Silvia">A(S)</th><th title="Ed. Física - Marcela">EF(M)</th><th>EDM</th><th class="el" title="Elefante Letrado">EL</th><th class="mtf" title="Matific">MTF</th>
     </tr>
     <tr>
       <td>7h05 - 8h</td>
@@ -123,10 +127,10 @@
       <th colspan="4">Sexta</th>
     </tr>
     <tr>
-      <th title="Artes - Silvia">A(S)</th><th title="Artes - Mauro">A(M)</th><th title="Ed. Física - Paulo">EF(P)</th><th title="Ciência e Tecnologia - Daniela">CT(D)</th><th class="el" title="Elefante Letrado">EL</th>
-      <th title="Artes - Silvia">A(S)</th><th title="Artes - Mauro">A(M)</th><th title="Ed. Física - Paulo">EF(P)</th><th class="el" title="Elefante Letrado">EL</th>
+      <th title="Artes - Silvia">A(S)</th><th title="Artes - Michelle">A(M)</th><th title="Ed. Física - Paulo">EF(P)</th><th title="Composta - Danilo">CT(D)</th><th class="el" title="Elefante Letrado">EL</th>
+      <th title="Artes - Silvia">A(S)</th><th title="Artes - Michelle">A(M)</th><th title="Ed. Física - Paulo">EF(P)</th><th class="el" title="Elefante Letrado">EL</th>
       <th title="Artes - Silvia">A(S)</th><th title="Ed. Física - Paulo">EF(P)</th><th title="EDM - Letícia" class="pd">EDM(L)</th><th class="mtf" title="Matific">MTF</th>
-      <th title="Artes - Silvia">A(S)</th><th title="Artes - Mauro">A(M)</th><th title="Ed. Física - Paulo">EF(P)</th><th class="el" title="Elefante Letrado">EL</th><th class="mtf" title="Matific">MTF</th>
+      <th title="Artes - Silvia">A(S)</th><th title="Artes - Michelle">A(M)</th><th title="Ed. Física - Paulo">EF(P)</th><th class="el" title="Elefante Letrado">EL</th><th class="mtf" title="Matific">MTF</th>
       <th title="Ed. Física - Paulo">EF(P)</th><th>EDM</th><th class="mtf" title="Matific">MTF</th><th class="el" title="Elefante Letrado">EL</th>
     </tr>
     <tr>

@@ -3,13 +3,14 @@ const cells = document.querySelectorAll('[contenteditable="true"]');
 
 // Mapeamento de Professores (Edite aqui para vincular nomes)
 const SPECIALIST_SIGLAS = ['A(S)', 'A(M)', 'EF(M)', 'EF(P)', 'CT(D)', 'EDM(L)', 'EDM', 'EL', 'MTF', 'PI', 'PII'];
+const DATA_CATEGORIES = ['HL', 'HTPC', 'PD', 'EL', 'MTF'];
 
 const TEACHER_MAP = {
   'A(S)': 'Artes - Silvia',
-  'A(M)': 'Artes - Mauro',
-  'EF(M)': 'Ed. Física - Marcelo',
+  'A(M)': 'Artes - Michelle',
+  'EF(M)': 'Ed. Física - Marcela',
   'EF(P)': 'Ed. Física - Paulo',
-  'CT(D)': 'Ciência e Tecnologia - Daniela',
+  'CT(D)': 'Composta - Danilo',
   'EDM(L)': 'EDM - Letícia',
   'EDM': 'EDM - Titulares',
   'EL': 'Elefante Letrado',
@@ -122,6 +123,15 @@ function loadData() {
       applyDynamicStyles(cell);
     }
   });
+
+  // Adiciona atributos de acessibilidade e labels
+  cells.forEach(cell => {
+    cell.setAttribute('role', 'textbox');
+    cell.setAttribute('aria-multiline', 'false');
+    const timeHeader = cell.closest('tr').querySelector('td:first-child')?.innerText || 'Horário desconhecido';
+    const specialistHeader = cell.closest('table').rows[1].cells[cell.cellIndex - 1]?.innerText || 'Especialista desconhecido';
+    cell.setAttribute('aria-label', `Célula de edição para ${specialistHeader} no horário ${timeHeader}`);
+  });
 }
 
 // Gerenciamento Centralizado de Eventos (Event Delegation)
@@ -142,6 +152,12 @@ const timeToMinutes = (str) => {
   const match = str.toLowerCase().match(/(\d+)h(\d+)?/);
   return match ? parseInt(match[1]) * 60 + parseInt(match[2] || 0) : null;
 };
+
+function clearSearch() {
+  const searchInput = document.getElementById('search-input');
+  searchInput.value = '';
+  highlightOccurrences(''); // Limpa todos os destaques
+}
 
 function highlightOccurrences(text) {
   // Se o texto for uma sigla de professor mapeada, também destaca
@@ -208,7 +224,6 @@ function updateStatusBar(cell) {
       const nomeProf = TEACHER_MAP[sigla] || sigla;
       
       // Tenta encontrar o nome da regente pelo conteúdo da célula (ex: "1A")
-      const SPECIALIST_SIGLAS = ['A(S)', 'A(M)', 'EF(M)', 'EF(P)', 'CT(D)', 'EDM(L)', 'EDM', 'EL', 'MTF', 'PI', 'PII'];
       const nomeRegente = teacherName && !SPECIALIST_SIGLAS.includes(text) && !SPECIALIST_SIGLAS.includes(baseCode) 
         ? ` | <b>Regente:</b> ${teacherName}` 
         : '';
@@ -239,10 +254,34 @@ function toggleLockMode() {
     document.querySelectorAll('.row-highlight, .col-highlight, .header-highlight').forEach(el => {
       el.classList.remove('row-highlight', 'col-highlight', 'header-highlight');
     });
+    const searchInput = document.getElementById('search-input');
+    searchInput.value = ''; // Limpa o campo de busca
+    highlightOccurrences(''); // Remove destaques da busca
   } else {
     btn.innerHTML = '🔓 Modo Edição';
     btn.style.background = 'var(--primary)';
   }
+}
+
+function exportToCsv() {
+  let csv = "Periodo;Horario;Especialista;Turma\n";
+  cells.forEach(cell => {
+    const table = cell.closest('table');
+    const section = cell.closest('[id^="section-"]').querySelector('h2').innerText;
+    const time = table.rows[cell.parentElement.rowIndex].cells[0].innerText;
+    const specialist = table.rows[1].cells[cell.cellIndex - 1]?.innerText || "";
+    const value = cell.innerText.trim();
+    
+    if (value && value !== '*') {
+      csv += `${section};${time};${specialist};${value}\n`;
+    }
+  });
+
+  const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.setAttribute("download", `horario_escolar_${new Date().toLocaleDateString()}.csv`);
+  link.click();
 }
 
 function exportToJson() {
@@ -259,6 +298,8 @@ function importFromJson(input) {
   const file = input.files[0];
   if (!file) return;
   
+  if (!confirm('Esta ação substituirá todos os dados atuais pelo arquivo de backup. Deseja continuar?')) return;
+
   const reader = new FileReader();
   reader.onload = (e) => {
     try {

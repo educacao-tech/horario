@@ -51,6 +51,7 @@ th, td {
   text-align: center;
   border-bottom: 1px solid var(--border-color);
   border-right: 1px solid var(--border-color);
+  min-width: 45px; /* Define um tamanho base igual para todas as colunas de dados */
   /* Remover borda direita da última coluna e borda inferior da última linha */
   &:last-child { border-right: none; }
   
@@ -59,8 +60,14 @@ th, td {
     position: sticky;
     left: 0;
     z-index: 20;
-    background-color: #f8fafc;
-    border-right: 2px solid var(--border-color);
+    background-color: #f1f5f9; /* Tom levemente mais escuro que o fundo */
+    border-right: 1px solid var(--border-color);
+    font-weight: 600;
+    color: #475569;
+    width: 95px;
+    min-width: 95px;
+    white-space: nowrap;
+    box-shadow: 4px 0 8px -4px rgba(0,0,0,0.1); /* Sombra para indicar profundidade na rolagem */
   }
   tr:last-child & { border-bottom: none; }
 }
@@ -119,6 +126,10 @@ td[contenteditable="true"]:focus {
   outline: 2px solid var(--primary);
   z-index: 2;
 }
+/* Estilo para células em modo leitura */
+body.readonly td[contenteditable="true"]:hover {
+  background-color: var(--bg-main); /* Remove o hover em modo leitura */
+}
 
 /* Modo leitura - desativa o cursor de texto */
 body.readonly td[contenteditable="true"] {
@@ -150,11 +161,17 @@ body.readonly td[contenteditable="true"] {
   text-align: center;
 }
 .current-active {
-  background-color: #fef08a !important;
-  box-shadow: inset 0 0 0 2px #eab308 !important;
+  background-color: #fef08a !important; 
   z-index: 1;
   position: relative;
   color: #000;
+}
+/* Estilo específico para a célula de horário quando ativa */
+td.current-active:first-child {
+  background-color: var(--primary) !important;
+  color: white !important;
+  box-shadow: 4px 0 8px -4px rgba(0,0,0,0.2) !important;
+  border-right-color: var(--primary-hover);
 }
 
 .toolbar {
@@ -169,6 +186,12 @@ body.readonly td[contenteditable="true"] {
   box-shadow: var(--shadow-sm);
 }
 
+.search-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
 .search-field {
   padding: 10px 16px;
   border: 1px solid var(--border-color);
@@ -177,8 +200,23 @@ body.readonly td[contenteditable="true"] {
   min-width: 250px;
   outline: none;
   transition: border-color 0.2s;
+  padding-right: 30px; /* Espaço para o botão de limpar */
 }
 .search-field:focus { border-color: var(--primary); }
+
+.clear-search-btn {
+  position: absolute;
+  right: 5px;
+  background: none;
+  border: none;
+  font-size: 1rem;
+  cursor: pointer;
+  color: #94a3b8;
+  display: none; /* Escondido por padrão */
+}
+.search-field:not(:placeholder-shown) + .clear-search-btn {
+  display: block; /* Mostra quando o input tem texto */
+}
 
 .time-counter {
   font-weight: 600;
