@@ -22,7 +22,9 @@
     <button class="btn btn-success" onclick="exportToJson()">💾 Exportar Backup</button>
     <button class="btn btn-primary" onclick="document.getElementById('importFile').click()">📂 Importar Backup</button>
     <input type="file" id="importFile" style="display:none" onchange="importFromJson(this)">
-    <button class="btn btn-danger" onclick="clearData()">🗑️ Limpar Tudo</button>
+    <input type="text" id="search-input" class="search-field" placeholder="🔍 Pesquisar professor ou turma..." oninput="highlightOccurrences(this.value)">
+    <span id="time-counter" class="time-counter"></span>
+    <button id="lock-btn" class="btn btn-primary" onclick="toggleLockMode()">🔓 Modo Edição</button>
     <span id="save-indicator">✅ Salvo</span>
   </div>
 

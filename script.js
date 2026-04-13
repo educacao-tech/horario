@@ -2,6 +2,8 @@ const STORAGE_KEY = 'school_schedule_v1';
 const cells = document.querySelectorAll('[contenteditable="true"]');
 
 // Mapeamento de Professores (Edite aqui para vincular nomes)
+const SPECIALIST_SIGLAS = ['A(S)', 'A(M)', 'EF(M)', 'EF(P)', 'CT(D)', 'EDM(L)', 'EDM', 'EL', 'MTF', 'PI', 'PII'];
+
 const TEACHER_MAP = {
   'A(S)': 'Artes - Silvia',
   'A(M)': 'Artes - Mauro',
@@ -51,6 +53,30 @@ const saveContent = debounce((index, text) => {
   setTimeout(() => { indicator.style.opacity = '0'; }, 2000);
 });
 
+// Helper function for time conversion
+const timeToMinutes = (str) => {
+  const match = str.toLowerCase().match(/(\d+)h(\d+)?/);
+  return match ? parseInt(match[1]) * 60 + parseInt(match[2] || 0) : null;
+};
+
+// Detecta se a mesma turma está em duas salas no mesmo horário
+function checkConflicts(cell) {
+  const text = cell.innerText.trim().toUpperCase();
+  const row = cell.parentElement;
+  
+  // Limpa conflitos antigos na linha
+  row.querySelectorAll('.conflict-error').forEach(c => c.classList.remove('conflict-error'));
+
+  if (!text || text === '*' || SPECIALIST_SIGLAS.includes(text)) return;
+
+  const editableInRow = Array.from(row.querySelectorAll('[contenteditable="true"]'));
+  const duplicates = editableInRow.filter(c => c.innerText.trim().toUpperCase() === text);
+
+  if (duplicates.length > 1) {
+    duplicates.forEach(c => c.classList.add('conflict-error'));
+  }
+}
+
 // Aplica cores baseadas no texto (HL, PD, etc)
 function applyDynamicStyles(cell) {
   const text = cell.innerText.trim().toUpperCase();
@@ -74,7 +100,6 @@ function applyDynamicStyles(cell) {
 
   // Se o texto for uma sala (ex: 1A), busca o nome da professora no mapa
   // Ignoramos siglas de especialistas para não duplicar informação na célula
-  const SPECIALIST_SIGLAS = ['A(S)', 'A(M)', 'EF(M)', 'EF(P)', 'CT(D)', 'EDM(L)', 'EDM', 'EL', 'MTF', 'PI', 'PII'];
   if (teacherName && !SPECIALIST_SIGLAS.includes(text) && !SPECIALIST_SIGLAS.includes(baseCode)) {
     // Extrai apenas o primeiro nome para não ocupar muito espaço na célula
     const fullName = teacherName.split(' (')[0];
@@ -98,6 +123,7 @@ document.addEventListener('input', (e) => {
   if (e.target.getAttribute('contenteditable') === 'true') {
     const index = Array.from(cells).indexOf(e.target);
     applyDynamicStyles(e.target);
+    checkConflicts(e.target);
     saveContent(index, e.target.innerText);
     
     // Atualiza a barra de status em tempo real enquanto digita
@@ -106,10 +132,14 @@ document.addEventListener('input', (e) => {
 });
 
 function highlightOccurrences(text) {
+  // Se o texto for uma sigla de professor mapeada, também destaca
   const cleanText = text.trim().toUpperCase();
+  
   cells.forEach(c => {
     const cellText = c.innerText.trim().toUpperCase();
-    if (cleanText && cellText === cleanText && !['*', ''].includes(cleanText)) {
+    const cellBaseCode = cellText.split('(')[0].trim();
+    
+    if (cleanText && (cellText.includes(cleanText) || cellBaseCode === cleanText) && !['*', ''].includes(cleanText)) {
       c.classList.add('match-highlight');
     } else {
       c.classList.remove('match-highlight');
@@ -162,10 +192,25 @@ function updateStatusBar(cell) {
     }
 }
 
-function clearData() {
-  if (confirm('Isso apagará todo o conteúdo preenchido. Confirmar?')) {
-    localStorage.removeItem(STORAGE_KEY);
-    location.reload();
+// Alterna entre modo de edição e modo de leitura
+function toggleLockMode() {
+  const isReadonly = document.body.classList.toggle('readonly');
+  const btn = document.getElementById('lock-btn');
+  
+  cells.forEach(cell => {
+    cell.contentEditable = !isReadonly;
+  });
+
+  if (isReadonly) {
+    btn.innerHTML = '🔒 Modo Leitura';
+    btn.style.background = '#64748b';
+    // Limpa destaques ao travar
+    document.querySelectorAll('.row-highlight, .col-highlight, .header-highlight').forEach(el => {
+      el.classList.remove('row-highlight', 'col-highlight', 'header-highlight');
+    });
+  } else {
+    btn.innerHTML = '🔓 Modo Edição';
+    btn.style.background = 'var(--primary)';
   }
 }
 
@@ -178,6 +223,26 @@ function exportToJson() {
   a.download = `horario_escolar_${new Date().toLocaleDateString()}.json`;
   a.click();
 }
+
+document.addEventListener('focusin', (e) => {
+  const cell = e.target;
+  if (cell.getAttribute('contenteditable') === 'true' || document.body.classList.contains('readonly')) {
+    const colIndex = cell.cellIndex;
+    const table = cell.closest('table');
+    
+    // Limpa destaques de coluna anteriores
+    document.querySelectorAll('.col-highlight').forEach(el => el.classList.remove('col-highlight'));
+    
+    // Destaca a coluna inteira
+    if (colIndex > 0) {
+      Array.from(table.rows).forEach(row => {
+        if (row.cells[colIndex]) {
+          row.cells[colIndex].classList.add('col-highlight');
+        }
+      });
+    }
+  }
+});
 
 function importFromJson(input) {
   const file = input.files[0];
@@ -211,11 +276,12 @@ function updateHighlights() {
     return match ? parseInt(match[1]) * 60 + parseInt(match[2] || 0) : null;
   };
 
-  document.querySelectorAll('table').forEach((table, tIdx) => {
+  document.querySelectorAll('table').forEach((table) => {
     // Mapeia colunas por dia (Manhã: [6,5,4,4,5] | Tarde: [5,4,4,5,4])
     const morningLayout = [6, 5, 4, 4, 5];
     const afternoonLayout = [5, 4, 4, 5, 4];
-    const currentLayout = tIdx === 0 ? morningLayout : afternoonLayout;
+    // Identifica a tabela pelo contêiner pai em vez da ordem no DOM
+    const currentLayout = table.closest('#section-morning') ? morningLayout : afternoonLayout;
 
     // Destaca o cabeçalho do dia atual (Segunda é índice 1)
     if (table.rows[0].cells[day]) table.rows[0].cells[day].classList.add('current-active');
@@ -253,6 +319,79 @@ function updateHighlights() {
   });
 }
 
+// Função para formatar a diferença de tempo em MMm SSs
+function formatTimeDifference(totalSeconds) {
+  if (totalSeconds < 0) return "00m 00s";
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes.toString().padStart(2, '0')}m ${seconds.toString().padStart(2, '0')}s`;
+}
+
+// Função para atualizar o contador de tempo (início/término de aula)
+function updateTimeCounter() {
+  const now = new Date();
+  const day = now.getDay(); // 0=Dom, 1=Seg, 2=Ter, 3=Qua, 4=Qui, 5=Sex, 6=Sab
+  const currentTotalSeconds = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+  const timeCounterElement = document.getElementById('time-counter');
+
+  if (day < 1 || day > 5) { // Fim de semana
+    timeCounterElement.innerText = "Fim de semana";
+    return;
+  }
+
+  let activePeriod = null;
+  let nextPeriod = null;
+  let minSecondsToNext = Infinity;
+
+  document.querySelectorAll('table').forEach((table) => {
+    const morningLayout = [6, 5, 4, 4, 5];
+    const afternoonLayout = [5, 4, 4, 5, 4];
+    const currentLayout = table.closest('#section-morning') ? morningLayout : afternoonLayout;
+
+    for (let i = 2; i < table.rows.length; i++) {
+      const row = table.rows[i];
+      const timeText = row.cells[0].innerText;
+      const parts = timeText.split(' - ');
+      let startMinutes = null, endMinutes = null;
+
+      if (row.classList.contains('recreio') && parts.length >= 3) {
+        startMinutes = timeToMinutes(parts[1]);
+        endMinutes = timeToMinutes(parts[2]);
+      } else if (parts.length === 2) {
+        startMinutes = timeToMinutes(parts[0]);
+        endMinutes = timeToMinutes(parts[1]);
+      }
+
+      if (startMinutes !== null && endMinutes !== null) {
+        const startTotalSeconds = startMinutes * 60;
+        const endTotalSeconds = endMinutes * 60;
+
+        if (currentTotalSeconds >= startTotalSeconds && currentTotalSeconds < endTotalSeconds) {
+          activePeriod = { start: startTotalSeconds, end: endTotalSeconds, type: row.classList.contains('recreio') ? 'recreio' : 'aula' };
+        } else if (startTotalSeconds > currentTotalSeconds && (startTotalSeconds - currentTotalSeconds) < minSecondsToNext) {
+          minSecondsToNext = startTotalSeconds - currentTotalSeconds;
+          nextPeriod = { start: startTotalSeconds, end: endTotalSeconds, type: row.classList.contains('recreio') ? 'recreio' : 'aula' };
+        }
+      }
+    }
+  });
+
+  let message = "";
+  if (activePeriod) {
+    const remainingSeconds = activePeriod.end - currentTotalSeconds;
+    message = `Termina em ${formatTimeDifference(remainingSeconds)}`;
+    if (activePeriod.type === 'recreio') { message = `Recreio termina em ${formatTimeDifference(remainingSeconds)}`; }
+  } else if (nextPeriod) {
+    const timeUntilNext = nextPeriod.start - currentTotalSeconds;
+    message = `Próxima aula em ${formatTimeDifference(timeUntilNext)}`;
+    if (nextPeriod.type === 'recreio') { message = `Próximo recreio em ${formatTimeDifference(timeUntilNext)}`; }
+  } else {
+    message = "Fora do horário de aula";
+  }
+
+  timeCounterElement.innerText = message;
+}
+
 // Função para reordenar as seções baseado no horário (Manhã vs Tarde)
 function reorderSectionsByTime() {
   const now = new Date();
@@ -271,4 +410,6 @@ function reorderSectionsByTime() {
 loadData(); // Carrega os dados salvos
 reorderSectionsByTime(); // Organiza a ordem das tabelas por relevância
 updateHighlights(); // Destaca o horário atual
+updateTimeCounter(); // Inicia o contador de tempo
 setInterval(updateHighlights, 60000); // Atualiza a cada 1 minuto
+setInterval(updateTimeCounter, 1000); // Atualiza o contador de tempo a cada 1 segundo
