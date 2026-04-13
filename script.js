@@ -539,6 +539,7 @@ function updateTimeCounter() {
   const day = now.getDay(); // 0=Dom, 1=Seg, 2=Ter, 3=Qua, 4=Qui, 5=Sex, 6=Sab
   const currentTotalSeconds = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
   const timeCounterElement = document.getElementById('time-counter');
+  const progressBar = document.getElementById('main-progress-bar');
 
   if (day < 1 || day > 5) { // Fim de semana
     timeCounterElement.innerText = "Fim de semana";
@@ -550,9 +551,7 @@ function updateTimeCounter() {
   let minSecondsToNext = Infinity;
 
   document.querySelectorAll('table').forEach((table) => {
-    const morningLayout = [6, 5, 4, 4, 5];
-    const afternoonLayout = [5, 4, 4, 5, 4];
-    const currentLayout = table.closest('#section-morning') ? morningLayout : afternoonLayout;
+    const currentLayout = table.closest('#section-morning') ? LAYOUTS.morning : LAYOUTS.afternoon;
 
     for (let i = 2; i < table.rows.length; i++) {
       const row = table.rows[i];
@@ -585,9 +584,16 @@ function updateTimeCounter() {
   let message = "";
   if (activePeriod) {
     const remainingSeconds = activePeriod.end - currentTotalSeconds;
+    const elapsed = currentTotalSeconds - activePeriod.start;
+    const duration = activePeriod.end - activePeriod.start;
+    const percentage = (elapsed / duration) * 100;
+    
+    if (progressBar) progressBar.style.width = `${percentage}%`;
+
     message = `Termina em ${formatTimeDifference(remainingSeconds)}`;
     if (activePeriod.type === 'recreio') { message = `Recreio termina em ${formatTimeDifference(remainingSeconds)}`; }
   } else if (nextPeriod) {
+    if (progressBar) progressBar.style.width = '0%';
     const timeUntilNext = nextPeriod.start - currentTotalSeconds;
     message = `Próxima aula em ${formatTimeDifference(timeUntilNext)}`;
     if (nextPeriod.type === 'recreio') { message = `Próximo recreio em ${formatTimeDifference(timeUntilNext)}`; }
