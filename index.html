@@ -18,13 +18,27 @@
     .mtf { background-color: #ffe5cc; }
     .recreio { background-color: #e0e0e0; font-weight: bold; text-align: center; }
     .current-active { background-color: #fff176 !important; outline: 2px solid #fbc02d !important; z-index: 1; position: relative; color: #000; }
-    .actions { margin: 20px 0; }
-    button { padding: 10px 20px; cursor: pointer; background: #d9534f; color: white; border: none; border-radius: 4px; }
-    button:hover { background: #c9302c; }
+    
+    .toolbar { margin: 20px 0; display: flex; gap: 10px; flex-wrap: wrap; background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #ddd; }
+    .btn { padding: 10px 15px; cursor: pointer; border: none; border-radius: 4px; font-weight: bold; transition: opacity 0.2s; }
+    .btn-danger { background: #d9534f; color: white; }
+    .btn-primary { background: #007bff; color: white; }
+    .btn-success { background: #28a745; color: white; }
+    .btn:hover { opacity: 0.8; }
+
+    .status-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: #333; color: #fff; padding: 8px 20px; font-size: 0.85em; display: flex; gap: 20px; z-index: 1000; }
+    .status-item { border-right: 1px solid #555; padding-right: 15px; }
+    .header-highlight { background-color: #007bff !important; color: white !important; }
+    th[title] { cursor: help; text-decoration: underline dotted #aaa; }
+
+    .legend { display: flex; gap: 15px; margin-bottom: 20px; font-size: 0.9em; flex-wrap: wrap; }
+    .legend-item { display: flex; align-items: center; gap: 5px; }
+    .box { width: 20px; height: 20px; border: 1px solid #ccc; border-radius: 3px; }
 
     @media print {
-      .actions, button { display: none; }
+      .toolbar, .legend, .actions, .status-bar, button, h1 { display: none !important; }
       body { padding: 0; }
+      h2 { margin-top: 0; }
       .table-container { overflow: visible; }
       td[contenteditable="true"] { background-color: transparent !important; }
     }
@@ -33,66 +47,97 @@
 <body>
   <h1>Horário Escolar - EMEB Professora Anna Bonagura de Andrade</h1>
 
+  <div class="legend">
+    <strong>Legenda:</strong>
+    <div class="legend-item"><div class="box hl"></div> HL (Hora Livre / HTPC)</div>
+    <div class="legend-item"><div class="box pd"></div> PD (Plantão de Dúvidas Letícia)</div>
+    <div class="legend-item"><div class="box el"></div> EL (Elefante Letrado)</div>
+    <div class="legend-item"><div class="box mtf"></div> MTF (Matific)</div>
+  </div>
+
+  <div class="toolbar">
+    <button class="btn btn-primary" onclick="window.print()">🖨️ Imprimir PDF</button>
+    <button class="btn btn-success" onclick="exportToJson()">💾 Exportar Backup</button>
+    <button class="btn btn-primary" onclick="document.getElementById('importFile').click()">📂 Importar Backup</button>
+    <input type="file" id="importFile" style="display:none" onchange="importFromJson(this)">
+    <button class="btn btn-danger" onclick="clearData()">🗑️ Limpar Tudo</button>
+  </div>
+
   <h2>Horário da Manhã</h2>
   <div class="table-container">
   <table>
     <tr>
       <th rowspan="2">Horário</th>
       <th colspan="6">Segunda</th>
-      <th colspan="6">Terça</th>
-      <th colspan="6">Quarta</th>
-      <th colspan="6">Quinta</th>
-      <th colspan="6">Sexta</th>
+      <th colspan="5">Terça</th>
+      <th colspan="4">Quarta</th>
+      <th colspan="4">Quinta</th>
+      <th colspan="5">Sexta</th>
     </tr>
     <tr>
-      <th>A(S)</th><th>A(M)</th><th>EF(M)</th><th>CT(D)</th><th>EL</th><th>MTF</th>
-      <th>A(S)</th><th>A(M)</th><th>EF(M)</th><th>EDM(L)</th><th>EL</th><th>MTF</th>
-      <th>A(S)</th><th>A(M)</th><th>EF(M)</th><th>EDM(L)</th><th>EL</th><th>MTF</th>
-      <th>A(S)</th><th>A(M)</th><th>EF(M)</th><th>EDM</th><th>EL</th><th>MTF</th>
-      <th>A(S)</th><th>A(M)</th><th>EF(M)</th><th>EDM</th><th>EL</th><th>MTF</th>
+      <th title="Artes - Silvia">A(S)</th><th title="Artes - Mauro">A(M)</th><th title="Ed. Física - Marcelo">EF(M)</th><th title="Ciência e Tecnologia - Daniela">CT(D)</th><th>EL</th><th>MTF</th>
+      <th title="Artes - Silvia">A(S)</th><th title="Artes - Mauro">A(M)</th><th title="Ed. Física - Marcelo">EF(M)</th><th title="EDM - Letícia">EDM(L)</th><th>EL</th>
+      <th title="Artes - Silvia">A(S)</th><th title="Ed. Física - Marcelo">EF(M)</th><th title="EDM - Letícia">EDM(L)</th><th>MTF</th>
+      <th title="Artes - Silvia">A(S)</th><th title="Ed. Física - Marcelo">EF(M)</th><th>EL</th><th>MTF</th>
+      <th title="Artes - Silvia">A(S)</th><th title="Ed. Física - Marcelo">EF(M)</th><th>EDM</th><th>EL</th><th>MTF</th>
     </tr>
     <tr>
       <td>7h05 - 8h</td>
-      <!-- 30 colunas editáveis (5 dias x 6 colunas) -->
-      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
-      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
-      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
-      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
-      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
+      <td class="hl" contenteditable="true">HL</td><td class="hl" contenteditable="true">HL</td><td contenteditable="true">1A</td><td contenteditable="true">*</td><td contenteditable="true">*</td><td contenteditable="true">*</td>
+      <td class="hl" contenteditable="true">HL</td><td contenteditable="true">1B</td><td contenteditable="true">1A</td><td contenteditable="true">*</td><td contenteditable="true">*</td>
+      <td class="hl" contenteditable="true">HL</td><td contenteditable="true">3B</td><td class="pd" contenteditable="true">PD</td><td contenteditable="true">*</td>
+      <td class="hl" contenteditable="true">HL</td><td contenteditable="true">1B</td><td contenteditable="true">*</td><td contenteditable="true">*</td>
+      <td contenteditable="true">2B</td><td contenteditable="true">4A</td><td contenteditable="true">*</td><td contenteditable="true">*</td><td contenteditable="true">*</td>
     </tr>
     <tr>
       <td>8h - 8h55</td>
-      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
-      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
-      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
-      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
-      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
+      <td contenteditable="true">2B</td><td contenteditable="true">1B</td><td contenteditable="true">2A</td><td contenteditable="true">*</td><td contenteditable="true">1A</td><td contenteditable="true">*</td>
+      <td contenteditable="true">TEATRO</td><td contenteditable="true">*</td><td contenteditable="true">5A</td><td contenteditable="true">2A</td><td contenteditable="true">*</td>
+      <td class="hl" contenteditable="true">HL</td><td contenteditable="true">3A</td><td contenteditable="true">1B</td><td contenteditable="true">2A</td>
+      <td contenteditable="true">1A</td><td contenteditable="true">2B</td><td contenteditable="true">5B</td><td contenteditable="true">*</td>
+      <td contenteditable="true">1A</td><td contenteditable="true">1B</td><td contenteditable="true">3B(N)</td><td contenteditable="true">*</td><td contenteditable="true">2B</td>
     </tr>
     <tr>
       <td>8h55 - 9h50</td>
-      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
-      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
-      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
-      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
-      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
+      <td contenteditable="true">3B</td><td contenteditable="true">*</td><td contenteditable="true">3A</td><td contenteditable="true">*</td><td contenteditable="true">*</td><td contenteditable="true">5A</td>
+      <td class="hl" contenteditable="true">HL</td><td contenteditable="true">*</td><td class="hl" contenteditable="true">HL</td><td contenteditable="true">3A</td><td contenteditable="true">*</td>
+      <td contenteditable="true">4A</td><td contenteditable="true">2A</td><td contenteditable="true">2B</td><td contenteditable="true">1A</td>
+      <td contenteditable="true">2A</td><td class="hl" contenteditable="true">HL</td><td contenteditable="true">*</td><td contenteditable="true">3A</td>
+      <td contenteditable="true">2A</td><td contenteditable="true">*</td><td contenteditable="true">5A(M)</td><td contenteditable="true">3B</td><td contenteditable="true">*</td>
     </tr>
     <tr>
-      <td>9h50 - 10h15</td>
-      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
-      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
-      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
-      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
-      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
+      <td>9h50 - 10h15 (25mim)</td>
+      <td class="hl" contenteditable="true">HL</td><td contenteditable="true">*</td><td class="hl" contenteditable="true">HL</td><td contenteditable="true">*</td><td contenteditable="true">*</td><td contenteditable="true">*</td>
+      <td contenteditable="true">*</td><td contenteditable="true">*</td><td contenteditable="true">2B</td><td contenteditable="true">*</td><td contenteditable="true">*</td>
+      <td contenteditable="true">*</td><td contenteditable="true">*</td><td contenteditable="true">1A</td><td contenteditable="true">*</td>
+      <td contenteditable="true">*</td><td contenteditable="true">*</td><td contenteditable="true">*</td><td contenteditable="true">*</td>
+      <td contenteditable="true">*</td><td contenteditable="true">*</td><td contenteditable="true">*</td><td contenteditable="true">*</td><td contenteditable="true">*</td>
     </tr>
-    <tr class="recreio"><td colspan="31">1º. RECREIO - 10h15 - 10h35</td></tr>
-    <tr class="recreio"><td colspan="31">2º. RECREIO - 10h45 - 11h05</td></tr>
+    <tr class="recreio"><td colspan="25">1º. RECREIO - 10h15 - 10h35 (1A/1B/2A/2B/3B)</td></tr>
+    <tr>
+      <td>10h35 - 11h05 (30mim)</td>
+      <td class="hl" contenteditable="true">HL</td><td contenteditable="true">*</td><td class="hl" contenteditable="true">HL</td><td contenteditable="true">*</td><td contenteditable="true">*</td><td contenteditable="true">*</td>
+      <td contenteditable="true">*</td><td contenteditable="true">*</td><td contenteditable="true">2B</td><td contenteditable="true">*</td><td contenteditable="true">*</td>
+      <td contenteditable="true">*</td><td contenteditable="true">*</td><td contenteditable="true">1A</td><td contenteditable="true">*</td>
+      <td contenteditable="true">*</td><td contenteditable="true">*</td><td contenteditable="true">*</td><td contenteditable="true">*</td>
+      <td contenteditable="true">*</td><td contenteditable="true">*</td><td contenteditable="true">*</td><td contenteditable="true">*</td><td contenteditable="true">*</td>
+    </tr>
+    <tr>
+      <td>9h50 - 10h45</td>
+      <td contenteditable="true">*</td><td contenteditable="true">*</td><td contenteditable="true">*</td><td contenteditable="true">5B</td><td contenteditable="true">*</td><td contenteditable="true">4A</td>
+      <td contenteditable="true">5B</td><td contenteditable="true">*</td><td contenteditable="true">*</td><td contenteditable="true">4A</td><td contenteditable="true">*</td>
+      <td contenteditable="true">5A</td><td class="hl" contenteditable="true">HL</td><td contenteditable="true">*</td><td contenteditable="true">5B</td>
+      <td contenteditable="true">3A</td><td contenteditable="true">4A</td><td contenteditable="true">5A</td><td contenteditable="true">*</td>
+      <td contenteditable="true">3A</td><td contenteditable="true">*</td><td contenteditable="true">5B(M)</td><td contenteditable="true">4A</td><td contenteditable="true">*</td>
+    </tr>
+    <tr class="recreio"><td colspan="25">2º. RECREIO - 10h45 - 11h05 (3A/4A/5A/5B)</td></tr>
     <tr>
       <td>11h05 - 12h</td>
-      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
-      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
-      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
-      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
-      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
+      <td contenteditable="true">4A</td><td contenteditable="true">*</td><td contenteditable="true">5B</td><td contenteditable="true">5A</td><td contenteditable="true">3A</td><td contenteditable="true">*</td>
+      <td contenteditable="true">5B</td><td contenteditable="true">*</td><td contenteditable="true">3B</td><td contenteditable="true">*</td><td contenteditable="true">2A</td>
+      <td contenteditable="true">5A</td><td contenteditable="true">5B</td><td contenteditable="true">*</td><td contenteditable="true">3B</td>
+      <td contenteditable="true">3B</td><td contenteditable="true">5A</td><td contenteditable="true">2B</td><td contenteditable="true">*</td>
+      <td contenteditable="true">*</td><td class="hl" contenteditable="true">HL</td><td contenteditable="true">*</td><td contenteditable="true">1B</td><td contenteditable="true">*</td>
     </tr>
   </table>
   </div>
@@ -102,86 +147,175 @@
   <table>
     <tr>
       <th rowspan="2">Horário</th>
-      <th colspan="7">Segunda</th>
-      <th colspan="7">Terça</th>
-      <th colspan="7">Quarta</th>
-      <th colspan="7">Quinta</th>
-      <th colspan="7">Sexta</th>
+      <th colspan="5">Segunda</th>
+      <th colspan="4">Terça</th>
+      <th colspan="4">Quarta</th>
+      <th colspan="5">Quinta</th>
+      <th colspan="4">Sexta</th>
     </tr>
     <tr>
-      <th>A(S)</th><th>A(M)</th><th>EF(P)</th><th>CT(D)</th><th>EL</th><th>EDM</th><th>MTF</th>
-      <th>A(S)</th><th>A(M)</th><th>EF(P)</th><th>CT(D)</th><th>EL</th><th>EDM</th><th>MTF</th>
-      <th>A(S)</th><th>A(M)</th><th>EF(P)</th><th>CT(D)</th><th>EL</th><th>EDM</th><th>MTF</th>
-      <th>A(S)</th><th>A(M)</th><th>EF(P)</th><th>CT(D)</th><th>EL</th><th>EDM</th><th>MTF</th>
-      <th>A(S)</th><th>A(M)</th><th>EF(P)</th><th>CT(D)</th><th>EL</th><th>EDM</th><th>MTF</th>
+      <th title="Artes - Silvia">A(S)</th><th title="Artes - Mauro">A(M)</th><th title="Ed. Física - Paulo">EF(P)</th><th title="Ciência e Tecnologia - Daniela">CT(D)</th><th>EL</th>
+      <th title="Artes - Silvia">A(S)</th><th title="Artes - Mauro">A(M)</th><th title="Ed. Física - Paulo">EF(P)</th><th>EL</th>
+      <th title="Artes - Silvia">A(S)</th><th title="Ed. Física - Paulo">EF(P)</th><th title="EDM - Letícia">EDM(L)</th><th>MTF</th>
+      <th title="Artes - Silvia">A(S)</th><th title="Artes - Mauro">A(M)</th><th title="Ed. Física - Paulo">EF(P)</th><th>EL</th><th>MTF</th>
+      <th title="Ed. Física - Paulo">EF(P)</th><th>EDM</th><th>MTF</th><th>EL</th>
     </tr>
     <tr>
       <td>12h35 - 13h30</td>
-      <!-- 35 colunas editáveis (5 dias x 7 colunas) -->
-      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
-      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
-      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
-      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
-      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
+      <td contenteditable="true">3D</td><td class="hl" contenteditable="true">HL</td><td contenteditable="true">*</td><td contenteditable="true">5C</td><td contenteditable="true">*</td>
+      <td contenteditable="true">3D</td><td contenteditable="true">PII</td><td contenteditable="true">1C</td><td contenteditable="true">*</td>
+      <td contenteditable="true">3C</td><td contenteditable="true">PII</td><td contenteditable="true">1C(S)</td><td contenteditable="true">*</td>
+      <td contenteditable="true">5C</td><td class="hl" contenteditable="true">HL</td><td contenteditable="true">*</td><td contenteditable="true">*</td><td contenteditable="true">*</td>
+      <td contenteditable="true">PI</td><td contenteditable="true">2C(J)</td><td contenteditable="true">*</td><td contenteditable="true">*</td>
     </tr>
     <tr>
       <td>13h30 - 14h25</td>
-      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
-      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
-      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
-      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
-      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
+      <td contenteditable="true">3C</td><td contenteditable="true">2C</td><td contenteditable="true">*</td><td contenteditable="true">*</td><td contenteditable="true">1D</td>
+      <td contenteditable="true">4B</td><td contenteditable="true">1D</td><td contenteditable="true">PI</td><td contenteditable="true">*</td>
+      <td contenteditable="true">1C</td><td contenteditable="true">1D</td><td class="pd" contenteditable="true">PD</td><td contenteditable="true">*</td>
+      <td contenteditable="true">5C</td><td contenteditable="true">PI</td><td class="hl" contenteditable="true">HL</td><td contenteditable="true">*</td><td contenteditable="true">4B</td>
+      <td contenteditable="true">PII</td><td contenteditable="true">1D(L)</td><td contenteditable="true">*</td><td contenteditable="true">1C</td>
     </tr>
     <tr>
-      <td>14h25 - 14h50</td>
-      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
-      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
-      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
-      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
-      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
+      <td>14h25 - 14h50 (25mim)</td>
+      <td contenteditable="true">*</td><td contenteditable="true">PII</td><td contenteditable="true">1D</td><td contenteditable="true">*</td><td contenteditable="true">*</td>
+      <td contenteditable="true">*</td><td contenteditable="true">*</td><td contenteditable="true">*</td><td contenteditable="true">*</td>
+      <td contenteditable="true">TEATRO</td><td contenteditable="true">2C</td><td contenteditable="true">*</td><td contenteditable="true">*</td>
+      <td contenteditable="true">1C</td><td contenteditable="true">1D</td><td contenteditable="true">*</td><td contenteditable="true">*</td><td contenteditable="true">*</td>
+      <td contenteditable="true">*</td><td contenteditable="true">*</td><td contenteditable="true">*</td><td contenteditable="true"></td>
     </tr>
-    <tr class="recreio"><td colspan="36">1º. RECREIO - 14h50 - 15h10</td></tr>
-    <tr class="recreio"><td colspan="36">2º. RECREIO - 15h20 - 15h40</td></tr>
+    <tr class="recreio"><td colspan="23">1º. RECREIO - 14h50 - 15h10 (PI/PII/1C/1D/2C)</td></tr>
+    <tr>
+      <td>15h10 - 15h40 (30 mim)</td>
+      <td contenteditable="true">*</td><td contenteditable="true">PII</td><td contenteditable="true">1D</td><td contenteditable="true">*</td><td contenteditable="true">*</td>
+      <td contenteditable="true">*</td><td contenteditable="true">*</td><td contenteditable="true">*</td><td contenteditable="true">*</td>
+      <td contenteditable="true">TEATRO</td><td contenteditable="true">2C</td><td contenteditable="true">*</td><td contenteditable="true">*</td>
+      <td contenteditable="true">1C</td><td contenteditable="true">1D</td><td contenteditable="true">*</td><td contenteditable="true">*</td><td contenteditable="true">*</td>
+      <td contenteditable="true">*</td><td contenteditable="true">*</td><td contenteditable="true">*</td><td contenteditable="true"></td>
+    </tr>
+    <tr>
+      <td>14h25 - 15h20</td>
+      <td contenteditable="true">4B</td><td contenteditable="true">*</td><td contenteditable="true">*</td><td contenteditable="true">*</td><td contenteditable="true">3C</td>
+      <td contenteditable="true">HTPC</td><td class="hl" contenteditable="true">HL</td><td contenteditable="true">3C</td><td contenteditable="true">*</td>
+      <td contenteditable="true">*</td><td contenteditable="true">*</td><td contenteditable="true">4B</td><td contenteditable="true">*</td>
+      <td contenteditable="true">*</td><td contenteditable="true">*</td><td contenteditable="true">4B</td><td contenteditable="true">*</td><td contenteditable="true">3D</td>
+      <td contenteditable="true">5C</td><td contenteditable="true">*</td><td contenteditable="true">3C</td><td contenteditable="true">*</td>
+    </tr>
+    <tr class="recreio"><td colspan="23">2º. RECREIO - 15h20 - 15h40 (3C/3D/4B/5C)</td></tr>
     <tr>
       <td>15h40 - 16h35</td>
-      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
-      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
-      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
-      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
-      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
+      <td contenteditable="true">*</td><td contenteditable="true">PI</td><td contenteditable="true">1C</td><td contenteditable="true">*</td><td contenteditable="true">4B</td>
+      <td contenteditable="true">HTPC</td><td contenteditable="true">*</td><td contenteditable="true">2C</td><td contenteditable="true">*</td>
+      <td contenteditable="true">*</td><td contenteditable="true">PI</td><td contenteditable="true">5C</td><td contenteditable="true">*</td>
+      <td contenteditable="true">*</td><td contenteditable="true">PII</td><td contenteditable="true">3D</td><td contenteditable="true">*</td><td contenteditable="true">2C</td>
+      <td contenteditable="true">3D</td><td contenteditable="true">3C (L)</td><td contenteditable="true">*</td><td contenteditable="true">2C</td>
     </tr>
     <tr>
       <td>16h35 - 17h30</td>
-      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
-      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
-      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
-      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
-      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
+      <td contenteditable="true">*</td><td contenteditable="true">*</td><td contenteditable="true">5C</td><td contenteditable="true">*</td><td contenteditable="true">3D</td>
+      <td contenteditable="true">*</td><td contenteditable="true">*</td><td contenteditable="true">*</td><td contenteditable="true">5C</td>
+      <td contenteditable="true">*</td><td contenteditable="true">*</td><td contenteditable="true">3D</td><td contenteditable="true">5C</td>
+      <td contenteditable="true">*</td><td contenteditable="true">2C</td><td contenteditable="true">3C</td><td contenteditable="true">*</td><td contenteditable="true">1C</td>
+      <td contenteditable="true">4B</td><td contenteditable="true">*</td><td contenteditable="true">1D</td><td contenteditable="true">*</td>
     </tr>
-    <tr class="recreio"><td colspan="36">LIMPEZA DAS SALAS DE AULA</td></tr>
+    <tr class="recreio"><td colspan="23">LIMPEZA DAS SALAS DE AULA</td></tr>
   </table>
   </div>
-
-  <div class="actions">
-    <button onclick="if(confirm('Limpar todos os dados?')) { localStorage.clear(); location.reload(); }">Limpar Horário</button>
+  
+  <div class="status-bar" id="statusBar">
+    <div class="status-item">Aguardando seleção...</div>
   </div>
 
   <script>
-    // Script para persistência de dados
+    const STORAGE_KEY = 'school_schedule_v1';
     const cells = document.querySelectorAll('[contenteditable="true"]');
     
-    // Carregar dados salvos
-    cells.forEach((cell, index) => {
-      const savedValue = localStorage.getItem('cell_' + index);
-      if (savedValue) {
-        cell.innerText = savedValue;
-      }
+    // Mapeamento de Professores (Edite aqui para vincular nomes)
+    const TEACHER_MAP = {
+      'A(S)': 'Artes - Silvia',
+      'A(M)': 'Artes - Mauro',
+      'EF(M)': 'Ed. Física - Marcelo',
+      'EF(P)': 'Ed. Física - Paulo',
+      'CT(D)': 'Ciência e Tecnologia - Daniela',
+      'EDM(L)': 'EDM - Letícia',
+      'EDM': 'EDM - Titulares',
+      'EL': 'Elefante Letrado',
+      'MTF': 'Matific',
+      'PI': 'Projeto I',
+      'PII': 'Projeto II'
+    };
+    
+    // Carregar dados (Estado Centralizado)
+    function loadData() {
+      const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+      cells.forEach((cell, index) => {
+        if (data[index] !== undefined) cell.innerText = data[index];
+        
+        // Eventos de Input
+        cell.addEventListener('input', () => {
+          data[index] = cell.innerText;
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        });
 
-      // Salvar ao digitar
-      cell.addEventListener('input', () => {
-        localStorage.setItem('cell_' + index, cell.innerText);
+        // Eventos de Foco para vincular professor à sala
+        cell.addEventListener('focus', () => {
+          const colIndex = cell.cellIndex;
+          const table = cell.closest('table');
+          const headerCell = table.rows[1].cells[colIndex - (cell.parentElement.cells.length > table.rows[1].cells.length ? 0 : 0)];
+          
+          // Tenta encontrar o cabeçalho correto considerando que a primeira coluna é o horário
+          const professorHeader = table.rows[1].cells[colIndex - 1];
+          if (professorHeader) {
+            const sigla = professorHeader.innerText;
+            const nomeProf = TEACHER_MAP[sigla] || sigla;
+            const sala = cell.innerText || '(vazia)';
+            
+            document.getElementById('statusBar').innerHTML = `
+              <div class="status-item"><b>Professor(a):</b> ${nomeProf}</div>
+              <div class="status-item"><b>Sala/Turma:</b> ${sala}</div>
+            `;
+            
+            // Destaque visual no cabeçalho
+            document.querySelectorAll('th').forEach(th => th.classList.remove('header-highlight'));
+            professorHeader.classList.add('header-highlight');
+          }
+        });
       });
-    });
+    }
+
+    function clearData() {
+      if(confirm('Isso apagará todo o conteúdo preenchido. Confirmar?')) {
+        localStorage.removeItem(STORAGE_KEY);
+        location.reload();
+      }
+    }
+
+    function exportToJson() {
+      const data = localStorage.getItem(STORAGE_KEY);
+      const blob = new Blob([data], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `horario_escolar_${new Date().toLocaleDateString()}.json`;
+      a.click();
+    }
+
+    function importFromJson(input) {
+      const file = input.files[0];
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = JSON.parse(e.target.result);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+          location.reload();
+        } catch (err) {
+          alert('Erro ao importar arquivo: Formato inválido.');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    loadData();
 
     // Função para destacar dia e horário atual
     function updateHighlights() {
@@ -201,7 +335,10 @@
       };
 
       document.querySelectorAll('table').forEach((table, tIdx) => {
-        const colsPerDay = tIdx === 0 ? 6 : 7; // Manhã tem 6 sub-colunas, Tarde tem 7
+        // Mapeia colunas por dia (Manhã: [6,5,4,4,5] | Tarde: [5,4,4,5,4])
+        const morningLayout = [6, 5, 4, 4, 5];
+        const afternoonLayout = [5, 4, 4, 5, 4];
+        const currentLayout = tIdx === 0 ? morningLayout : afternoonLayout;
         
         // Destaca o cabeçalho do dia atual (Segunda é índice 1)
         if (table.rows[0].cells[day]) table.rows[0].cells[day].classList.add('current-active');
@@ -222,7 +359,14 @@
 
           if (start !== null && currentMinutes >= start && currentMinutes < end) {
             row.cells[0].classList.add('current-active'); // Destaca a célula do horário
-            const cellStart = 1 + (day - 1) * colsPerDay;
+            
+            // Calcula o índice de início da célula baseado no layout variável
+            let cellStart = 1;
+            for(let d = 0; d < day - 1; d++) {
+              cellStart += currentLayout[d];
+            }
+            
+            const colsPerDay = currentLayout[day - 1];
             for (let j = 0; j < colsPerDay; j++) {
               if (row.cells[cellStart + j]) row.cells[cellStart + j].classList.add('current-active');
             }
