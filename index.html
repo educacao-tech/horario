@@ -7,14 +7,17 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>Horário Escolar - EMEB Professora Anna Bonagura de Andrade</h1>
+  <header style="margin-bottom: 32px;">
+    <h1 style="font-size: 1.75rem; color: #0f172a;">Horário Escolar 2026</h1>
+    <p style="color: #64748b; margin-top: -4px;">EMEB Professora Anna Bonagura de Andrade</p>
+  </header>
 
   <div class="legend">
-    <strong>Legenda:</strong>
-    <div class="legend-item"><div class="box hl"></div> HL (Hora Livre / HTPC)</div>
-    <div class="legend-item"><div class="box pd"></div> PD (Plantão de Dúvidas Letícia)</div>
-    <div class="legend-item"><div class="box el"></div> EL (Elefante Letrado)</div>
-    <div class="legend-item"><div class="box mtf"></div> MTF (Matific)</div>
+    <strong style="margin-right: 8px; color: #475569;">Legenda:</strong>
+    <div class="legend-item" onclick="toggleCategory('hl')"><div class="box hl"></div> HL (Hora Livre / HTPC)</div>
+    <div class="legend-item" onclick="toggleCategory('pd')"><div class="box pd"></div> PD (Plantão de Dúvidas Letícia)</div>
+    <div class="legend-item" onclick="toggleCategory('el')"><div class="box el"></div> EL (Elefante Letrado)</div>
+    <div class="legend-item" onclick="toggleCategory('mtf')"><div class="box mtf"></div> MTF (Matific)</div>
   </div>
 
   <div class="toolbar">
@@ -28,6 +31,7 @@
       <button class="clear-search-btn" onclick="clearSearch()">✖</button>
     </div>
     <span id="time-counter" class="time-counter"></span>
+    <button id="theme-toggle" class="btn btn-primary" onclick="toggleTheme()">🌙 Tema Escuro</button>
     <button id="lock-btn" class="btn btn-primary" onclick="toggleLockMode()">🔓 Modo Edição</button>
     <span id="save-indicator">✅ Salvo</span>
   </div>
@@ -39,10 +43,10 @@
   <table>
     <tr>
       <th rowspan="2">Horário</th>
-      <th colspan="6">Segunda</th>
-      <th colspan="5">Terça</th>
-      <th colspan="4">Quarta</th>
-      <th colspan="4">Quinta</th>
+      <th colspan="6" class="day-divider">Segunda</th>
+      <th colspan="5" class="day-divider">Terça</th>
+      <th colspan="4" class="day-divider">Quarta</th>
+      <th colspan="4" class="day-divider">Quinta</th>
       <th colspan="5">Sexta</th>
     </tr>
     <tr>
@@ -120,10 +124,10 @@
   <table>
     <tr>
       <th rowspan="2">Horário</th>
-      <th colspan="5">Segunda</th>
-      <th colspan="4">Terça</th>
-      <th colspan="4">Quarta</th>
-      <th colspan="5">Quinta</th>
+      <th colspan="5" class="day-divider">Segunda</th>
+      <th colspan="4" class="day-divider">Terça</th>
+      <th colspan="4" class="day-divider">Quarta</th>
+      <th colspan="5" class="day-divider">Quinta</th>
       <th colspan="4">Sexta</th>
     </tr>
     <tr>

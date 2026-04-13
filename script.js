@@ -1,4 +1,5 @@
 const STORAGE_KEY = 'school_schedule_v1';
+const THEME_KEY = 'school_schedule_theme';
 const cells = document.querySelectorAll('[contenteditable="true"]');
 
 // Mapeamento de Professores (Edite aqui para vincular nomes)
@@ -104,9 +105,8 @@ function applyDynamicStyles(cell) {
     cell.title = teacherName;
   }
 
-  // Se o texto for uma sala (ex: 1A), busca o nome da professora no mapa
-  // Ignoramos siglas de especialistas para não duplicar informação na célula
-  if (teacherName && !SPECIALIST_SIGLAS.includes(text) && !SPECIALIST_SIGLAS.includes(baseCode)) {
+  // Se o texto estiver no mapa de professores, exibe o nome abaixo do código
+  if (teacherName && text !== '*' && text !== '') {
     // Extrai apenas o primeiro nome para não ocupar muito espaço na célula
     const fullName = teacherName.split(' (')[0];
     cell.setAttribute('data-teacher', fullName);
@@ -193,12 +193,76 @@ document.addEventListener('focusin', (e) => {
     
     // Destaca a coluna inteira (Crosshair effect)
     if (colIndex > 0 && table) {
-      Array.from(table.rows).forEach(row => {
-        if (row.cells[colIndex]) {
-          row.cells[colIndex].classList.add('col-highlight');
+      // Lógica aprimorada para destacar cabeçalhos complexos (rowspan/colspan)
+      const morningLayout = [6, 5, 4, 4, 5];
+      const afternoonLayout = [5, 4, 4, 5, 4];
+      const layout = table.closest('#section-morning') ? morningLayout : afternoonLayout;
+      
+      let dayIdx = 0;
+      let colSum = 0;
+      for(let i = 0; i < layout.length; i++) {
+        colSum += layout[i];
+        if (colIndex <= colSum) {
+          dayIdx = i + 1; // +1 devido à coluna "Horário"
+          break;
         }
-      });
+      }
+
+      // Destaca o Dia (Linha 0)
+      if (table.rows[0].cells[dayIdx]) table.rows[0].cells[dayIdx].classList.add('col-highlight');
+      
+      // Destaca o Especialista (Linha 1)
+      if (table.rows[1].cells[colIndex - 1]) table.rows[1].cells[colIndex - 1].classList.add('col-highlight');
+
+      // Destaca as células de dados (Linhas 2+)
+      for (let i = 2; i < table.rows.length; i++) {
+        const r = table.rows[i];
+        if (r.cells[colIndex]) r.cells[colIndex].classList.add('col-highlight');
+      }
     }
+  }
+});
+
+// Navegação por teclado (Setas e Enter para a linha de baixo/cima)
+document.addEventListener('keydown', (e) => {
+  const cell = e.target;
+  if (cell.getAttribute('contenteditable') !== 'true') return;
+
+  const row = cell.parentElement;
+  const table = cell.closest('table');
+  const colIndex = cell.cellIndex;
+  const rowIndex = row.rowIndex;
+  let nextCell;
+
+  if (e.key === 'Enter' || e.key === 'ArrowDown') {
+    e.preventDefault();
+    for (let i = rowIndex + 1; i < table.rows.length; i++) {
+      const target = table.rows[i].cells[colIndex];
+      if (target && target.getAttribute('contenteditable') === 'true') {
+        nextCell = target;
+        break;
+      }
+    }
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    for (let i = rowIndex - 1; i >= 2; i--) {
+      const target = table.rows[i].cells[colIndex];
+      if (target && target.getAttribute('contenteditable') === 'true') {
+        nextCell = target;
+        break;
+      }
+    }
+  }
+
+  if (nextCell) {
+    nextCell.focus();
+    // Move o cursor para o final do texto na nova célula
+    const range = document.createRange();
+    const sel = window.getSelection();
+    range.selectNodeContents(nextCell);
+    range.collapse(false);
+    sel.removeAllRanges();
+    sel.addRange(range);
   }
 });
 
@@ -217,8 +281,8 @@ function updateStatusBar(cell) {
     row.classList.add('row-highlight');
 
     // Encontra o cabeçalho correto
-    // Ajuste: em tabelas com a primeira coluna fixa, o índice pode variar, mas cellIndex costuma ser confiável
-    const professorHeader = table.rows[1].cells[colIndex - 1]; 
+    // Usa o índice da célula para encontrar o especialista correspondente na linha 1
+    const professorHeader = table.rows[1].cells[colIndex - 1];
     if (professorHeader) {
       const sigla = professorHeader.innerText;
       const nomeProf = TEACHER_MAP[sigla] || sigla;
@@ -236,6 +300,22 @@ function updateStatusBar(cell) {
       document.querySelectorAll('th').forEach(th => th.classList.remove('header-highlight'));
       professorHeader.classList.add('header-highlight');
     }
+}
+
+function applyTheme() {
+  const savedTheme = localStorage.getItem(THEME_KEY);
+  const btn = document.getElementById('theme-toggle');
+  if (savedTheme === 'dark') {
+    document.body.classList.add('dark-theme');
+    if (btn) btn.innerHTML = '☀️ Tema Claro';
+  }
+}
+
+function toggleTheme() {
+  const isDark = document.body.classList.toggle('dark-theme');
+  const btn = document.getElementById('theme-toggle');
+  localStorage.setItem(THEME_KEY, isDark ? 'dark' : 'light');
+  if (btn) btn.innerHTML = isDark ? '☀️ Tema Claro' : '🌙 Tema Escuro';
 }
 
 // Alterna entre modo de edição e modo de leitura
@@ -368,6 +448,75 @@ function updateHighlights() {
   });
 }
 
+// Função para selecionar colunas/células através da legenda
+function toggleCategory(category) {
+  // 1. Alterna o estado ativo do item clicado na legenda
+  const clickedBox = document.querySelector(`.legend-item .box.${category}`);
+  if (!clickedBox) return;
+  clickedBox.parentElement.classList.toggle('active');
+
+  // 2. Identifica quais filtros de especialistas estão ativos (PD, EL, MTF)
+  // HL é tratado separadamente pois é baseado em conteúdo, não em colunas fixas
+  const specialistCategories = ['pd', 'el', 'mtf'];
+  const activeFilters = specialistCategories.filter(cat =>
+    document.querySelector(`.legend-item .box.${cat}`).parentElement.classList.contains('active')
+  );
+  const isFiltering = activeFilters.length > 0;
+  
+  document.body.classList.toggle('is-filtering', isFiltering);
+
+  document.querySelectorAll('table').forEach(table => {
+    const dayRow = table.rows[0];
+    const specialistRow = table.rows[1];
+    if (!dayRow || !specialistRow) return;
+
+    const morningLayout = [6, 5, 4, 4, 5];
+    const afternoonLayout = [5, 4, 4, 5, 4];
+    const currentLayout = table.closest('#section-morning') ? morningLayout : afternoonLayout;
+
+    let colVisibility = [];
+    // Limpa divisórias antigas
+    table.querySelectorAll('.day-divider').forEach(el => el.classList.remove('day-divider'));
+
+    // 3. Itera pelas colunas de especialistas (Linha 1 da tabela)
+    for (let i = 0; i < specialistRow.cells.length; i++) {
+      const th = specialistRow.cells[i];
+      const headerText = th.innerText.trim().toUpperCase();
+      const headerTitle = (th.title || "").toUpperCase();
+      
+      let colCategory = null;
+      if (headerText.includes('EDM(L)') || headerTitle.includes('LETÍCIA')) colCategory = 'pd';
+      else if (headerText === 'EL') colCategory = 'el';
+      else if (headerText === 'MTF') colCategory = 'mtf';
+
+      // Uma coluna deve ser exibida se: não houver filtro OU se ela pertencer a uma categoria ativa
+      const shouldShow = !isFiltering || (colCategory && activeFilters.includes(colCategory));
+      const isSelected = isFiltering && colCategory && activeFilters.includes(colCategory);
+
+      th.classList.toggle('hidden-col', !shouldShow);
+      th.classList.toggle('category-select', isSelected);
+
+      // Aplica a visibilidade em todas as linhas de dados daquela coluna
+      for (let r = 2; r < table.rows.length; r++) {
+        const cell = table.rows[r].cells[i + 1]; // +1 devido à coluna de Horário
+        if (cell) {
+          cell.classList.toggle('hidden-col', !shouldShow);
+          cell.classList.toggle('category-select', isSelected);
+        }
+      }
+    }
+  });
+
+  // 5. Caso especial HL: apenas destaca células com o texto HL/HTPC (não oculta colunas)
+  const isHlActive = document.querySelector('.legend-item .box.hl').parentElement.classList.contains('active');
+  cells.forEach(cell => {
+    const txt = cell.innerText.trim().toUpperCase();
+    if (txt === 'HL' || txt === 'HTPC') {
+      cell.classList.toggle('category-select', isHlActive);
+    }
+  });
+}
+
 // Função para formatar a diferença de tempo em MMm SSs
 function formatTimeDifference(totalSeconds) {
   if (totalSeconds < 0) return "00m 00s";
@@ -457,6 +606,7 @@ function reorderSectionsByTime() {
 
 // Inicializa e define intervalo de atualização
 loadData(); // Carrega os dados salvos
+applyTheme(); // Aplica o tema salvo
 reorderSectionsByTime(); // Organiza a ordem das tabelas por relevância
 updateHighlights(); // Destaca o horário atual
 updateTimeCounter(); // Inicia o contador de tempo

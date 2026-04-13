@@ -1,17 +1,36 @@
 :root {
   --primary: #4f46e5;
   --primary-hover: #4338ca;
+  --accent: #0ea5e9;
   --bg-main: #f8fafc;
   --bg-card: #ffffff;
   --text-main: #1e293b;
+  --text-muted: #64748b;
   --border-color: #e2e8f0;
   --hl-color: #f1f5f9;
   --pd-color: #d0e7ff;
   --el-color: #ecfdf5;
   --mtf-color: #fff7ed;
   --edit-bg: #fffef2;
+  --bg-header: #f8fafc;
+  --bg-sticky-col: #f1f5f9;
   --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+
+body.dark-theme {
+  --bg-main: #0f172a;
+  --bg-card: #1e293b;
+  --bg-header: #334155;
+  --bg-sticky-col: #1e293b;
+  --text-main: #f1f5f9;
+  --text-muted: #94a3b8;
+  --border-color: #475569;
+  --hl-color: #334155;
+  --pd-color: #1e40af;
+  --el-color: #065f46;
+  --mtf-color: #92400e;
+  --edit-bg: #1e293b;
 }
 
 body {
@@ -23,8 +42,13 @@ body {
 }
 
 h1, h2 {
-  color: #0f172a;
+  color: #1e293b;
   letter-spacing: -0.025em;
+  font-weight: 800;
+}
+
+h1 {
+  margin-bottom: 8px;
 }
 
 .table-container {
@@ -32,26 +56,29 @@ h1, h2 {
   overflow-x: auto;
   margin-bottom: 30px;
   background: var(--bg-card);
-  border-radius: 12px;
+  border-radius: 16px;
   border: 1px solid var(--border-color);
   box-shadow: var(--shadow-md);
 }
 
 table {
   width: 100%;
-  border-collapse: separate; /* Usar separate para permitir border-radius na tabela */
+  border-collapse: separate;
   border-spacing: 0;
   min-width: 1200px;
-  border-radius: 12px; /* Arredondar cantos da tabela */
+  border-radius: 16px;
   overflow: hidden; /* Esconder bordas que ultrapassam o radius */
 }
 
 th, td {
   padding: 10px 8px;
   text-align: center;
+  vertical-align: top !important; /* Força o alinhamento no topo mesmo com redimensionamento */
+  box-sizing: border-box;
   border-bottom: 1px solid var(--border-color);
   border-right: 1px solid var(--border-color);
   min-width: 45px; /* Define um tamanho base igual para todas as colunas de dados */
+  line-height: 1.2; /* Estabiliza a altura do texto principal */
   /* Remover borda direita da última coluna e borda inferior da última linha */
   &:last-child { border-right: none; }
   
@@ -60,10 +87,10 @@ th, td {
     position: sticky;
     left: 0;
     z-index: 20;
-    background-color: #f1f5f9; /* Tom levemente mais escuro que o fundo */
+    background-color: var(--bg-sticky-col);
     border-right: 1px solid var(--border-color);
     font-weight: 600;
-    color: #475569;
+    color: var(--text-main);
     width: 95px;
     min-width: 95px;
     white-space: nowrap;
@@ -73,11 +100,11 @@ th, td {
 }
 
 th {
-  background-color: #f8fafc;
+  background-color: var(--bg-header);
   font-weight: 600;
   font-size: 0.85rem;
   text-transform: uppercase;
-  color: #64748b;
+  color: var(--text-muted);
   position: sticky;
   top: 0;
   z-index: 10; /* Aumentar z-index para garantir que fique acima do conteúdo */
@@ -94,7 +121,7 @@ tr:hover {
 
 /* Efeito de destaque na linha quando uma célula está focada */
 tr.row-highlight {
-  background-color: #e3f2fd !important;
+  background-color: rgba(79, 70, 229, 0.05) !important;
   transition: background-color 0.2s ease;
 }
 /* Destaque na coluna do cabeçalho */
@@ -105,27 +132,60 @@ td[contenteditable="true"] {
   background-color: var(--edit-bg);
   transition: background 0.2s ease, outline 0.2s ease; /* Transição para foco e background */
 }
+
+/* Garante que os cabeçalhos dos dias permaneçam visíveis e alinhados durante a filtragem */
+body.is-filtering tr:nth-child(1) {
+  display: table-row !important;
+}
+
+body.is-filtering tr:nth-child(2) th {
+  top: 41px !important;
+}
+
 /* Destaque para células com o mesmo conteúdo */
 .match-highlight {
-  background-color: #dcfce7 !important; /* Verde bem claro */
-  box-shadow: inset 0 0 0 1px #22c55e !important;
+  background-color: #f0fdf4 !important;
+  box-shadow: inset 0 0 0 2px #22c55e !important;
   color: #166534 !important;
+  animation: highlightPulse 2s infinite;
 }
+
+/* Destaque para seleção via legenda */
+.category-select {
+  box-shadow: inset 0 0 0 3px var(--primary) !important;
+  transition: none; /* Remove a transição que pode causar oscilação visual ao filtrar */
+}
+
+/* Classe para ocultar colunas durante a filtragem */
+.hidden-col {
+  display: none !important;
+}
+
 /* Exibe o nome do professor regente dentro da célula se houver mapeamento */
 td[contenteditable="true"][data-teacher]::after {
   content: attr(data-teacher);
   display: block;
-  font-size: 0.75rem; /* Aumentado o tamanho da fonte */
-  color: #334155; /* Cor mais escura para maior contraste */
+  font-size: 0.7rem;
+  color: var(--text-muted);
   font-weight: 600; /* Negrito para destaque */
   margin-top: 2px;
+  white-space: nowrap; /* Impede que o nome do professor quebre a linha e aumente a célula */
+  overflow: hidden;
+  text-overflow: ellipsis; /* Se o nome for longo demais para a coluna, ele encurta com "..." */
   pointer-events: none; /* Garante que não atrapalhe o clique/edição */
 }
+
 td[contenteditable="true"]:focus {
   background-color: #fff;
   outline: 2px solid var(--primary);
-  z-index: 2;
 }
+
+/* Divisória Dupla entre os Dias */
+.day-divider {
+  border-right: 3px solid var(--border-color) !important;
+  background-color: rgba(79, 70, 229, 0.05); /* Destaque sutil no cabeçalho do dia */
+}
+
 /* Estilo para células em modo leitura */
 body.readonly td[contenteditable="true"]:hover {
   background-color: var(--bg-main); /* Remove o hover em modo leitura */
@@ -156,32 +216,33 @@ body.readonly td[contenteditable="true"] {
   background-color: var(--mtf-color) !important;
 }
 .recreio {
-  background-color: #e0e0e0;
+  background: linear-gradient(to bottom, var(--bg-header), var(--bg-main));
+  color: var(--text-muted);
   font-weight: bold;
   text-align: center;
+  font-size: 0.8rem;
+  letter-spacing: 0.05em;
 }
 .current-active {
-  background-color: #fef08a !important; 
-  z-index: 1;
-  position: relative;
+  background-color: #fef9c3 !important; 
   color: #000;
 }
 /* Estilo específico para a célula de horário quando ativa */
 td.current-active:first-child {
-  background-color: var(--primary) !important;
+  background: linear-gradient(135deg, var(--primary), var(--primary-hover)) !important;
   color: white !important;
-  box-shadow: 4px 0 8px -4px rgba(0,0,0,0.2) !important;
+  box-shadow: 4px 0 12px -4px rgba(79, 70, 229, 0.4) !important;
   border-right-color: var(--primary-hover);
 }
 
 .toolbar {
-  margin: 24px 0;
+  margin: 0 0 24px 0;
   display: flex;
-  gap: 12px;
+  gap: 16px;
   flex-wrap: wrap;
   background: var(--bg-card);
-  padding: 20px;
-  border-radius: 12px;
+  padding: 16px 24px;
+  border-radius: 16px;
   border: 1px solid var(--border-color);
   box-shadow: var(--shadow-sm);
 }
@@ -195,7 +256,7 @@ td.current-active:first-child {
 .search-field {
   padding: 10px 16px;
   border: 1px solid var(--border-color);
-  border-radius: 8px;
+  border-radius: 10px;
   font-size: 0.9rem;
   min-width: 250px;
   outline: none;
@@ -221,7 +282,7 @@ td.current-active:first-child {
 .time-counter {
   font-weight: 600;
   color: var(--primary);
-  /* margin-left: auto; */ /* Removido para permitir que save-indicator continue no canto */
+  font-variant-numeric: tabular-nums;
   padding: 0 10px;
   display: flex;
   align-items: center;
@@ -231,7 +292,7 @@ td.current-active:first-child {
 #save-indicator {
   margin-left: auto;
   font-size: 0.85rem;
-  color: #64748b;
+  color: #10b981;
   display: flex;
   align-items: center;
   gap: 4px;
@@ -243,7 +304,7 @@ td.current-active:first-child {
   padding: 10px 18px;
   cursor: pointer;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   font-weight: 600;
   font-size: 0.9rem;
   transition: all 0.2s ease;
@@ -270,14 +331,14 @@ td.current-active:first-child {
   bottom: 0;
   left: 0;
   width: 100%;
-  background: #1e293b;
+  background: rgba(30, 41, 59, 0.85);
   color: #fff;
-  padding: 10px 24px;
+  padding: 12px 24px;
   font-size: 0.9em;
   display: flex;
   gap: 32px;
   z-index: 1000;
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(12px) saturate(180%);
 }
 .status-item {
   border-right: 1px solid #555;
@@ -312,12 +373,27 @@ th[title] {
   display: flex;
   align-items: center;
   gap: 5px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+.legend-item:hover { background-color: var(--hl-color); }
+.legend-item.active {
+  background-color: var(--border-color);
+  font-weight: 700;
 }
 .box {
   width: 20px;
   height: 20px;
   border: 1px solid var(--border-color); /* Usar variável para a borda */
   border-radius: 3px;
+}
+
+@keyframes highlightPulse {
+  0% { box-shadow: inset 0 0 0 2px #22c55e; }
+  50% { box-shadow: inset 0 0 0 4px #4ade80; }
+  100% { box-shadow: inset 0 0 0 2px #22c55e; }
 }
 
 @media print {
