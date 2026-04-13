@@ -23,8 +23,11 @@
     <button class="btn btn-primary" onclick="document.getElementById('importFile').click()">📂 Importar Backup</button>
     <input type="file" id="importFile" style="display:none" onchange="importFromJson(this)">
     <button class="btn btn-danger" onclick="clearData()">🗑️ Limpar Tudo</button>
+    <span id="save-indicator">✅ Salvo</span>
   </div>
 
+  <div id="schedule-wrapper">
+    <div id="section-morning">
   <h2>Horário da Manhã</h2>
   <div class="table-container">
   <table>
@@ -103,7 +106,9 @@
     </tr>
   </table>
   </div>
+    </div>
 
+    <div id="section-afternoon">
   <h2>Horário da Tarde</h2>
   <div class="table-container">
   <table>
@@ -183,7 +188,9 @@
     <tr class="recreio"><td colspan="23">LIMPEZA DAS SALAS DE AULA</td></tr>
   </table>
   </div>
-  
+    </div>
+  </div>
+
   <div class="status-bar" id="statusBar">
     <div class="status-item">Aguardando seleção...</div>
   </div>

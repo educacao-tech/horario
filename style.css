@@ -36,9 +36,11 @@ h1, h2 {
 
 table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate; /* Usar separate para permitir border-radius na tabela */
   border-spacing: 0;
   min-width: 1200px;
+  border-radius: 12px; /* Arredondar cantos da tabela */
+  overflow: hidden; /* Esconder bordas que ultrapassam o radius */
 }
 
 th, td {
@@ -46,6 +48,18 @@ th, td {
   text-align: center;
   border-bottom: 1px solid var(--border-color);
   border-right: 1px solid var(--border-color);
+  /* Remover borda direita da última coluna e borda inferior da última linha */
+  &:last-child { border-right: none; }
+  
+  /* Fixar a primeira coluna (Horário) */
+  &:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 20;
+    background-color: #f8fafc;
+    border-right: 2px solid var(--border-color);
+  }
+  tr:last-child & { border-bottom: none; }
 }
 
 th {
@@ -56,15 +70,17 @@ th {
   color: #64748b;
   position: sticky;
   top: 0;
-  z-index: 5;
+  z-index: 10; /* Aumentar z-index para garantir que fique acima do conteúdo */
 }
 
 /* Ajuste para cabeçalho duplo sticky */
-tr:nth-child(1) th { top: 0; }
-tr:nth-child(2) th { top: 38px; } /* Ajuste conforme a altura da célula */
+tr:nth-child(1) th { top: 0; z-index: 31; } 
+tr:nth-child(2) th { top: 41px; z-index: 30; }
+tr:nth-child(1) th:first-child { z-index: 40; } /* Canto superior esquerdo */
 
 tr:hover {
-  background-color: #f1f5f9;
+  background-color: #f1f5f9; /* Cor de hover mais suave */
+  transition: background-color 0.2s ease; /* Transição suave para o hover */
 }
 /* Efeito de destaque na linha quando uma célula está focada */
 tr.row-highlight {
@@ -72,7 +88,23 @@ tr.row-highlight {
 }
 td[contenteditable="true"] {
   background-color: var(--edit-bg);
-  transition: background 0.3s;
+  transition: background 0.2s ease, outline 0.2s ease; /* Transição para foco e background */
+}
+/* Destaque para células com o mesmo conteúdo */
+.match-highlight {
+  background-color: #dcfce7 !important; /* Verde bem claro */
+  box-shadow: inset 0 0 0 1px #22c55e !important;
+  color: #166534 !important;
+}
+/* Exibe o nome do professor regente dentro da célula se houver mapeamento */
+td[contenteditable="true"][data-teacher]::after {
+  content: attr(data-teacher);
+  display: block;
+  font-size: 0.75rem; /* Aumentado o tamanho da fonte */
+  color: #334155; /* Cor mais escura para maior contraste */
+  font-weight: 600; /* Negrito para destaque */
+  margin-top: 2px;
+  pointer-events: none; /* Garante que não atrapalhe o clique/edição */
 }
 td[contenteditable="true"]:focus {
   background-color: #fff;
@@ -116,6 +148,18 @@ td[contenteditable="true"]:focus {
   box-shadow: var(--shadow-sm);
 }
 
+/* Indicador de salvamento */
+#save-indicator {
+  margin-left: auto;
+  font-size: 0.85rem;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
 .btn {
   padding: 10px 18px;
   cursor: pointer;
@@ -141,7 +185,7 @@ td[contenteditable="true"]:focus {
   color: white;
 }
 .btn:hover {
-  transform: translateY(-1px);
+  transform: translateY(-2px); /* Efeito de elevação mais pronunciado */
   filter: brightness(1.1);
   box-shadow: var(--shadow-sm);
 }
@@ -197,7 +241,7 @@ th[title] {
 .box {
   width: 20px;
   height: 20px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border-color); /* Usar variável para a borda */
   border-radius: 3px;
 }
 
