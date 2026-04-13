@@ -5,21 +5,36 @@
   <title>Horário Escolar Editável</title>
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; }
-    table { width: 100%; margin-bottom: 30px; border-collapse: collapse; }
+    .table-container { width: 100%; overflow-x: auto; margin-bottom: 30px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    table { width: 100%; border-collapse: collapse; min-width: 1200px; }
     th, td { padding: 6px; text-align: center; border: 1px solid #ccc; }
     th { background-color: #f2f2f2; }
-    td[contenteditable="true"] { background-color: #fff8dc; }
+    tr:hover { background-color: #f9f9f9; }
+    td[contenteditable="true"] { background-color: #fff8dc; transition: background 0.3s; }
+    td[contenteditable="true"]:focus { background-color: #fff; outline: 2px solid #007bff; }
     .hl { background-color: #f9f9f9; }
     .pd { background-color: #d0e7ff; }
     .el { background-color: #d9f2d9; }
     .mtf { background-color: #ffe5cc; }
     .recreio { background-color: #e0e0e0; font-weight: bold; text-align: center; }
+    .current-active { background-color: #fff176 !important; outline: 2px solid #fbc02d !important; z-index: 1; position: relative; color: #000; }
+    .actions { margin: 20px 0; }
+    button { padding: 10px 20px; cursor: pointer; background: #d9534f; color: white; border: none; border-radius: 4px; }
+    button:hover { background: #c9302c; }
+
+    @media print {
+      .actions, button { display: none; }
+      body { padding: 0; }
+      .table-container { overflow: visible; }
+      td[contenteditable="true"] { background-color: transparent !important; }
+    }
   </style>
 </head>
 <body>
   <h1>Horário Escolar - EMEB Professora Anna Bonagura de Andrade</h1>
 
   <h2>Horário da Manhã</h2>
+  <div class="table-container">
   <table>
     <tr>
       <th rowspan="2">Horário</th>
@@ -38,18 +53,52 @@
     </tr>
     <tr>
       <td>7h05 - 8h</td>
-      <td class="hl" contenteditable="true">HL</td><td class="hl" contenteditable="true">HL</td><td contenteditable="true">1A</td><td contenteditable="true">*</td><td contenteditable="true">*</td>
-      <td class="hl" contenteditable="true">HL</td><td contenteditable="true">1B</td><td contenteditable="true">1A</td><td contenteditable="true">*</td><td contenteditable="true">*</td><td contenteditable="true">*</td>
-      <td class="hl" contenteditable="true">HL</td><td contenteditable="true">3B</td><td class="pd" contenteditable="true">PD</td><td contenteditable="true">*</td><td contenteditable="true">*</td><td contenteditable="true">*</td>
-      <td class="hl" contenteditable="true">HL</td><td contenteditable="true">1B</td><td contenteditable="true">*</td><td contenteditable="true">*</td><td contenteditable="true">2B</td><td contenteditable="true">*</td>
-      <td contenteditable="true">4A</td><td contenteditable="true">*</td><td contenteditable="true">*</td><td contenteditable="true">*</td><td contenteditable="true">*</td><td contenteditable="true">*</td>
+      <!-- 30 colunas editáveis (5 dias x 6 colunas) -->
+      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
+      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
+      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
+      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
+      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
     </tr>
-    <!-- Continue preenchendo as demais linhas conforme o Excel original -->
+    <tr>
+      <td>8h - 8h55</td>
+      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
+      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
+      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
+      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
+      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
+    </tr>
+    <tr>
+      <td>8h55 - 9h50</td>
+      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
+      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
+      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
+      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
+      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
+    </tr>
+    <tr>
+      <td>9h50 - 10h15</td>
+      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
+      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
+      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
+      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
+      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
+    </tr>
     <tr class="recreio"><td colspan="31">1º. RECREIO - 10h15 - 10h35</td></tr>
     <tr class="recreio"><td colspan="31">2º. RECREIO - 10h45 - 11h05</td></tr>
+    <tr>
+      <td>11h05 - 12h</td>
+      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
+      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
+      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
+      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
+      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
+    </tr>
   </table>
+  </div>
 
   <h2>Horário da Tarde</h2>
+  <div class="table-container">
   <table>
     <tr>
       <th rowspan="2">Horário</th>
@@ -68,13 +117,123 @@
     </tr>
     <tr>
       <td>12h35 - 13h30</td>
-      <td contenteditable="true">3D</td><td class="hl" contenteditable="true">HL</td><td contenteditable="true">*</td><td contenteditable="true">5C</td><td contenteditable="true">*</td><td contenteditable="true">*</td>
-      <td contenteditable="true">3D</td><td contenteditable="true">PII</td><td contenteditable="true">1C</td><td contenteditable="true">*</td><td contenteditable="true">3C</td><td contenteditable="true">PII</td><td contenteditable="true">*</td>
-      <!-- Continue preenchendo conforme o Excel original -->
+      <!-- 35 colunas editáveis (5 dias x 7 colunas) -->
+      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
+      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
+      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
+      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
+      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
+    </tr>
+    <tr>
+      <td>13h30 - 14h25</td>
+      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
+      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
+      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
+      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
+      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
+    </tr>
+    <tr>
+      <td>14h25 - 14h50</td>
+      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
+      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
+      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
+      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
+      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
     </tr>
     <tr class="recreio"><td colspan="36">1º. RECREIO - 14h50 - 15h10</td></tr>
     <tr class="recreio"><td colspan="36">2º. RECREIO - 15h20 - 15h40</td></tr>
+    <tr>
+      <td>15h40 - 16h35</td>
+      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
+      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
+      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
+      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
+      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
+    </tr>
+    <tr>
+      <td>16h35 - 17h30</td>
+      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
+      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
+      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
+      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
+      <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td>
+    </tr>
     <tr class="recreio"><td colspan="36">LIMPEZA DAS SALAS DE AULA</td></tr>
   </table>
+  </div>
+
+  <div class="actions">
+    <button onclick="if(confirm('Limpar todos os dados?')) { localStorage.clear(); location.reload(); }">Limpar Horário</button>
+  </div>
+
+  <script>
+    // Script para persistência de dados
+    const cells = document.querySelectorAll('[contenteditable="true"]');
+    
+    // Carregar dados salvos
+    cells.forEach((cell, index) => {
+      const savedValue = localStorage.getItem('cell_' + index);
+      if (savedValue) {
+        cell.innerText = savedValue;
+      }
+
+      // Salvar ao digitar
+      cell.addEventListener('input', () => {
+        localStorage.setItem('cell_' + index, cell.innerText);
+      });
+    });
+
+    // Função para destacar dia e horário atual
+    function updateHighlights() {
+      const now = new Date();
+      const day = now.getDay(); // 0=Dom, 1=Seg, 2=Ter, 3=Qua, 4=Qui, 5=Sex, 6=Sab
+      
+      // Remove destaques antigos
+      document.querySelectorAll('.current-active').forEach(el => el.classList.remove('current-active'));
+      
+      if (day < 1 || day > 5) return; // Não destaca nada nos fins de semana
+
+      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+      
+      const timeToMinutes = (str) => {
+        const match = str.toLowerCase().match(/(\d+)h(\d+)?/);
+        return match ? parseInt(match[1]) * 60 + parseInt(match[2] || 0) : null;
+      };
+
+      document.querySelectorAll('table').forEach((table, tIdx) => {
+        const colsPerDay = tIdx === 0 ? 6 : 7; // Manhã tem 6 sub-colunas, Tarde tem 7
+        
+        // Destaca o cabeçalho do dia atual (Segunda é índice 1)
+        if (table.rows[0].cells[day]) table.rows[0].cells[day].classList.add('current-active');
+
+        for (let i = 2; i < table.rows.length; i++) {
+          const row = table.rows[i];
+          const timeText = row.cells[0].innerText;
+          const parts = timeText.split(' - ');
+          let start = null, end = null;
+
+          if (row.classList.contains('recreio') && parts.length >= 3) {
+            start = timeToMinutes(parts[1]);
+            end = timeToMinutes(parts[2]);
+          } else if (parts.length === 2) {
+            start = timeToMinutes(parts[0]);
+            end = timeToMinutes(parts[1]);
+          }
+
+          if (start !== null && currentMinutes >= start && currentMinutes < end) {
+            row.cells[0].classList.add('current-active'); // Destaca a célula do horário
+            const cellStart = 1 + (day - 1) * colsPerDay;
+            for (let j = 0; j < colsPerDay; j++) {
+              if (row.cells[cellStart + j]) row.cells[cellStart + j].classList.add('current-active');
+            }
+          }
+        }
+      });
+    }
+
+    // Inicializa e define intervalo de atualização
+    updateHighlights();
+    setInterval(updateHighlights, 60000); // Atualiza a cada 1 minuto
+  </script>
 </body>
 </html>
