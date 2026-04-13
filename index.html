@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Horário Escolar Editável</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    table { width: 100%; margin-bottom: 30px; border-collapse: collapse; }
+    th, td { padding: 6px; text-align: center; border: 1px solid #ccc; }
+    th { background-color: #f2f2f2; }
+    td[contenteditable="true"] { background-color: #fff8dc; }
+    .hl { background-color: #f9f9f9; }
+    .pd { background-color: #d0e7ff; }
+    .el { background-color: #d9f2d9; }
+    .mtf { background-color: #ffe5cc; }
+    .recreio { background-color: #e0e0e0; font-weight: bold; text-align: center; }
+  </style>
+</head>
+<body>
+  <h1>Horário Escolar - EMEB Professora Anna Bonagura de Andrade</h1>
+
+  <h2>Horário da Manhã</h2>
+  <table>
+    <tr>
+      <th rowspan="2">Horário</th>
+      <th colspan="6">Segunda</th>
+      <th colspan="6">Terça</th>
+      <th colspan="6">Quarta</th>
+      <th colspan="6">Quinta</th>
+      <th colspan="6">Sexta</th>
+    </tr>
+    <tr>
+      <th>A(S)</th><th>A(M)</th><th>EF(M)</th><th>CT(D)</th><th>EL</th><th>MTF</th>
+      <th>A(S)</th><th>A(M)</th><th>EF(M)</th><th>EDM(L)</th><th>EL</th><th>MTF</th>
+      <th>A(S)</th><th>A(M)</th><th>EF(M)</th><th>EDM(L)</th><th>EL</th><th>MTF</th>
+      <th>A(S)</th><th>A(M)</th><th>EF(M)</th><th>EDM</th><th>EL</th><th>MTF</th>
+      <th>A(S)</th><th>A(M)</th><th>EF(M)</th><th>EDM</th><th>EL</th><th>MTF</th>
+    </tr>
+    <tr>
+      <td>7h05 - 8h</td>
+      <td class="hl" contenteditable="true">HL</td><td class="hl" contenteditable="true">HL</td><td contenteditable="true">1A</td><td contenteditable="true">*</td><td contenteditable="true">*</td>
+      <td class="hl" contenteditable="true">HL</td><td contenteditable="true">1B</td><td contenteditable="true">1A</td><td contenteditable="true">*</td><td contenteditable="true">*</td><td contenteditable="true">*</td>
+      <td class="hl" contenteditable="true">HL</td><td contenteditable="true">3B</td><td class="pd" contenteditable="true">PD</td><td contenteditable="true">*</td><td contenteditable="true">*</td><td contenteditable="true">*</td>
+      <td class="hl" contenteditable="true">HL</td><td contenteditable="true">1B</td><td contenteditable="true">*</td><td contenteditable="true">*</td><td contenteditable="true">2B</td><td contenteditable="true">*</td>
+      <td contenteditable="true">4A</td><td contenteditable="true">*</td><td contenteditable="true">*</td><td contenteditable="true">*</td><td contenteditable="true">*</td><td contenteditable="true">*</td>
+    </tr>
+    <!-- Continue preenchendo as demais linhas conforme o Excel original -->
+    <tr class="recreio"><td colspan="31">1º. RECREIO - 10h15 - 10h35</td></tr>
+    <tr class="recreio"><td colspan="31">2º. RECREIO - 10h45 - 11h05</td></tr>
+  </table>
+
+  <h2>Horário da Tarde</h2>
+  <table>
+    <tr>
+      <th rowspan="2">Horário</th>
+      <th colspan="7">Segunda</th>
+      <th colspan="7">Terça</th>
+      <th colspan="7">Quarta</th>
+      <th colspan="7">Quinta</th>
+      <th colspan="7">Sexta</th>
+    </tr>
+    <tr>
+      <th>A(S)</th><th>A(M)</th><th>EF(P)</th><th>CT(D)</th><th>EL</th><th>EDM</th><th>MTF</th>
+      <th>A(S)</th><th>A(M)</th><th>EF(P)</th><th>CT(D)</th><th>EL</th><th>EDM</th><th>MTF</th>
+      <th>A(S)</th><th>A(M)</th><th>EF(P)</th><th>CT(D)</th><th>EL</th><th>EDM</th><th>MTF</th>
+      <th>A(S)</th><th>A(M)</th><th>EF(P)</th><th>CT(D)</th><th>EL</th><th>EDM</th><th>MTF</th>
+      <th>A(S)</th><th>A(M)</th><th>EF(P)</th><th>CT(D)</th><th>EL</th><th>EDM</th><th>MTF</th>
+    </tr>
+    <tr>
+      <td>12h35 - 13h30</td>
+      <td contenteditable="true">3D</td><td class="hl" contenteditable="true">HL</td><td contenteditable="true">*</td><td contenteditable="true">5C</td><td contenteditable="true">*</td><td contenteditable="true">*</td>
+      <td contenteditable="true">3D</td><td contenteditable="true">PII</td><td contenteditable="true">1C</td><td contenteditable="true">*</td><td contenteditable="true">3C</td><td contenteditable="true">PII</td><td contenteditable="true">*</td>
+      <!-- Continue preenchendo conforme o Excel original -->
+    </tr>
+    <tr class="recreio"><td colspan="36">1º. RECREIO - 14h50 - 15h10</td></tr>
+    <tr class="recreio"><td colspan="36">2º. RECREIO - 15h20 - 15h40</td></tr>
+    <tr class="recreio"><td colspan="36">LIMPEZA DAS SALAS DE AULA</td></tr>
+  </table>
+</body>
+</html>
