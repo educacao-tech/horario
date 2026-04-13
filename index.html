@@ -6,7 +6,7 @@
   <title>Horário Escolar Editável</title>
   <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="readonly">
   <div class="progress-container">
     <div id="main-progress-bar" class="progress-bar"></div>
   </div>
@@ -36,7 +36,7 @@
     </div>
     <span id="time-counter" class="time-counter"></span>
     <button id="theme-toggle" class="btn btn-primary" onclick="toggleTheme()">🌙 Tema Escuro</button>
-    <button id="lock-btn" class="btn btn-primary" onclick="toggleLockMode()">🔓 Modo Edição</button>
+    <button id="lock-btn" class="btn btn-primary" style="background: #64748b;" onclick="toggleLockMode()">🔒 Modo Leitura</button>
     <span id="save-indicator">✅ Salvo</span>
   </div>
 
