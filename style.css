@@ -1,0 +1,161 @@
+body {
+  font-family: Arial, sans-serif;
+  padding: 20px;
+}
+.table-container {
+  width: 100%;
+  overflow-x: auto;
+  margin-bottom: 30px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 1200px;
+}
+th,
+td {
+  padding: 6px;
+  text-align: center;
+  border: 1px solid #ccc;
+}
+th {
+  background-color: #f2f2f2;
+}
+tr:hover {
+  background-color: #f9f9f9;
+}
+td[contenteditable="true"] {
+  background-color: #fff8dc;
+  transition: background 0.3s;
+}
+td[contenteditable="true"]:focus {
+  background-color: #fff;
+  outline: 2px solid #007bff;
+}
+.hl {
+  background-color: #f9f9f9;
+}
+.pd {
+  background-color: #d0e7ff;
+}
+.el {
+  background-color: #d9f2d9;
+}
+.mtf {
+  background-color: #ffe5cc;
+}
+.recreio {
+  background-color: #e0e0e0;
+  font-weight: bold;
+  text-align: center;
+}
+.current-active {
+  background-color: #fff176 !important;
+  outline: 2px solid #fbc02d !important;
+  z-index: 1;
+  position: relative;
+  color: #000;
+}
+
+.toolbar {
+  margin: 20px 0;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+}
+.btn {
+  padding: 10px 15px;
+  cursor: pointer;
+  border: none;
+  border-radius: 4px;
+  font-weight: bold;
+  transition: opacity 0.2s;
+}
+.btn-danger {
+  background: #d9534f;
+  color: white;
+}
+.btn-primary {
+  background: #007bff;
+  color: white;
+}
+.btn-success {
+  background: #28a745;
+  color: white;
+}
+.btn:hover {
+  opacity: 0.8;
+}
+
+.status-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: #333;
+  color: #fff;
+  padding: 8px 20px;
+  font-size: 0.85em;
+  display: flex;
+  gap: 20px;
+  z-index: 1000;
+}
+.status-item {
+  border-right: 1px solid #555;
+  padding-right: 15px;
+}
+.header-highlight {
+  background-color: #007bff !important;
+  color: white !important;
+}
+th[title] {
+  cursor: help;
+  text-decoration: underline dotted #aaa;
+}
+
+.legend {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 20px;
+  font-size: 0.9em;
+  flex-wrap: wrap;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.box {
+  width: 20px;
+  height: 20px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+}
+
+@media print {
+  .toolbar,
+  .legend,
+  .actions,
+  .status-bar,
+  button,
+  h1 {
+    display: none !important;
+  }
+  body {
+    padding: 0;
+  }
+  h2 {
+    margin-top: 0;
+  }
+  .table-container {
+    overflow: visible;
+  }
+  td[contenteditable="true"] {
+    background-color: transparent !important;
+  }
+}
