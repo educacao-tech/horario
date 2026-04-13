@@ -4,10 +4,10 @@ const cells = document.querySelectorAll('[contenteditable="true"]');
 // Mapeamento de Professores (Edite aqui para vincular nomes)
 const TEACHER_MAP = {
   'A(S)': 'Artes - Silvia',
-  'A(M)': 'Artes - Michele',
-  'EF(M)': 'Ed. Física - Marcelo',
+  'A(M)': 'Artes - Michelle',
+  'EF(M)': 'Ed. Física - Marcela',
   'EF(P)': 'Ed. Física - Paulo',
-  'CT(D)': 'Ciência e Tecnologia - Daniela',
+  'CT(D)': 'Composta - Danilo',
   'EDM(L)': 'EDM - Letícia',
   'EDM': 'EDM - Titulares',
   'EL': 'Elefante Letrado',
@@ -16,42 +16,65 @@ const TEACHER_MAP = {
   'PII': 'Projeto II'
 };
 
+// Função para atrasar o salvamento (Debounce)
+function debounce(func, timeout = 500) {
+  let timer;
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => { func.apply(this, args); }, timeout);
+  };
+}
+
+const saveContent = debounce((index, text) => {
+  const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+  data[index] = text;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  console.log(`Célula ${index} salva.`);
+});
+
 // Carregar dados (Estado Centralizado)
 function loadData() {
   const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
   cells.forEach((cell, index) => {
     if (data[index] !== undefined) cell.innerText = data[index];
-
-    // Eventos de Input
-    cell.addEventListener('input', () => {
-      data[index] = cell.innerText;
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    });
-
-    // Eventos de Foco para vincular professor à sala
-    cell.addEventListener('focus', () => {
-      const colIndex = cell.cellIndex;
-      const table = cell.closest('table');
-
-      // Encontra o cabeçalho correto, ajustando para a coluna de horário
-      const professorHeader = table.rows[1].cells[colIndex - 1];
-      if (professorHeader) {
-        const sigla = professorHeader.innerText;
-        const nomeProf = TEACHER_MAP[sigla] || sigla;
-        const sala = cell.innerText || '(vazia)';
-
-        document.getElementById('statusBar').innerHTML = `
-          <div class="status-item"><b>Professor(a):</b> ${nomeProf}</div>
-          <div class="status-item"><b>Sala/Turma:</b> ${sala}</div>
-        `;
-
-        // Destaque visual no cabeçalho
-        document.querySelectorAll('th').forEach(th => th.classList.remove('header-highlight'));
-        professorHeader.classList.add('header-highlight');
-      }
-    });
   });
 }
+
+// Gerenciamento Centralizado de Eventos (Event Delegation)
+document.addEventListener('input', (e) => {
+  if (e.target.getAttribute('contenteditable') === 'true') {
+    const index = Array.from(cells).indexOf(e.target);
+    saveContent(index, e.target.innerText);
+  }
+});
+
+document.addEventListener('focusin', (e) => {
+  const cell = e.target;
+  if (cell.getAttribute('contenteditable') === 'true') {
+    const colIndex = cell.cellIndex;
+    const table = cell.closest('table');
+    const row = cell.parentElement;
+
+    // Destaca a linha
+    document.querySelectorAll('tr').forEach(r => r.classList.remove('row-highlight'));
+    row.classList.add('row-highlight');
+
+    // Encontra o cabeçalho correto
+    const professorHeader = table.rows[1].cells[colIndex - 1];
+    if (professorHeader) {
+      const sigla = professorHeader.innerText;
+      const nomeProf = TEACHER_MAP[sigla] || sigla;
+      
+      document.getElementById('statusBar').innerHTML = `
+        <div class="status-item"><b>Professor(a):</b> ${nomeProf}</div>
+        <div class="status-item"><b>Sala/Turma:</b> ${cell.innerText || '(vazia)'}</div>
+      `;
+
+      document.querySelectorAll('th').forEach(th => th.classList.remove('header-highlight'));
+      professorHeader.classList.add('header-highlight');
+    }
+  }
+});
 
 function clearData() {
   if (confirm('Isso apagará todo o conteúdo preenchido. Confirmar?')) {

@@ -1,6 +1,6 @@
 body {
   font-family: Arial, sans-serif;
-  padding: 20px;
+  padding: 20px 20px 60px 20px; /* Aumentado o padding inferior para não cobrir a tabela com a barra de status */
 }
 .table-container {
   width: 100%;
@@ -24,6 +24,10 @@ th {
 }
 tr:hover {
   background-color: #f9f9f9;
+}
+/* Efeito de destaque na linha quando uma célula está focada */
+tr.row-highlight {
+  background-color: #e3f2fd !important;
 }
 td[contenteditable="true"] {
   background-color: #fff8dc;
@@ -104,6 +108,7 @@ td[contenteditable="true"]:focus {
   display: flex;
   gap: 20px;
   z-index: 1000;
+  box-shadow: 0 -2px 10px rgba(0,0,0,0.3);
 }
 .status-item {
   border-right: 1px solid #555;
