@@ -2,6 +2,11 @@ const STORAGE_KEY = 'school_schedule_v1';
 const THEME_KEY = 'school_schedule_theme';
 const cells = document.querySelectorAll('[contenteditable="true"]');
 
+const LAYOUTS = {
+  morning: [6, 5, 4, 4, 5],
+  afternoon: [5, 4, 4, 5, 4]
+};
+
 // Mapeamento de Professores (Edite aqui para vincular nomes)
 const SPECIALIST_SIGLAS = ['A(S)', 'A(M)', 'EF(M)', 'EF(P)', 'CT(D)', 'EDM(L)', 'EDM', 'EL', 'MTF', 'PI', 'PII'];
 const DATA_CATEGORIES = ['HL', 'HTPC', 'PD', 'EL', 'MTF'];
@@ -123,6 +128,9 @@ function loadData() {
       applyDynamicStyles(cell);
     }
   });
+
+  // Aplica as divisórias de dia iniciais
+  applyStaticDayDividers();
 
   // Adiciona atributos de acessibilidade e labels
   cells.forEach(cell => {
@@ -448,73 +456,73 @@ function updateHighlights() {
   });
 }
 
+// Aplica as divisórias visuais (linhas duplas) entre os dias da semana
+function applyStaticDayDividers() {
+  document.querySelectorAll('table').forEach(table => {
+    const specialistRow = table.rows[1];
+    if (!specialistRow) return;
+
+    const layout = table.closest('#section-morning') ? LAYOUTS.morning : LAYOUTS.afternoon;
+    let colOffset = 0;
+
+    layout.forEach((colsInDay, idx) => {
+      if (idx === layout.length - 1) return; // Não coloca na última coluna da tabela
+      
+      colOffset += colsInDay;
+      // Aplica no cabeçalho de especialista
+      if (specialistRow.cells[colOffset - 1]) {
+        specialistRow.cells[colOffset - 1].classList.add('day-divider');
+      }
+      // Aplica nas células de dados
+      for (let r = 2; r < table.rows.length; r++) {
+        const cell = table.rows[r].cells[colOffset]; // colOffset já considera o índice correto (+1 horário)
+        if (cell) cell.classList.add('day-divider');
+      }
+    });
+  });
+}
+
 // Função para selecionar colunas/células através da legenda
 function toggleCategory(category) {
-  // 1. Alterna o estado ativo do item clicado na legenda
   const clickedBox = document.querySelector(`.legend-item .box.${category}`);
   if (!clickedBox) return;
-  clickedBox.parentElement.classList.toggle('active');
-
-  // 2. Identifica quais filtros de especialistas estão ativos (PD, EL, MTF)
-  // HL é tratado separadamente pois é baseado em conteúdo, não em colunas fixas
-  const specialistCategories = ['pd', 'el', 'mtf'];
-  const activeFilters = specialistCategories.filter(cat =>
-    document.querySelector(`.legend-item .box.${cat}`).parentElement.classList.contains('active')
-  );
-  const isFiltering = activeFilters.length > 0;
-  
-  document.body.classList.toggle('is-filtering', isFiltering);
+  const isActive = clickedBox.parentElement.classList.toggle('active');
 
   document.querySelectorAll('table').forEach(table => {
-    const dayRow = table.rows[0];
     const specialistRow = table.rows[1];
-    if (!dayRow || !specialistRow) return;
+    if (!specialistRow) return;
 
-    const morningLayout = [6, 5, 4, 4, 5];
-    const afternoonLayout = [5, 4, 4, 5, 4];
-    const currentLayout = table.closest('#section-morning') ? morningLayout : afternoonLayout;
-
-    let colVisibility = [];
-    // Limpa divisórias antigas
-    table.querySelectorAll('.day-divider').forEach(el => el.classList.remove('day-divider'));
-
-    // 3. Itera pelas colunas de especialistas (Linha 1 da tabela)
+    // Itera pelas colunas de especialistas para encontrar correspondências
     for (let i = 0; i < specialistRow.cells.length; i++) {
       const th = specialistRow.cells[i];
       const headerText = th.innerText.trim().toUpperCase();
       const headerTitle = (th.title || "").toUpperCase();
       
-      let colCategory = null;
-      if (headerText.includes('EDM(L)') || headerTitle.includes('LETÍCIA')) colCategory = 'pd';
-      else if (headerText === 'EL') colCategory = 'el';
-      else if (headerText === 'MTF') colCategory = 'mtf';
+      let isMatch = false;
+      if (category === 'pd' && (headerText.includes('EDM(L)') || headerTitle.includes('LETÍCIA'))) isMatch = true;
+      if (category === 'el' && headerText === 'EL') isMatch = true;
+      if (category === 'mtf' && headerText === 'MTF') isMatch = true;
 
-      // Uma coluna deve ser exibida se: não houver filtro OU se ela pertencer a uma categoria ativa
-      const shouldShow = !isFiltering || (colCategory && activeFilters.includes(colCategory));
-      const isSelected = isFiltering && colCategory && activeFilters.includes(colCategory);
-
-      th.classList.toggle('hidden-col', !shouldShow);
-      th.classList.toggle('category-select', isSelected);
-
-      // Aplica a visibilidade em todas as linhas de dados daquela coluna
-      for (let r = 2; r < table.rows.length; r++) {
-        const cell = table.rows[r].cells[i + 1]; // +1 devido à coluna de Horário
-        if (cell) {
-          cell.classList.toggle('hidden-col', !shouldShow);
-          cell.classList.toggle('category-select', isSelected);
+      if (isMatch) {
+        th.classList.toggle('category-select', isActive);
+        // Aplica o destaque em todas as células de dados desta coluna
+        for (let r = 2; r < table.rows.length; r++) {
+          const cell = table.rows[r].cells[i + 1]; // +1 devido à coluna Horário
+          if (cell) cell.classList.toggle('category-select', isActive);
         }
       }
     }
   });
 
-  // 5. Caso especial HL: apenas destaca células com o texto HL/HTPC (não oculta colunas)
-  const isHlActive = document.querySelector('.legend-item .box.hl').parentElement.classList.contains('active');
-  cells.forEach(cell => {
-    const txt = cell.innerText.trim().toUpperCase();
-    if (txt === 'HL' || txt === 'HTPC') {
-      cell.classList.toggle('category-select', isHlActive);
-    }
-  });
+  // Caso especial HL: destaca células que contenham o texto HL/HTPC
+  if (category === 'hl') {
+    cells.forEach(cell => {
+      const txt = cell.innerText.trim().toUpperCase();
+      if (txt === 'HL' || txt === 'HTPC') {
+        cell.classList.toggle('category-select', isActive);
+      }
+    });
+  }
 }
 
 // Função para formatar a diferença de tempo em MMm SSs

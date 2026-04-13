@@ -133,15 +133,6 @@ td[contenteditable="true"] {
   transition: background 0.2s ease, outline 0.2s ease; /* Transição para foco e background */
 }
 
-/* Garante que os cabeçalhos dos dias permaneçam visíveis e alinhados durante a filtragem */
-body.is-filtering tr:nth-child(1) {
-  display: table-row !important;
-}
-
-body.is-filtering tr:nth-child(2) th {
-  top: 41px !important;
-}
-
 /* Destaque para células com o mesmo conteúdo */
 .match-highlight {
   background-color: #f0fdf4 !important;
