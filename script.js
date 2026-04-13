@@ -43,21 +43,26 @@ function debounce(func, timeout = 500) {
   };
 }
 
-const saveContent = debounce((index, text) => {
+// Gera uma chave única para a célula baseada no contexto (Período + Horário + Especialista)
+function getCellKey(cell) {
+  const table = cell.closest('table');
+  const section = cell.closest('[id^="section-"]');
+  const rowIndex = cell.parentElement.rowIndex;
+  const colIndex = cell.cellIndex;
+  const time = table.rows[rowIndex].cells[0].innerText.trim();
+  const specialist = table.rows[1].cells[colIndex - 1]?.innerText.trim() || colIndex;
+  return `${section.id}_${time}_${specialist}`.replace(/\s+/g, '_');
+}
+
+const saveContent = debounce((key, text) => {
   const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-  data[index] = text;
+  data[key] = text;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   
   const indicator = document.getElementById('save-indicator');
   indicator.style.opacity = '1';
   setTimeout(() => { indicator.style.opacity = '0'; }, 2000);
 });
-
-// Helper function for time conversion
-const timeToMinutes = (str) => {
-  const match = str.toLowerCase().match(/(\d+)h(\d+)?/);
-  return match ? parseInt(match[1]) * 60 + parseInt(match[2] || 0) : null;
-};
 
 // Detecta se a mesma turma está em duas salas no mesmo horário
 function checkConflicts(cell) {
@@ -110,9 +115,10 @@ function applyDynamicStyles(cell) {
 // Carregar dados (Estado Centralizado)
 function loadData() {
   const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-  cells.forEach((cell, index) => {
-    if (data[index] !== undefined) {
-      cell.innerText = data[index];
+  cells.forEach((cell) => {
+    const key = getCellKey(cell);
+    if (data[key] !== undefined) {
+      cell.innerText = data[key];
       applyDynamicStyles(cell);
     }
   });
@@ -121,15 +127,21 @@ function loadData() {
 // Gerenciamento Centralizado de Eventos (Event Delegation)
 document.addEventListener('input', (e) => {
   if (e.target.getAttribute('contenteditable') === 'true') {
-    const index = Array.from(cells).indexOf(e.target);
+    const key = getCellKey(e.target);
     applyDynamicStyles(e.target);
     checkConflicts(e.target);
-    saveContent(index, e.target.innerText);
+    saveContent(key, e.target.innerText);
     
     // Atualiza a barra de status em tempo real enquanto digita
     updateStatusBar(e.target);
   }
 });
+
+// Helper function for time conversion - Centralizada no topo
+const timeToMinutes = (str) => {
+  const match = str.toLowerCase().match(/(\d+)h(\d+)?/);
+  return match ? parseInt(match[1]) * 60 + parseInt(match[2] || 0) : null;
+};
 
 function highlightOccurrences(text) {
   // Se o texto for uma sigla de professor mapeada, também destaca
@@ -147,11 +159,30 @@ function highlightOccurrences(text) {
   });
 }
 
+// Consolidação dos ouvintes de Focus (Barra de Status + Destaque de Coluna)
 document.addEventListener('focusin', (e) => {
   const cell = e.target;
-  if (cell.getAttribute('contenteditable') === 'true') {
+  const isEditable = cell.getAttribute('contenteditable') === 'true';
+  const isReadonlyMode = document.body.classList.contains('readonly');
+
+  if (isEditable || isReadonlyMode) {
     updateStatusBar(cell);
     highlightOccurrences(cell.innerText);
+
+    const colIndex = cell.cellIndex;
+    const table = cell.closest('table');
+    
+    // Limpa destaques de coluna anteriores
+    document.querySelectorAll('.col-highlight').forEach(el => el.classList.remove('col-highlight'));
+    
+    // Destaca a coluna inteira (Crosshair effect)
+    if (colIndex > 0 && table) {
+      Array.from(table.rows).forEach(row => {
+        if (row.cells[colIndex]) {
+          row.cells[colIndex].classList.add('col-highlight');
+        }
+      });
+    }
   }
 });
 
@@ -224,28 +255,10 @@ function exportToJson() {
   a.click();
 }
 
-document.addEventListener('focusin', (e) => {
-  const cell = e.target;
-  if (cell.getAttribute('contenteditable') === 'true' || document.body.classList.contains('readonly')) {
-    const colIndex = cell.cellIndex;
-    const table = cell.closest('table');
-    
-    // Limpa destaques de coluna anteriores
-    document.querySelectorAll('.col-highlight').forEach(el => el.classList.remove('col-highlight'));
-    
-    // Destaca a coluna inteira
-    if (colIndex > 0) {
-      Array.from(table.rows).forEach(row => {
-        if (row.cells[colIndex]) {
-          row.cells[colIndex].classList.add('col-highlight');
-        }
-      });
-    }
-  }
-});
-
 function importFromJson(input) {
   const file = input.files[0];
+  if (!file) return;
+  
   const reader = new FileReader();
   reader.onload = (e) => {
     try {
@@ -270,11 +283,6 @@ function updateHighlights() {
   if (day < 1 || day > 5) return; // Não destaca nada nos fins de semana
 
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
-
-  const timeToMinutes = (str) => {
-    const match = str.toLowerCase().match(/(\d+)h(\d+)?/);
-    return match ? parseInt(match[1]) * 60 + parseInt(match[2] || 0) : null;
-  };
 
   document.querySelectorAll('table').forEach((table) => {
     // Mapeia colunas por dia (Manhã: [6,5,4,4,5] | Tarde: [5,4,4,5,4])

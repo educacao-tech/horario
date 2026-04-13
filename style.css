@@ -6,6 +6,9 @@
   --text-main: #1e293b;
   --border-color: #e2e8f0;
   --hl-color: #f1f5f9;
+  --pd-color: #d0e7ff;
+  --el-color: #ecfdf5;
+  --mtf-color: #fff7ed;
   --edit-bg: #fffef2;
   --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
@@ -80,11 +83,12 @@ tr:nth-child(1) th:first-child { z-index: 40; } /* Canto superior esquerdo */
 
 tr:hover {
   background-color: #f1f5f9; /* Cor de hover mais suave */
-  transition: background-color 0.2s ease; /* Transição suave para o hover */
 }
+
 /* Efeito de destaque na linha quando uma célula está focada */
 tr.row-highlight {
   background-color: #e3f2fd !important;
+  transition: background-color 0.2s ease;
 }
 /* Destaque na coluna do cabeçalho */
 .col-highlight {
@@ -129,16 +133,16 @@ body.readonly td[contenteditable="true"] {
   color: #991b1b !important;
 }
 .hl {
-  background-color: var(--hl-color);
+  background-color: var(--hl-color) !important;
 }
 .pd {
-  background-color: #d0e7ff;
+  background-color: var(--pd-color) !important;
 }
 .el {
-  background-color: #ecfdf5;
+  background-color: var(--el-color) !important;
 }
 .mtf {
-  background-color: #fff7ed;
+  background-color: var(--mtf-color) !important;
 }
 .recreio {
   background-color: #e0e0e0;
@@ -293,8 +297,15 @@ th[title] {
   h2 {
     margin-top: 0;
   }
+  table {
+    page-break-inside: avoid;
+    break-inside: avoid;
+    font-size: 10px; /* Reduz levemente para caber no A4 */
+  }
   .table-container {
     overflow: visible;
+    box-shadow: none;
+    border: 1px solid #000;
   }
   td[contenteditable="true"] {
     background-color: transparent !important;
