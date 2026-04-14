@@ -328,9 +328,20 @@ function toggleTheme() {
 
 // Alterna entre modo de edição e modo de leitura
 function toggleLockMode() {
-  const isReadonly = document.body.classList.toggle('readonly');
+  const body = document.body;
+  const isReadonlyCurrently = body.classList.contains('readonly');
   const btn = document.getElementById('lock-btn');
+
+  // Se está bloqueado e quer entrar no modo de edição, pede a senha
+  if (isReadonlyCurrently) {
+    const senha = prompt("Digite a senha para entrar no modo de edição:");
+    if (senha !== 'qwe123') {
+      alert("Senha incorreta!");
+      return;
+    }
+  }
   
+  const isReadonly = body.classList.toggle('readonly');
   cells.forEach(cell => {
     cell.contentEditable = !isReadonly;
   });
@@ -624,5 +635,7 @@ applyTheme(); // Aplica o tema salvo
 reorderSectionsByTime(); // Organiza a ordem das tabelas por relevância
 updateHighlights(); // Destaca o horário atual
 updateTimeCounter(); // Inicia o contador de tempo
+cells.forEach(cell => cell.contentEditable = false); // Garante estado inicial bloqueado
+
 setInterval(updateHighlights, 60000); // Atualiza a cada 1 minuto
 setInterval(updateTimeCounter, 1000); // Atualiza o contador de tempo a cada 1 segundo

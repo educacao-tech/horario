@@ -154,7 +154,7 @@ td[contenteditable="true"] {
 }
 
 /* Exibe o nome do professor regente dentro da célula se houver mapeamento */
-td[contenteditable="true"][data-teacher]::after {
+td[data-teacher]::after {
   content: attr(data-teacher);
   display: block;
   font-size: 0.7rem;
