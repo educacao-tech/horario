@@ -1,5 +1,6 @@
 const STORAGE_KEY = 'school_schedule_v1';
 const THEME_KEY = 'school_schedule_theme';
+const TEACHER_REGISTRY_KEY = 'school_teachers_v1';
 const cells = document.querySelectorAll('[contenteditable="true"]');
 
 const LAYOUTS = {
@@ -11,7 +12,8 @@ const LAYOUTS = {
 const SPECIALIST_SIGLAS = ['A(S)', 'A(M)', 'EF(M)', 'EF(P)', 'CT(D)', 'EDM(L)', 'EDM', 'EL', 'MTF', 'PI', 'PII'];
 const DATA_CATEGORIES = ['HL', 'HTPC', 'PD', 'EL', 'MTF'];
 
-const TEACHER_MAP = {
+// Mapa padrão (Fallback caso o storage esteja vazio)
+const DEFAULT_TEACHER_MAP = {
   'A(S)': 'Artes - Silvia',
   'A(M)': 'Artes - Michelle',
   'EF(M)': 'Ed. Física - Marcela',
@@ -40,6 +42,12 @@ const TEACHER_MAP = {
   '5B': 'Solange (5ºB)',
   '5C': 'Camila (5ºC)'
 };
+
+// Inicialização dinâmica do Mapa de Professores
+let TEACHER_MAP = (() => {
+  const stored = localStorage.getItem(TEACHER_REGISTRY_KEY);
+  return stored ? JSON.parse(stored) : DEFAULT_TEACHER_MAP;
+})();
 
 // Função para atrasar o salvamento (Debounce)
 function debounce(func, timeout = 500) {
@@ -425,7 +433,8 @@ function exportToCsv() {
   let csv = "Periodo;Horario;Especialista;Turma;Professor Regente\n";
   cells.forEach(cell => {
     const table = cell.closest('table');
-    const section = cell.closest('[id^="section-"]').querySelector('h2').innerText;
+    const sectionEl = cell.closest('[id^="section-"]');
+    const section = sectionEl ? (sectionEl.querySelector('h2')?.innerText || "Geral") : "Geral";
     const time = table.rows[cell.parentElement.rowIndex].cells[0].innerText;
     const specialist = table.rows[1].cells[cell.cellIndex - 1]?.innerText || "";
     const value = cell.innerText.trim();
@@ -712,5 +721,5 @@ updateHighlights(); // Destaca o horário atual
 updateTimeCounter(); // Inicia o contador de tempo
 cells.forEach(cell => cell.contentEditable = false); // Garante estado inicial bloqueado
 
-setInterval(updateHighlights, 60000); // Atualiza a cada 1 minuto
+setInterval(updateHighlights, 10000); // Atualiza a cada 10 segundos para maior precisão
 setInterval(updateTimeCounter, 1000); // Atualiza o contador de tempo a cada 1 segundo
