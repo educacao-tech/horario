@@ -11,13 +11,13 @@
     <div id="main-progress-bar" class="progress-bar"></div>
   </div>
 
-  <header style="margin-bottom: 32px;">
-    <h1 style="font-size: 1.75rem; color: #0f172a;">Horário Escolar 2026</h1>
-    <p style="color: #64748b; margin-top: -4px;">EMEB Professora Anna Bonagura de Andrade</p>
+  <header class="main-header">
+    <h1>Horário Escolar 2026</h1>
+    <p>EMEB Professora Anna Bonagura de Andrade</p>
   </header>
 
   <div class="legend">
-    <strong style="margin-right: 8px; color: #475569;">Legenda:</strong>
+    <strong class="legend-title">Legenda:</strong>
     <div class="legend-item" onclick="toggleCategory('hl')"><div class="box hl"></div> HL (Hora Livre / HTPC)</div>
     <div class="legend-item" onclick="toggleCategory('pd')"><div class="box pd"></div> PD (Plantão de Dúvidas Letícia)</div>
     <div class="legend-item" onclick="toggleCategory('el')"><div class="box el"></div> EL (Elefante Letrado)</div>
@@ -30,6 +30,16 @@
     <div class="search-wrapper">
       <input type="text" id="search-input" class="search-field" placeholder="🔍 Pesquisar professor ou turma..." oninput="highlightOccurrences(this.value)">
       <button class="clear-search-btn" onclick="clearSearch()">✖</button>
+    </div>
+    <div class="day-filter-wrapper">
+      <select id="day-filter-select" class="day-filter-select">
+        <option value="0">📅 Todos os Dias</option>
+        <option value="1">Segunda-feira</option>
+        <option value="2">Terça-feira</option>
+        <option value="3">Quarta-feira</option>
+        <option value="4">Quinta-feira</option>
+        <option value="5">Sexta-feira</option>
+      </select>
     </div>
     <span id="time-counter" class="time-counter"></span>
     <button id="theme-toggle" class="btn btn-primary" onclick="toggleTheme()">🌙 Tema Escuro</button>

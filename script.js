@@ -1,6 +1,7 @@
 const STORAGE_KEY = 'school_schedule_v1';
 const THEME_KEY = 'school_schedule_theme';
 const TEACHER_REGISTRY_KEY = 'school_teachers_v1';
+const FILTER_DAY_KEY = 'school_filter_day_v1';
 const cells = document.querySelectorAll('[contenteditable="true"]');
 
 const LAYOUTS = {
@@ -43,11 +44,15 @@ const DEFAULT_TEACHER_MAP = {
   '5C': 'Camila (5ºC)'
 };
 
-// Inicialização dinâmica do Mapa de Professores
-let TEACHER_MAP = (() => {
-  const stored = localStorage.getItem(TEACHER_REGISTRY_KEY);
-  return stored ? JSON.parse(stored) : DEFAULT_TEACHER_MAP;
-})();
+// Getter centralizado para o Mapa de Professores para garantir dados sempre frescos
+function getTeacherMap() {
+  try {
+    const stored = localStorage.getItem(TEACHER_REGISTRY_KEY);
+    return stored ? JSON.parse(stored) : DEFAULT_TEACHER_MAP;
+  } catch (e) {
+    return DEFAULT_TEACHER_MAP;
+  }
+}
 
 // Função para atrasar o salvamento (Debounce)
 function debounce(func, timeout = 500) {
@@ -71,13 +76,20 @@ function getCellKey(cell) {
 }
 
 const saveContent = debounce((key, text) => {
-  const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-  data[key] = text;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  
-  const indicator = document.getElementById('save-indicator');
-  indicator.style.opacity = '1';
-  setTimeout(() => { indicator.style.opacity = '0'; }, 2000);
+  try {
+    const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    data[key] = text;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    
+    const indicator = document.getElementById('save-indicator');
+    if (indicator) {
+      indicator.style.opacity = '1';
+      setTimeout(() => { indicator.style.opacity = '0'; }, 2000);
+    }
+  } catch (e) {
+    console.error("Erro ao salvar no localStorage. O limite pode ter sido excedido.", e);
+    alert("Erro crítico: Não foi possível salvar as alterações. Verifique o espaço do navegador.");
+  }
 });
 
 // Detecta se a mesma turma está em duas salas no mesmo horário
@@ -92,42 +104,54 @@ function checkConflicts(cell) {
   const currentBaseCode = rawText.split('(')[0].trim();
   const row = cell.parentElement;
   const editableInRow = Array.from(row.querySelectorAll('[contenteditable="true"]'));
-  const currentTeacher = TEACHER_MAP[rawText] || TEACHER_MAP[currentBaseCode];
+  if (editableInRow.length === 0) return;
+  
+  const teacherMap = getTeacherMap();
+  
+  // Função interna para limpar conflitos
+  const clearConflict = (el) => {
+    el.classList.remove('conflict-error');
+    el.removeAttribute('title');
+  };
 
-  // Reset local de conflitos para as células afetadas
-  let hasConflict = false;
+  // Mapeia o estado da linha em uma única passagem O(n)
+  const rowState = editableInRow.map(c => {
+    const txt = c.innerText.trim().toUpperCase();
+    const base = txt.split('(')[0].trim();
+    return {
+      element: c,
+      text: txt,
+      teacher: teacherMap[txt] || teacherMap[base] || null,
+      isSpecialist: SPECIALIST_SIGLAS.includes(txt) || txt === '*' || !txt
+    };
+  });
 
-  for (const otherCell of editableInRow) {
-    if (otherCell === cell) continue;
-    
-    const otherText = otherCell.innerText.trim().toUpperCase();
-    if (!otherText) continue;
+  // Valida duplicatas cruzadas de forma eficiente
+  rowState.forEach((current) => {
+    clearConflict(current.element);
+    if (current.isSpecialist) return;
 
-    const otherBaseCode = otherText.split('(')[0].trim();
-    const otherTeacher = TEACHER_MAP[otherText] || TEACHER_MAP[otherBaseCode];
+    const hasConflict = rowState.some((other) => {
+      if (current.element === other.element || other.isSpecialist) return false;
+      // Conflito de texto direto (ex: "1A" e "1A") ou conflito de professor regente
+      return current.text === other.text || (current.teacher && current.teacher === other.teacher);
+    });
 
-    // Conflito por Turma Direta OU por Professor Regente
-    if (rawText === otherText || (currentTeacher && currentTeacher === otherTeacher)) {
-      cell.classList.add('conflict-error');
-      otherCell.classList.add('conflict-error');
-      const msg = currentTeacher ? `Conflito de Professor: ${currentTeacher}` : `Conflito de Turma: ${rawText}`;
-      cell.title = msg;
-      otherCell.title = msg;
-      hasConflict = true;
+    if (hasConflict) {
+      current.element.classList.add('conflict-error');
+      current.element.title = current.teacher 
+        ? `Conflito de Professor: ${current.teacher}` 
+        : `Conflito de Turma: ${current.text}`;
     }
-  }
-
-  if (!hasConflict) {
-    cell.classList.remove('conflict-error');
-    cell.removeAttribute('title');
-  }
+  });
 }
 
 // Aplica cores baseadas no texto (HL, PD, etc)
 function applyDynamicStyles(cell) {
   const text = cell.innerText.trim().toUpperCase();
   const baseCode = text.split('(')[0].trim(); // Extrai "3B" de "3B(N)"
-  const teacherName = TEACHER_MAP[text] || TEACHER_MAP[baseCode];
+  const teacherMap = getTeacherMap();
+  const teacherName = teacherMap[text] || teacherMap[baseCode];
 
   // Remove classes de legenda antigas
   cell.classList.remove('hl', 'pd', 'el', 'mtf');
@@ -228,6 +252,65 @@ function getDayAndColIndices(cell) {
   }
   const specialist = table.rows[1].cells[colIndex - 1]?.innerText || '';
   return { dayIdx, specialist, table };
+}
+
+// Helper to get day index for a given column index (1-based for specialist columns)
+function getDayIndexForColumn(colIndex, layout) {
+  let currentSpecialistColCount = 0;
+  for (let i = 0; i < layout.length; i++) {
+    currentSpecialistColCount += layout[i];
+    if (colIndex <= currentSpecialistColCount) {
+      return i + 1; // 1 for Monday, 2 for Tuesday, etc.
+    }
+  }
+  return 0; // Should not happen for specialist columns
+}
+
+// Função para filtrar as colunas por dia da semana
+function filterByDay(selectedDayIndex) {
+  // Salva a preferência do usuário para persistência
+  localStorage.setItem(FILTER_DAY_KEY, selectedDayIndex);
+  const selectedDay = parseInt(selectedDayIndex);
+
+  document.querySelectorAll('table').forEach(table => {
+    const layout = table.closest('#section-morning') ? LAYOUTS.morning : LAYOUTS.afternoon;
+    const rows = table.rows;
+
+    // 1. Ocultar/Mostrar os cabeçalhos dos dias (Linha 0)
+    // cells[0] é "Horário", cells[1..5] são os dias
+    for (let i = 1; i <= 5; i++) {
+      const headerCell = rows[0].cells[i];
+      if (headerCell) {
+        const shouldHide = (selectedDay !== 0 && selectedDay !== i);
+        headerCell.classList.toggle('hidden-col', shouldHide);
+      }
+    }
+
+    // 2. Ocultar/Mostrar colunas de especialistas (Linha 1) e dados (Linhas 2+)
+    let colOffset = 0;
+    layout.forEach((colsInDay, dayIdx) => {
+      const currentDayNum = dayIdx + 1;
+      const shouldHide = (selectedDay !== 0 && selectedDay !== currentDayNum);
+
+      // Especialistas (Linha 1) - Não tem coluna de horário nesta linha devido ao rowspan
+      for (let c = 0; c < colsInDay; c++) {
+        const cell = rows[1].cells[colOffset + c];
+        if (cell) cell.classList.toggle('hidden-col', shouldHide);
+      }
+
+      // Dados (Linhas 2+) - cells[0] é o Horário, então os dados começam em index 1
+      for (let r = 2; r < rows.length; r++) {
+        if (rows[r].classList.contains('recreio')) continue;
+        for (let c = 0; c < colsInDay; c++) {
+          const cell = rows[r].cells[colOffset + c + 1];
+          if (cell) cell.classList.toggle('hidden-col', shouldHide);
+        }
+      }
+      colOffset += colsInDay;
+    });
+  });
+  // Re-apply highlights after filtering
+  updateHighlights();
 }
 
 function clearSearch() {
@@ -334,7 +417,8 @@ document.addEventListener('keydown', (e) => {
 function updateStatusBar(cell) {
     const text = cell.innerText.trim().toUpperCase();
     const baseCode = text.split('(')[0].trim();
-    const teacherName = TEACHER_MAP[text] || TEACHER_MAP[baseCode];
+    const teacherMap = getTeacherMap();
+    const teacherName = teacherMap[text] || teacherMap[baseCode];
 
     const colIndex = cell.cellIndex;
     const table = cell.closest('table');
@@ -352,7 +436,7 @@ function updateStatusBar(cell) {
     const professorHeader = table.rows[1].cells[colIndex - 1];
     if (professorHeader) {
       const sigla = professorHeader.innerText.trim().toUpperCase();
-      const nomeProf = TEACHER_MAP[sigla] || `Especialista: ${sigla}`;
+      const nomeProf = teacherMap[sigla] || `Especialista: ${sigla}`;
       
       // Tenta encontrar o nome da regente pelo conteúdo da célula
       const nomeRegente = teacherName && !SPECIALIST_SIGLAS.includes(text) && !SPECIALIST_SIGLAS.includes(baseCode) 
@@ -722,4 +806,95 @@ updateTimeCounter(); // Inicia o contador de tempo
 cells.forEach(cell => cell.contentEditable = false); // Garante estado inicial bloqueado
 
 setInterval(updateHighlights, 10000); // Atualiza a cada 10 segundos para maior precisão
+
+// Event listener para o select de filtro de dia
+document.addEventListener('DOMContentLoaded', () => {
+  const dayFilterSelect = document.getElementById('day-filter-select');
+  
+  // Recupera o filtro salvo ou padrão (0 - Todos)
+  const savedDay = localStorage.getItem(FILTER_DAY_KEY) || "0";
+  
+  if (dayFilterSelect) {
+    dayFilterSelect.value = savedDay;
+    dayFilterSelect.addEventListener('change', (e) => {
+      filterByDay(parseInt(e.target.value));
+    });
+  }
+
+  // Aplica o filtro inicial após um pequeno delay para garantir que o DOM e os layouts estejam prontos
+  setTimeout(() => filterByDay(parseInt(savedDay)), 50);
+});
+
+// --- SISTEMA DE GERENCIAMENTO DE PROFESSORES ---
+
+function openTeacherManager() {
+  const map = getTeacherMap();
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.style.display = 'flex';
+  overlay.id = 'teacher-modal';
+
+  overlay.innerHTML = `
+    <div class="modal">
+      <h2>Gerenciar Professores</h2>
+      <p style="font-size: 0.85rem; color: var(--text-muted);">Cadastre siglas de turmas ou especialistas (Ex: 1A, A(S)).</p>
+      <div class="teacher-list-container" id="modal-teacher-list"></div>
+      <div class="modal-form">
+        <input type="text" id="new-sigla" placeholder="Sigla" class="search-field" style="min-width: 80px;">
+        <input type="text" id="new-nome" placeholder="Nome Completo" class="search-field" style="min-width: 150px;">
+        <button class="btn btn-primary" onclick="addTeacherToRegistry()">Add</button>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" onclick="document.getElementById('teacher-modal').remove()">Fechar</button>
+        <button class="btn btn-success" onclick="saveTeacherRegistryAndReload()">Salvar e Reiniciar</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  renderTeacherList(map);
+}
+
+function renderTeacherList(map) {
+  const container = document.getElementById('modal-teacher-list');
+  container.innerHTML = '';
+  Object.keys(map).sort().forEach(sigla => {
+    const item = document.createElement('div');
+    item.className = 'teacher-item';
+    item.innerHTML = `
+      <div class="teacher-info">
+        <span class="teacher-sigla">${sigla}</span>
+        <span class="teacher-nome">${map[sigla]}</span>
+      </div>
+      <button class="btn" style="color: #ef4444; padding: 4px 8px;" onclick="removeTeacherFromRegistry('${sigla}')">🗑️</button>
+    `;
+    container.appendChild(item);
+  });
+}
+
+function addTeacherToRegistry() {
+  const sigla = document.getElementById('new-sigla').value.trim().toUpperCase();
+  const nome = document.getElementById('new-nome').value.trim();
+  if (!sigla || !nome) return alert("Preencha sigla e nome.");
+  
+  const map = getTeacherMap();
+  map[sigla] = nome;
+  localStorage.setItem(TEACHER_REGISTRY_KEY, JSON.stringify(map));
+  renderTeacherList(map);
+  document.getElementById('new-sigla').value = '';
+  document.getElementById('new-nome').value = '';
+}
+
+function removeTeacherFromRegistry(sigla) {
+  const map = getTeacherMap();
+  delete map[sigla];
+  localStorage.setItem(TEACHER_REGISTRY_KEY, JSON.stringify(map));
+  renderTeacherList(map);
+}
+
+function saveTeacherRegistryAndReload() {
+  if (confirm("O sistema será reiniciado para aplicar as mudanças nos nomes dos professores. Continuar?")) {
+    window.location.reload();
+  }
+}
+
 setInterval(updateTimeCounter, 1000); // Atualiza o contador de tempo a cada 1 segundo

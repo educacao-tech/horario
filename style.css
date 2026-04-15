@@ -42,14 +42,26 @@ body {
   line-height: 1.5;
 }
 
-h1, h2 {
-  color: #1e293b;
-  letter-spacing: -0.025em;
-  font-weight: 800;
+.main-header {
+  margin-bottom: 32px;
 }
 
-h1 {
+.main-header h1 {
+  font-size: 1.75rem;
+  color: var(--text-main);
+  letter-spacing: -0.025em;
+  font-weight: 800;
   margin-bottom: 8px;
+}
+
+.main-header p {
+  color: var(--text-muted);
+  margin-top: -4px;
+}
+
+.legend-title {
+  margin-right: 8px;
+  color: var(--text-muted);
 }
 
 .table-container {
@@ -126,7 +138,7 @@ body.dark-theme tr:nth-child(even) td:not(:first-child) {
 }
 
 tr:hover td {
-  background-color: var(--hl-color) !important;
+  background-color: var(--hl-color);
 }
 
 /* Efeito de destaque na linha quando uma célula está focada */
@@ -136,9 +148,9 @@ tr.row-highlight {
 }
 /* Destaque na coluna do cabeçalho */
 .col-highlight {
-  background-color: #e0f2fe !important;
+  background-color: #e0f2fe;
 }
-td[role="textbox"] {
+td[contenteditable="true"], td[role="textbox"] {
   background-color: var(--edit-bg);
   transition: background 0.2s ease, outline 0.2s ease; /* Transição para foco e background */
 }
@@ -160,6 +172,34 @@ td[role="textbox"] {
 .hidden-col {
   display: none !important;
 }
+
+.day-filter-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-left: 2px solid var(--border-color);
+  padding-left: 16px;
+}
+
+.day-filter-select {
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  font-size: 0.9rem;
+  background-color: var(--bg-card);
+  color: var(--text-main);
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+.day-filter-select:hover {
+  border-color: var(--primary);
+}
+.day-filter-select:focus {
+  border-color: var(--primary);
+}
+
+/* A classe .hidden-col já está definida acima no seu CSS */
 
 /* Exibe o nome do professor regente dentro da célula se houver mapeamento */
 td[data-teacher]::after {
@@ -488,4 +528,71 @@ th[title] {
   td[contenteditable="true"] {
     background-color: transparent !important;
   }
+}
+
+/* Modal de Gerenciamento de Professores */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  backdrop-filter: blur(4px);
+}
+
+.modal {
+  background: var(--bg-card);
+  width: 90%;
+  max-width: 600px;
+  max-height: 80vh;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: var(--shadow-md);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.teacher-list-container {
+  flex: 1;
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 8px;
+}
+
+.teacher-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+.teacher-item:last-child { border-bottom: none; }
+
+.teacher-info {
+  display: flex;
+  flex-direction: column;
+}
+.teacher-sigla { font-weight: 700; color: var(--primary); font-size: 0.85rem; }
+.teacher-nome { font-size: 0.95rem; color: var(--text-main); }
+
+.modal-form {
+  display: grid;
+  grid-template-columns: 1fr 2fr auto;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 2px solid var(--border-color);
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 12px;
 }
