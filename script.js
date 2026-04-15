@@ -53,12 +53,13 @@ function debounce(func, timeout = 500) {
 // Gera uma chave única para a célula baseada no contexto (Período + Horário + Especialista)
 function getCellKey(cell) {
   const table = cell.closest('table');
-  const section = cell.closest('[id^="section-"]');
+  const section = cell.closest('section, div[id^="section-"]');
+  const sectionId = section ? section.id : 'unknown';
   const rowIndex = cell.parentElement.rowIndex;
   const colIndex = cell.cellIndex;
   const time = table.rows[rowIndex].cells[0].innerText.trim();
-  const specialist = table.rows[1].cells[colIndex - 1]?.innerText.trim() || colIndex;
-  return `${section.id}_${time}_${specialist}`.replace(/\s+/g, '_');
+  const specialist = table.rows[1].cells[colIndex - 1]?.innerText.trim() || `col_${colIndex}`;
+  return `sched_${sectionId}_${time}_${specialist}`.replace(/[^a-zA-Z0-9]/g, '_');
 }
 
 const saveContent = debounce((key, text) => {
@@ -73,19 +74,44 @@ const saveContent = debounce((key, text) => {
 
 // Detecta se a mesma turma está em duas salas no mesmo horário
 function checkConflicts(cell) {
-  const text = cell.innerText.trim().toUpperCase();
+  const rawText = cell.innerText.trim().toUpperCase();
+  if (!rawText || rawText === '*' || SPECIALIST_SIGLAS.includes(rawText)) {
+    cell.classList.remove('conflict-error');
+    cell.removeAttribute('title');
+    return;
+  }
+
+  const currentBaseCode = rawText.split('(')[0].trim();
   const row = cell.parentElement;
-  
-  // Limpa conflitos antigos na linha
-  row.querySelectorAll('.conflict-error').forEach(c => c.classList.remove('conflict-error'));
-
-  if (!text || text === '*' || SPECIALIST_SIGLAS.includes(text)) return;
-
   const editableInRow = Array.from(row.querySelectorAll('[contenteditable="true"]'));
-  const duplicates = editableInRow.filter(c => c.innerText.trim().toUpperCase() === text);
+  const currentTeacher = TEACHER_MAP[rawText] || TEACHER_MAP[currentBaseCode];
 
-  if (duplicates.length > 1) {
-    duplicates.forEach(c => c.classList.add('conflict-error'));
+  // Reset local de conflitos para as células afetadas
+  let hasConflict = false;
+
+  for (const otherCell of editableInRow) {
+    if (otherCell === cell) continue;
+    
+    const otherText = otherCell.innerText.trim().toUpperCase();
+    if (!otherText) continue;
+
+    const otherBaseCode = otherText.split('(')[0].trim();
+    const otherTeacher = TEACHER_MAP[otherText] || TEACHER_MAP[otherBaseCode];
+
+    // Conflito por Turma Direta OU por Professor Regente
+    if (rawText === otherText || (currentTeacher && currentTeacher === otherTeacher)) {
+      cell.classList.add('conflict-error');
+      otherCell.classList.add('conflict-error');
+      const msg = currentTeacher ? `Conflito de Professor: ${currentTeacher}` : `Conflito de Turma: ${rawText}`;
+      cell.title = msg;
+      otherCell.title = msg;
+      hasConflict = true;
+    }
+  }
+
+  if (!hasConflict) {
+    cell.classList.remove('conflict-error');
+    cell.removeAttribute('title');
   }
 }
 
@@ -126,6 +152,7 @@ function loadData() {
     if (data[key] !== undefined) {
       cell.innerText = data[key];
       applyDynamicStyles(cell);
+      checkConflicts(cell); // Valida conflitos já no carregamento
     }
   });
 
@@ -135,12 +162,27 @@ function loadData() {
   // Adiciona atributos de acessibilidade e labels
   cells.forEach(cell => {
     cell.setAttribute('role', 'textbox');
+    cell.tabIndex = 0; // Permite que a célula receba foco mesmo se não for editável
     cell.setAttribute('aria-multiline', 'false');
     const timeHeader = cell.closest('tr').querySelector('td:first-child')?.innerText || 'Horário desconhecido';
-    const specialistHeader = cell.closest('table').rows[1].cells[cell.cellIndex - 1]?.innerText || 'Especialista desconhecido';
-    cell.setAttribute('aria-label', `Célula de edição para ${specialistHeader} no horário ${timeHeader}`);
+    const colInfo = getDayAndColIndices(cell);
+    cell.setAttribute('aria-label', `Aula de ${colInfo.specialist} às ${timeHeader}`);
   });
+  
+  updateAriaStatus();
 }
+
+// Função para forçar a revalidação de todos os conflitos (útil após carga de dados)
+function validateAllConflicts() {
+    cells.forEach(cell => {
+        if (cell.innerText.trim()) checkConflicts(cell);
+    });
+}
+
+const updateAriaStatus = () => {
+  const isReadonly = document.body.classList.contains('readonly');
+  cells.forEach(c => c.setAttribute('aria-readonly', isReadonly));
+};
 
 // Gerenciamento Centralizado de Eventos (Event Delegation)
 document.addEventListener('input', (e) => {
@@ -160,6 +202,25 @@ const timeToMinutes = (str) => {
   const match = str.toLowerCase().match(/(\d+)h(\d+)?/);
   return match ? parseInt(match[1]) * 60 + parseInt(match[2] || 0) : null;
 };
+
+// Helper para identificar Dia e Especialista de forma centralizada
+function getDayAndColIndices(cell) {
+  const table = cell.closest('table');
+  const colIndex = cell.cellIndex;
+  const layout = table.closest('#section-morning') ? LAYOUTS.morning : LAYOUTS.afternoon;
+  
+  let dayIdx = 0;
+  let colSum = 0;
+  for(let i = 0; i < layout.length; i++) {
+    colSum += layout[i];
+    if (colIndex <= colSum) {
+      dayIdx = i + 1;
+      break;
+    }
+  }
+  const specialist = table.rows[1].cells[colIndex - 1]?.innerText || '';
+  return { dayIdx, specialist, table };
+}
 
 function clearSearch() {
   const searchInput = document.getElementById('search-input');
@@ -201,20 +262,7 @@ document.addEventListener('focusin', (e) => {
     
     // Destaca a coluna inteira (Crosshair effect)
     if (colIndex > 0 && table) {
-      // Lógica aprimorada para destacar cabeçalhos complexos (rowspan/colspan)
-      const morningLayout = [6, 5, 4, 4, 5];
-      const afternoonLayout = [5, 4, 4, 5, 4];
-      const layout = table.closest('#section-morning') ? morningLayout : afternoonLayout;
-      
-      let dayIdx = 0;
-      let colSum = 0;
-      for(let i = 0; i < layout.length; i++) {
-        colSum += layout[i];
-        if (colIndex <= colSum) {
-          dayIdx = i + 1; // +1 devido à coluna "Horário"
-          break;
-        }
-      }
+      const { dayIdx } = getDayAndColIndices(cell);
 
       // Destaca o Dia (Linha 0)
       if (table.rows[0].cells[dayIdx]) table.rows[0].cells[dayIdx].classList.add('col-highlight');
@@ -288,14 +336,17 @@ function updateStatusBar(cell) {
     document.querySelectorAll('tr').forEach(r => r.classList.remove('row-highlight'));
     row.classList.add('row-highlight');
 
+    // Limpa destaques de cabeçalho anteriores
+    document.querySelectorAll('th').forEach(th => th.classList.remove('header-highlight'));
+
     // Encontra o cabeçalho correto
     // Usa o índice da célula para encontrar o especialista correspondente na linha 1
     const professorHeader = table.rows[1].cells[colIndex - 1];
     if (professorHeader) {
-      const sigla = professorHeader.innerText;
-      const nomeProf = TEACHER_MAP[sigla] || sigla;
+      const sigla = professorHeader.innerText.trim().toUpperCase();
+      const nomeProf = TEACHER_MAP[sigla] || `Especialista: ${sigla}`;
       
-      // Tenta encontrar o nome da regente pelo conteúdo da célula (ex: "1A")
+      // Tenta encontrar o nome da regente pelo conteúdo da célula
       const nomeRegente = teacherName && !SPECIALIST_SIGLAS.includes(text) && !SPECIALIST_SIGLAS.includes(baseCode) 
         ? ` | <b>Regente:</b> ${teacherName}` 
         : '';
@@ -305,8 +356,13 @@ function updateStatusBar(cell) {
         <div class="status-item"><b>Sala/Turma:</b> ${cell.innerText || '(vazia)'}${nomeRegente}</div>
       `;
 
-      document.querySelectorAll('th').forEach(th => th.classList.remove('header-highlight'));
       professorHeader.classList.add('header-highlight');
+    }
+    
+    // Sugestão de UX: Mostrar carga horária da turma selecionada
+    const count = Array.from(cells).filter(c => c.innerText.trim().toUpperCase() === text).length;
+    if (text && text !== '*') {
+        document.getElementById('statusBar').innerHTML += `<div class="status-item"><b>Aulas na Semana:</b> ${count}</div>`;
     }
 }
 
@@ -333,9 +389,10 @@ function toggleLockMode() {
   const btn = document.getElementById('lock-btn');
 
   // Se está bloqueado e quer entrar no modo de edição, pede a senha
+  // NOTA: Isso é apenas um controle de interface, não segurança real.
   if (isReadonlyCurrently) {
     const senha = prompt("Digite a senha para entrar no modo de edição:");
-    if (senha !== 'qwe123') {
+    if (senha !== 'qwe123') { // TODO: Mover validação para backend se necessário
       alert("Senha incorreta!");
       return;
     }
@@ -345,6 +402,8 @@ function toggleLockMode() {
   cells.forEach(cell => {
     cell.contentEditable = !isReadonly;
   });
+  
+  updateAriaStatus();
 
   if (isReadonly) {
     btn.innerHTML = '🔒 Modo Leitura';
@@ -363,16 +422,17 @@ function toggleLockMode() {
 }
 
 function exportToCsv() {
-  let csv = "Periodo;Horario;Especialista;Turma\n";
+  let csv = "Periodo;Horario;Especialista;Turma;Professor Regente\n";
   cells.forEach(cell => {
     const table = cell.closest('table');
     const section = cell.closest('[id^="section-"]').querySelector('h2').innerText;
     const time = table.rows[cell.parentElement.rowIndex].cells[0].innerText;
     const specialist = table.rows[1].cells[cell.cellIndex - 1]?.innerText || "";
     const value = cell.innerText.trim();
+    const teacher = cell.getAttribute('data-teacher') || "";
     
     if (value && value !== '*') {
-      csv += `${section};${time};${specialist};${value}\n`;
+      csv += `${section};${time};${specialist};${value};${teacher}\n`;
     }
   });
 
@@ -383,33 +443,45 @@ function exportToCsv() {
   link.click();
 }
 
-function exportToJson() {
+// Exporta todo o banco de dados (localStorage) para um arquivo JSON
+function exportBackupJSON() {
   const data = localStorage.getItem(STORAGE_KEY);
+  if (!data) return alert("Não há dados para exportar.");
+  
   const blob = new Blob([data], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `horario_escolar_${new Date().toLocaleDateString()}.json`;
-  a.click();
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `backup_horario_${new Date().toISOString().split('T')[0]}.json`;
+  link.click();
 }
 
-function importFromJson(input) {
-  const file = input.files[0];
-  if (!file) return;
+// Importa dados de um arquivo JSON para o localStorage
+function importBackupJSON() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
   
-  if (!confirm('Esta ação substituirá todos os dados atuais pelo arquivo de backup. Deseja continuar?')) return;
-
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    try {
-      const data = JSON.parse(e.target.result);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-      location.reload();
-    } catch (err) {
-      alert('Erro ao importar arquivo: Formato inválido.');
-    }
+  input.onchange = e => {
+    const file = e.target.files[0];
+    const reader = new FileReader();
+    
+    reader.onload = readerEvent => {
+      try {
+        const content = readerEvent.target.result;
+        // Validação básica de estrutura JSON
+        JSON.parse(content); 
+        
+        if (confirm("Isso irá sobrescrever todos os dados atuais. Deseja continuar?")) {
+          localStorage.setItem(STORAGE_KEY, content);
+          window.location.reload(); // Recarrega para aplicar os novos dados
+        }
+      } catch (err) {
+        alert("Erro: Arquivo JSON inválido.");
+      }
+    };
+    reader.readAsText(file);
   };
-  reader.readAsText(file);
+  input.click();
 }
 
 // Função para destacar dia e horário atual
@@ -425,11 +497,7 @@ function updateHighlights() {
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
   document.querySelectorAll('table').forEach((table) => {
-    // Mapeia colunas por dia (Manhã: [6,5,4,4,5] | Tarde: [5,4,4,5,4])
-    const morningLayout = [6, 5, 4, 4, 5];
-    const afternoonLayout = [5, 4, 4, 5, 4];
-    // Identifica a tabela pelo contêiner pai em vez da ordem no DOM
-    const currentLayout = table.closest('#section-morning') ? morningLayout : afternoonLayout;
+    const currentLayout = table.closest('#section-morning') ? LAYOUTS.morning : LAYOUTS.afternoon;
 
     // Destaca o cabeçalho do dia atual (Segunda é índice 1)
     if (table.rows[0].cells[day]) table.rows[0].cells[day].classList.add('current-active');
@@ -476,19 +544,32 @@ function applyStaticDayDividers() {
     const layout = table.closest('#section-morning') ? LAYOUTS.morning : LAYOUTS.afternoon;
     let colOffset = 0;
 
-    layout.forEach((colsInDay, idx) => {
-      if (idx === layout.length - 1) return; // Não coloca na última coluna da tabela
+    layout.forEach((colsInDay, dayIdx) => {
+      const dayNum = dayIdx + 1;
       
+      // Aplica no cabeçalho do dia (Linha 0)
+      const headerCell = table.rows[0].cells[dayNum];
+      if (headerCell) {
+        headerCell.classList.add(`day-header-${dayNum}`);
+        if (dayIdx < layout.length - 1) headerCell.classList.add('day-divider');
+      }
+
+      // Aplica as classes de fundo e divisórias nas colunas deste dia
+      for (let r = 1; r < table.rows.length; r++) {
+        for (let c = 0; c < colsInDay; c++) {
+          const targetCol = colOffset + c + 1; // +1 pela coluna de horário
+          const cell = table.rows[r].cells[targetCol];
+          if (cell) {
+            cell.classList.add(`day-cell-${dayNum}`);
+            
+            // Se for a última coluna do dia, adiciona a divisória (exceto na última coluna da tabela)
+            if (c === colsInDay - 1 && dayIdx < layout.length - 1) {
+              cell.classList.add('day-divider');
+            }
+          }
+        }
+      }
       colOffset += colsInDay;
-      // Aplica no cabeçalho de especialista
-      if (specialistRow.cells[colOffset - 1]) {
-        specialistRow.cells[colOffset - 1].classList.add('day-divider');
-      }
-      // Aplica nas células de dados
-      for (let r = 2; r < table.rows.length; r++) {
-        const cell = table.rows[r].cells[colOffset]; // colOffset já considera o índice correto (+1 horário)
-        if (cell) cell.classList.add('day-divider');
-      }
     });
   });
 }
@@ -503,20 +584,14 @@ function toggleCategory(category) {
     const specialistRow = table.rows[1];
     if (!specialistRow) return;
 
-    // Itera pelas colunas de especialistas para encontrar correspondências
     for (let i = 0; i < specialistRow.cells.length; i++) {
       const th = specialistRow.cells[i];
-      const headerText = th.innerText.trim().toUpperCase();
-      const headerTitle = (th.title || "").toUpperCase();
-      
-      let isMatch = false;
-      if (category === 'pd' && (headerText.includes('EDM(L)') || headerTitle.includes('LETÍCIA'))) isMatch = true;
-      if (category === 'el' && headerText === 'EL') isMatch = true;
-      if (category === 'mtf' && headerText === 'MTF') isMatch = true;
+      // Verifica se o cabeçalho ou a célula de legenda tem a classe correspondente
+      const isMatch = th.classList.contains(category) || 
+                      th.innerText.trim().toUpperCase() === category.toUpperCase();
 
       if (isMatch) {
         th.classList.toggle('category-select', isActive);
-        // Aplica o destaque em todas as células de dados desta coluna
         for (let r = 2; r < table.rows.length; r++) {
           const cell = table.rows[r].cells[i + 1]; // +1 devido à coluna Horário
           if (cell) cell.classList.toggle('category-select', isActive);
