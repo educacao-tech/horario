@@ -44,14 +44,20 @@ const DEFAULT_TEACHER_MAP = {
   '5C': 'Camila (5ºC)'
 };
 
+// Cache em memória para evitar parsing excessivo de JSON durante o uso
+let _teacherMapCache = null;
+
 // Getter centralizado para o Mapa de Professores para garantir dados sempre frescos
 function getTeacherMap() {
+  if (_teacherMapCache) return _teacherMapCache;
+
   try {
     const stored = localStorage.getItem(TEACHER_REGISTRY_KEY);
-    return stored ? JSON.parse(stored) : DEFAULT_TEACHER_MAP;
+    _teacherMapCache = stored ? JSON.parse(stored) : DEFAULT_TEACHER_MAP;
   } catch (e) {
-    return DEFAULT_TEACHER_MAP;
+    _teacherMapCache = DEFAULT_TEACHER_MAP;
   }
+  return _teacherMapCache;
 }
 
 // Função para atrasar o salvamento (Debounce)
@@ -869,9 +875,9 @@ function openTeacherManager() {
   // Estrutura do formulário
   const form = document.createElement('div');
   form.className = 'modal-form';
-  const inputSigla = Object.assign(document.createElement('input'), { id: 'new-sigla', placeholder: 'Sigla', className: 'search-field' });
-  const inputNome = Object.assign(document.createElement('input'), { id: 'new-nome', placeholder: 'Nome Completo', className: 'search-field' });
-  form.append(inputSigla, inputNome, createBtn('Add', 'btn-primary', addTeacherToRegistry));
+  const inputSigla = Object.assign(document.createElement('input'), { id: 'new-sigla', placeholder: 'Sigla (ex: 1A)', className: 'search-field' });
+  const inputNome = Object.assign(document.createElement('input'), { id: 'new-nome', placeholder: 'Nome do Professor', className: 'search-field' });
+  form.append(inputSigla, inputNome, createBtn('➕ Adicionar', 'btn-primary', addTeacherToRegistry));
 
   const footer = document.createElement('div');
   footer.className = 'modal-footer';
@@ -904,16 +910,36 @@ function renderTeacherList(map) {
     nSpan.className = 'teacher-nome';
     nSpan.textContent = map[sigla];
     
+    const actions = document.createElement('div');
+    actions.style.display = 'flex';
+    actions.style.gap = '8px';
+
+    const editBtn = document.createElement('button');
+    editBtn.className = 'btn';
+    editBtn.style.cssText = 'padding: 4px 8px; font-size: 1rem; background: var(--pd-color);';
+    editBtn.textContent = '✏️';
+    editBtn.onclick = () => prepareEditTeacher(sigla, map[sigla]);
+
     const delBtn = document.createElement('button');
     delBtn.className = 'btn';
-    delBtn.style.cssText = 'color: #ef4444; padding: 4px 8px;';
+    delBtn.style.cssText = 'padding: 4px 8px; font-size: 1rem; background: #fee2e2;';
     delBtn.textContent = '🗑️';
     delBtn.onclick = () => removeTeacherFromRegistry(sigla);
 
     info.append(sSpan, nSpan);
-    item.append(info, delBtn);
+    actions.append(editBtn, delBtn);
+    item.append(info, actions);
     container.appendChild(item);
   });
+}
+
+function prepareEditTeacher(sigla, nome) {
+  document.getElementById('new-sigla').value = sigla;
+  document.getElementById('new-nome').value = nome;
+  document.getElementById('new-nome').focus();
+  // Feedback visual no botão de adicionar para indicar atualização
+  const addBtn = document.querySelector('.modal-form .btn-primary');
+  if (addBtn) addBtn.textContent = '💾 Atualizar';
 }
 
 function addTeacherToRegistry() {
@@ -923,15 +949,21 @@ function addTeacherToRegistry() {
   
   const map = getTeacherMap();
   map[sigla] = nome;
+  _teacherMapCache = map; // Atualiza o cache
   localStorage.setItem(TEACHER_REGISTRY_KEY, JSON.stringify(map));
   renderTeacherList(map);
+  
+  // Limpa campos e reseta botão
   document.getElementById('new-sigla').value = '';
   document.getElementById('new-nome').value = '';
+  const addBtn = document.querySelector('.modal-form .btn-primary');
+  if (addBtn) addBtn.textContent = '➕ Adicionar';
 }
 
 function removeTeacherFromRegistry(sigla) {
   const map = getTeacherMap();
   delete map[sigla];
+  _teacherMapCache = map; // Atualiza o cache
   localStorage.setItem(TEACHER_REGISTRY_KEY, JSON.stringify(map));
   renderTeacherList(map);
 }

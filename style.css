@@ -379,10 +379,11 @@ td.current-active:first-child {
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
-  background: var(--bg-card);
+  background: var(--bg-header);
+  backdrop-filter: blur(12px) saturate(180%);
   padding: 12px 20px;
   border-radius: 16px;
-  border: 1px solid var(--border-color);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: var(--shadow-sm);
 }
 
@@ -510,14 +511,15 @@ td.current-active:first-child {
   bottom: 0;
   left: 0;
   width: 100%;
-  background: rgba(30, 41, 59, 0.85);
+  background: rgba(15, 23, 42, 0.8);
   color: #fff;
   padding: 12px 24px;
   font-size: 0.9em;
   display: flex;
   gap: 32px;
   z-index: 1000;
-  backdrop-filter: blur(12px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 .status-item {
   border-right: 1px solid #555;
@@ -659,12 +661,20 @@ th[title] {
 
 .modal-form {
   display: grid;
-  grid-template-columns: 1fr 2fr auto;
-  gap: 12px;
-  padding-top: 16px;
+  grid-template-columns: 1
   border-top: 2px solid var(--border-color);
+  align-items: end;
 }
 
+.modal-form input {
+  width: 100%;
+  padding: 10px;
+}
+
+.modal-form .btn-primary {
+  height: 42px;
+  white-space: nowrap;
+}
 .modal-footer {
   display: flex;
   justify-content: flex-end;
