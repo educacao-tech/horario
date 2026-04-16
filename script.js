@@ -781,6 +781,15 @@ function updateTimeCounter() {
   timeCounterElement.innerText = message;
 }
 
+function updateClock() {
+  const clockElement = document.getElementById('current-date-time');
+  if (!clockElement) return;
+  const now = new Date();
+  clockElement.textContent = now.toLocaleString('pt-BR', {
+    weekday: 'short', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit'
+  }).replace(/^\w/, (c) => c.toUpperCase());
+}
+
 // Função para reordenar as seções baseado no horário (Manhã vs Tarde)
 function reorderSectionsByTime() {
   const now = new Date();
@@ -801,6 +810,7 @@ applyTheme(); // Aplica o tema salvo
 reorderSectionsByTime(); // Organiza a ordem das tabelas por relevância
 updateHighlights(); // Destaca o horário atual
 updateTimeCounter(); // Inicia o contador de tempo
+updateClock(); // Inicia o relógio
 cells.forEach(cell => cell.contentEditable = false); // Garante estado inicial bloqueado
 
 setInterval(updateHighlights, 10000); // Atualiza a cada 10 segundos para maior precisão
@@ -932,4 +942,7 @@ function saveTeacherRegistryAndReload() {
   }
 }
 
-setInterval(updateTimeCounter, 1000); // Atualiza o contador de tempo a cada 1 segundo
+setInterval(() => {
+  updateTimeCounter();
+  updateClock();
+}, 1000); // Atualiza o contador de tempo e o relógio a cada 1 segundo

@@ -43,20 +43,48 @@ body {
 }
 
 .main-header {
-  margin-bottom: 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--border-color);
 }
 
-.main-header h1 {
-  font-size: 1.75rem;
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header-logo {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.25rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.header-titles h1 {
+  font-size: 1.25rem;
   color: var(--text-main);
   letter-spacing: -0.025em;
   font-weight: 800;
-  margin-bottom: 8px;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.main-header p {
+.header-titles p {
   color: var(--text-muted);
-  margin-top: -4px;
+  margin: 2px 0 0 0;
+  font-size: 0.85rem;
 }
 
 .legend-title {
@@ -91,7 +119,7 @@ th, td {
   border-bottom: 1px solid var(--border-color);
   border-right: 1px solid var(--border-color);
   min-width: 45px; /* Define um tamanho base igual para todas as colunas de dados */
-  line-height: 1.2; /* Estabiliza a altura do texto principal */
+  line-height: 1.4; /* Melhora a legibilidade e o respiro do texto */
   /* Remover borda direita da última coluna e borda inferior da última linha */
   &:last-child { border-right: none; }
   
@@ -210,10 +238,10 @@ td[contenteditable="true"], td[role="textbox"] {
 td[data-teacher]::after {
   content: attr(data-teacher);
   display: block;
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   color: var(--text-muted);
   font-weight: 600; /* Negrito para destaque */
-  margin-top: 2px;
+  margin-top: 4px;
   white-space: nowrap; /* Impede que o nome do professor quebre a linha e aumente a célula */
   overflow: hidden;
   text-overflow: ellipsis; /* Se o nome for longo demais para a coluna, ele encurta com "..." */
@@ -347,12 +375,12 @@ td.current-active:first-child {
 }
 
 .toolbar {
-  margin: 0 0 24px 0;
+  margin: 0 0 16px 0;
   display: flex;
-  gap: 16px;
+  gap: 12px;
   flex-wrap: wrap;
   background: var(--bg-card);
-  padding: 16px 24px;
+  padding: 12px 20px;
   border-radius: 16px;
   border: 1px solid var(--border-color);
   box-shadow: var(--shadow-sm);
@@ -368,7 +396,7 @@ td.current-active:first-child {
   padding: 10px 16px;
   border: 1px solid var(--border-color);
   border-radius: 10px;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   min-width: 250px;
   outline: none;
   transition: border-color 0.2s;
@@ -391,12 +419,26 @@ td.current-active:first-child {
 }
 
 .time-counter {
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 1rem;
   color: var(--primary);
   font-variant-numeric: tabular-nums;
   padding: 0 10px;
   display: flex;
   align-items: center;
+}
+
+.current-date-time {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--primary);
+  padding: 6px 16px;
+  background: var(--pd-color);
+  border-radius: 12px;
+  border: 1px solid rgba(79, 70, 229, 0.2);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  box-shadow: var(--shadow-sm);
 }
 
 /* Barra de progresso da aula atual */
@@ -429,7 +471,7 @@ td.current-active:first-child {
 }
 
 .btn {
-  padding: 10px 18px;
+  padding: 8px 14px;
   cursor: pointer;
   border: none;
   border-radius: 12px;
@@ -439,6 +481,15 @@ td.current-active:first-child {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.year-badge {
+  background: var(--pd-color);
+  color: var(--primary);
+  padding: 2px 10px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 700;
 }
 .btn-primary {
   background: var(--primary);
@@ -492,8 +543,8 @@ th[title] {
 
 .legend {
   display: flex;
-  gap: 15px;
-  margin-bottom: 20px;
+  gap: 12px;
+  margin-bottom: 12px;
   font-size: 0.9em;
   flex-wrap: wrap;
 }

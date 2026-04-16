@@ -12,19 +12,26 @@
   </div>
 
   <header class="main-header">
-    <h1>Horário Escolar 2026</h1>
-    <p>EMEB Professora Anna Bonagura de Andrade</p>
+    <div class="header-brand">
+      <div class="header-logo">📚</div>
+      <div class="header-titles">
+        <h1>
+          Horário Escolar <span class="year-badge">2026</span>
+        </h1>
+        <p>EMEB Professora Anna Bonagura de Andrade</p>
+      </div>
+    </div>
   </header>
 
   <div class="legend">
+    <span class="legend-title" style="font-size: 0.8rem; align-self: center;">Legendas:</span>
     <div class="legend-item" onclick="toggleCategory('hl')"><div class="box hl"></div> <span><b>HL</b> Livre</span></div>
     <div class="legend-item" onclick="toggleCategory('pd')"><div class="box pd"></div> <span><b>PD</b> Plantão</span></div>
     <div class="legend-item" onclick="toggleCategory('el')"><div class="box el"></div> <span><b>EL</b> Elefante</span></div>
     <div class="legend-item" onclick="toggleCategory('mtf')"><div class="box mtf"></div> <span><b>MTF</b> Matific</span></div>
-    <button class="btn" style="padding: 4px 12px; margin-left: 10px; font-size: 0.75rem; background: var(--border-color);" onclick="openTeacherManager()">⚙️ Professores</button>
-  </div>
-
+  
   <div class="toolbar">
+    <button class="btn" style="background: var(--hl-color); color: var(--text-main);" onclick="openTeacherManager()">⚙️ Professores</button>
     <button class="btn btn-primary" onclick="window.print()">🖨️ Imprimir PDF</button>
     <button class="btn btn-success" onclick="exportToCsv()">📊 Exportar CSV</button>
     <div class="search-wrapper">
@@ -42,6 +49,7 @@
       </select>
     </div>
     <span id="time-counter" class="time-counter"></span>
+    <div id="current-date-time" class="current-date-time"></div>
     <button id="theme-toggle" class="btn btn-primary" onclick="toggleTheme()">🌙 Tema Escuro</button>
     <button id="lock-btn" class="btn btn-primary" style="background: #64748b;" onclick="toggleLockMode()">🔒 Modo Leitura</button>
     <span id="save-indicator">✅ Salvo</span>
