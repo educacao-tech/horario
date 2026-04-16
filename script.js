@@ -69,6 +69,14 @@ function debounce(func, timeout = 500) {
   };
 }
 
+// Atualiza todas as células da tabela para refletir mudanças no mapeamento de professores
+function refreshTableUI() {
+  cells.forEach(cell => {
+    applyDynamicStyles(cell);
+    checkConflicts(cell);
+  });
+}
+
 // Gera uma chave única para a célula baseada no contexto (Período + Horário + Especialista)
 function getCellKey(cell) {
   const table = cell.closest('table');
@@ -952,6 +960,7 @@ function addTeacherToRegistry() {
   _teacherMapCache = map; // Atualiza o cache
   localStorage.setItem(TEACHER_REGISTRY_KEY, JSON.stringify(map));
   renderTeacherList(map);
+  refreshTableUI(); // Atualiza a tabela imediatamente
   
   // Limpa campos e reseta botão
   document.getElementById('new-sigla').value = '';
@@ -966,6 +975,7 @@ function removeTeacherFromRegistry(sigla) {
   _teacherMapCache = map; // Atualiza o cache
   localStorage.setItem(TEACHER_REGISTRY_KEY, JSON.stringify(map));
   renderTeacherList(map);
+  refreshTableUI(); // Atualiza a tabela imediatamente
 }
 
 function saveTeacherRegistryAndReload() {

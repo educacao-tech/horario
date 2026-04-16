@@ -95,24 +95,32 @@ body {
 .table-container {
   width: 100%;
   overflow-x: auto;
-  margin-bottom: 30px;
+  margin-bottom: 32px;
   background: var(--bg-card);
   border-radius: 16px;
   border: 1px solid var(--border-color);
   box-shadow: var(--shadow-md);
+  display: block; /* Garante comportamento de bloco */
+}
+
+#schedule-wrapper, 
+section[id^="section-"] {
+  width: 100%;
+  display: block;
 }
 
 table {
   width: 100%;
+  table-layout: fixed; /* Força as colunas a se expandirem para preencher 100% da tela */
   border-collapse: separate;
   border-spacing: 0;
-  min-width: 1200px;
+  min-width: 1250px; /* Mantém a rolagem horizontal em telas muito pequenas */
   border-radius: 16px;
   overflow: hidden; /* Esconder bordas que ultrapassam o radius */
 }
 
 th, td {
-  padding: 10px 8px;
+  padding: 10px 6px;
   text-align: center;
   vertical-align: top !important; /* Força o alinhamento no topo mesmo com redimensionamento */
   box-sizing: border-box;
@@ -132,8 +140,11 @@ th, td {
     border-right: 1px solid var(--border-color);
     font-weight: 700;
     color: var(--text-main);
-    width: 95px;
-    min-width: 95px;
+    width: 145px;
+    min-width: 145px;
+    font-size: 0.82rem;
+    padding-left: 4px;
+    padding-right: 4px;
     white-space: nowrap;
     box-shadow: 4px 0 8px -4px rgba(0,0,0,0.1); /* Sombra para indicar profundidade na rolagem */
   }
@@ -661,7 +672,8 @@ th[title] {
 
 .modal-form {
   display: grid;
-  grid-template-columns: 1
+  grid-template-columns: 100px 1fr auto;
+  gap: 10px;
   border-top: 2px solid var(--border-color);
   align-items: end;
 }
