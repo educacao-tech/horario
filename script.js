@@ -107,41 +107,39 @@ function checkConflicts(cell) {
   if (editableInRow.length === 0) return;
   
   const teacherMap = getTeacherMap();
-  
-  // Função interna para limpar conflitos
-  const clearConflict = (el) => {
-    el.classList.remove('conflict-error');
-    el.removeAttribute('title');
-  };
+  const frequencyMap = new Map();
 
-  // Mapeia o estado da linha em uma única passagem O(n)
-  const rowState = editableInRow.map(c => {
+  // Passo 1: Limpar estados e mapear dados em O(n)
+  const rowData = editableInRow.map(c => {
+    c.classList.remove('conflict-error');
+    c.removeAttribute('title');
     const txt = c.innerText.trim().toUpperCase();
     const base = txt.split('(')[0].trim();
+    const teacher = teacherMap[txt] || teacherMap[base] || null;
+    const isSpecialist = SPECIALIST_SIGLAS.includes(txt) || txt === '*' || !txt;
+
+    if (!isSpecialist) {
+      const key = teacher || txt;
+      frequencyMap.set(key, (frequencyMap.get(key) || 0) + 1);
+    }
+
     return {
       element: c,
       text: txt,
-      teacher: teacherMap[txt] || teacherMap[base] || null,
-      isSpecialist: SPECIALIST_SIGLAS.includes(txt) || txt === '*' || !txt
+      teacher,
+      isSpecialist
     };
   });
 
-  // Valida duplicatas cruzadas de forma eficiente
-  rowState.forEach((current) => {
-    clearConflict(current.element);
-    if (current.isSpecialist) return;
-
-    const hasConflict = rowState.some((other) => {
-      if (current.element === other.element || other.isSpecialist) return false;
-      // Conflito de texto direto (ex: "1A" e "1A") ou conflito de professor regente
-      return current.text === other.text || (current.teacher && current.teacher === other.teacher);
-    });
-
-    if (hasConflict) {
-      current.element.classList.add('conflict-error');
-      current.element.title = current.teacher 
-        ? `Conflito de Professor: ${current.teacher}` 
-        : `Conflito de Turma: ${current.text}`;
+  // Passo 2: Marcar conflitos em O(n)
+  rowData.forEach(item => {
+    if (item.isSpecialist) return;
+    const key = item.teacher || item.text;
+    if (frequencyMap.get(key) > 1) {
+      item.element.classList.add('conflict-error');
+      item.element.title = item.teacher 
+        ? `Conflito: Professor ${item.teacher} em múltiplas salas.` 
+        : `Conflito: Turma ${item.text} em múltiplas salas.`;
     }
   });
 }
@@ -829,27 +827,51 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function openTeacherManager() {
   const map = getTeacherMap();
-  const overlay = document.createElement('div');
-  overlay.className = 'modal-overlay';
+  
+  // Criação de elementos de forma segura (Prevenção de XSS)
+  const overlay = Object.assign(document.createElement('div'), {
+    className: 'modal-overlay',
+    id: 'teacher-modal'
+  });
   overlay.style.display = 'flex';
-  overlay.id = 'teacher-modal';
 
-  overlay.innerHTML = `
-    <div class="modal">
-      <h2>Gerenciar Professores</h2>
-      <p style="font-size: 0.85rem; color: var(--text-muted);">Cadastre siglas de turmas ou especialistas (Ex: 1A, A(S)).</p>
-      <div class="teacher-list-container" id="modal-teacher-list"></div>
-      <div class="modal-form">
-        <input type="text" id="new-sigla" placeholder="Sigla" class="search-field" style="min-width: 80px;">
-        <input type="text" id="new-nome" placeholder="Nome Completo" class="search-field" style="min-width: 150px;">
-        <button class="btn btn-primary" onclick="addTeacherToRegistry()">Add</button>
-      </div>
-      <div class="modal-footer">
-        <button class="btn" onclick="document.getElementById('teacher-modal').remove()">Fechar</button>
-        <button class="btn btn-success" onclick="saveTeacherRegistryAndReload()">Salvar e Reiniciar</button>
-      </div>
-    </div>
-  `;
+  const modal = document.createElement('div');
+  modal.className = 'modal';
+  
+  const title = document.createElement('h2');
+  title.textContent = 'Gerenciar Professores';
+  
+  const listContainer = Object.assign(document.createElement('div'), {
+    className: 'teacher-list-container',
+    id: 'modal-teacher-list'
+  });
+
+  // Helper para criar botões rapidamente
+  const createBtn = (text, cls, fn) => {
+    const btn = Object.assign(document.createElement('button'), {
+      className: `btn ${cls}`,
+      textContent: text
+    });
+    btn.onclick = fn;
+    return btn;
+  };
+
+  // Estrutura do formulário
+  const form = document.createElement('div');
+  form.className = 'modal-form';
+  const inputSigla = Object.assign(document.createElement('input'), { id: 'new-sigla', placeholder: 'Sigla', className: 'search-field' });
+  const inputNome = Object.assign(document.createElement('input'), { id: 'new-nome', placeholder: 'Nome Completo', className: 'search-field' });
+  form.append(inputSigla, inputNome, createBtn('Add', 'btn-primary', addTeacherToRegistry));
+
+  const footer = document.createElement('div');
+  footer.className = 'modal-footer';
+  footer.append(
+    createBtn('Fechar', '', () => overlay.remove()),
+    createBtn('Salvar e Reiniciar', 'btn-success', saveTeacherRegistryAndReload)
+  );
+
+  modal.append(title, listContainer, form, footer);
+  overlay.appendChild(modal);
   document.body.appendChild(overlay);
   renderTeacherList(map);
 }
@@ -860,13 +882,26 @@ function renderTeacherList(map) {
   Object.keys(map).sort().forEach(sigla => {
     const item = document.createElement('div');
     item.className = 'teacher-item';
-    item.innerHTML = `
-      <div class="teacher-info">
-        <span class="teacher-sigla">${sigla}</span>
-        <span class="teacher-nome">${map[sigla]}</span>
-      </div>
-      <button class="btn" style="color: #ef4444; padding: 4px 8px;" onclick="removeTeacherFromRegistry('${sigla}')">🗑️</button>
-    `;
+    
+    const info = document.createElement('div');
+    info.className = 'teacher-info';
+    
+    const sSpan = document.createElement('span');
+    sSpan.className = 'teacher-sigla';
+    sSpan.textContent = sigla;
+    
+    const nSpan = document.createElement('span');
+    nSpan.className = 'teacher-nome';
+    nSpan.textContent = map[sigla];
+    
+    const delBtn = document.createElement('button');
+    delBtn.className = 'btn';
+    delBtn.style.cssText = 'color: #ef4444; padding: 4px 8px;';
+    delBtn.textContent = '🗑️';
+    delBtn.onclick = () => removeTeacherFromRegistry(sigla);
+
+    info.append(sSpan, nSpan);
+    item.append(info, delBtn);
     container.appendChild(item);
   });
 }
