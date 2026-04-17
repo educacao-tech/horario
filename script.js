@@ -285,6 +285,14 @@ function filterByDay(selectedDayIndex) {
   const selectedDay = parseInt(selectedDayIndex);
 
   document.querySelectorAll('table').forEach(table => {
+    const container = table.closest('.table-container');
+    if (container) {
+      // Ativa a classe de centralização se um dia específico for selecionado
+      container.classList.toggle('single-day-active', selectedDay !== 0);
+      // Reseta o scroll horizontal para que a centralização via CSS (margin: 0 auto) seja visível
+      container.scrollTo({ left: 0, behavior: 'smooth' });
+    }
+
     const layout = table.closest('#section-morning') ? LAYOUTS.morning : LAYOUTS.afternoon;
     const rows = table.rows;
 

@@ -151,6 +151,34 @@ th, td {
   tr:last-child & { border-bottom: none; }
 }
 
+/* New CSS for centering the table when a single day is selected */
+.table-container.single-day-active table {
+  width: auto; /* Allow table to shrink to content */
+  table-layout: auto; /* Allow column widths to be determined by content */
+  min-width: unset; /* Remove minimum width constraint */
+  margin: 0 auto; /* Center the table itself within the container */
+}
+
+/* Ensure the first column (Horário) remains sticky and has its defined width */
+.table-container.single-day-active table th:first-child,
+.table-container.single-day-active table td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 20;
+  background-color: var(--bg-sticky-col);
+  border-right: 1px solid var(--border-color);
+  font-weight: 700;
+  color: var(--text-main);
+  width: 145px; /* Keep the fixed width for the time column */
+  min-width: 145px;
+  font-size: 0.82rem;
+  padding-left: 4px;
+  padding-right: 4px;
+  white-space: nowrap;
+  box-shadow: 4px 0 8px -4px rgba(0,0,0,0.1);
+}
+
+
 /* Estilo base para cabeçalhos */
 thead th, 
 th {
