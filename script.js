@@ -837,8 +837,31 @@ cells.forEach(cell => cell.contentEditable = false); // Garante estado inicial b
 
 setInterval(updateHighlights, 10000); // Atualiza a cada 10 segundos para maior precisão
 
-// Event listener para o select de filtro de dia
-document.addEventListener('DOMContentLoaded', () => {
+// Service Worker Registration (PWA)
+async function registerSW() {
+  if ('serviceWorker' in navigator) {
+    try {
+      const registration = await navigator.serviceWorker.register('/service-worker.js');
+      console.log('✅ SW registrado:', registration.scope);
+      
+      // Adiciona badge indicador PWA no toolbar (visível em standalone)
+      if (window.matchMedia('(display-mode: standalone)').matches) {
+        const indicator = document.createElement('span');
+        indicator.id = 'pwa-indicator';
+        indicator.innerHTML = '📱 <small>PWA</small>';
+        indicator.style.cssText = 'font-size: 0.8rem; color: #10b981; background: rgba(16,185,129,0.1); padding: 4px 8px; border-radius: 12px;';
+        document.querySelector('.toolbar').appendChild(indicator);
+      }
+    } catch (error) {
+      console.error('❌ Erro SW:', error);
+    }
+  }
+}
+
+// Event listener para o select de filtro de dia + PWA init
+document.addEventListener('DOMContentLoaded', async () => {
+  await registerSW(); // Inicializa PWA primeiro
+  
   const dayFilterSelect = document.getElementById('day-filter-select');
   
   // Recupera o filtro salvo ou padrão (0 - Todos)

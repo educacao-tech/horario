@@ -1,0 +1,29 @@
+{
+  "name": "Horário Escolar 2026 - EMEB Anna Bonagura",
+  "short_name": "Horário Escolar",
+  "description": "Gerenciador editável de horários escolares com edição em tempo real, detecção de conflitos e exportações.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#4f46e5",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgdmlld0JveD0iMCAwIDE5MiAxOTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxOTIiIGhlaWdodD0iMTkyIiByeD0iMjQiIGZpbGw9IiM0ZjQ2ZTVmIi8+CjxwYXRoIGQ9Ik0xMzIgNzJMMTEyIDg4TDkyIDcyTDExMiA1NkwxMzIgNzJaIiBmaWxsPSIjZmZmIi8+CjxwYXRoIGQ9Ik0xNjAgNjRIMzIgVjEyMEgxNjBWNjRaIiBzdHJva2U9IiNmZmYiIHN0cm9rZS13aWR0aD0iNCIgZmlsbD0ibm9uZSIvPgo8L3N2Zz4K",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgdmlld0JveD0iMCAwIDUxMiA1MTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI1MTIiIGhlaWdodD0iNTEyIiByeD0iNjQiIGZpbGw9IiM0ZjQ2ZTVmIi8+CjxwYXRoIGQ9Ik0zNDggMTkyTDMxMiAyMzJMMjQ4IDE5MkwzMTIgMTU4TDM0OCAxOTJaIiBmaWxsPSIjZmZmIi8+CjxwYXRoIGQ9Ik00MjQgMTcxMkgyODggVjMyMEg0MjRWMTcxMkEiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIxMiIgZmlsbD0ibm9uZSIvPgo8L3N2Zz4K",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable any"
+    }
+  ],
+  "categories": ["education", "productivity", "utilities"],
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "prefer_related_applications": false
+}
+
