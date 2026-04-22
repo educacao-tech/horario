@@ -16,7 +16,9 @@
   --bg-sticky-col: #f1f5f9;
   --header-height: 41px;
   --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-  --shadow-md: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-md: 0 4px 20px -2px rgba(0, 0, 0, 0.08), 0 2px 10px -2px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  --glass-bg: rgba(255, 255, 255, 0.7);
 }
 
 body.dark-theme {
@@ -32,11 +34,13 @@ body.dark-theme {
   --el-color: #065f46;
   --mtf-color: #92400e;
   --edit-bg: #1e293b;
+  --glass-bg: rgba(15, 23, 42, 0.7);
 }
 
 body {
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-  background-color: var(--bg-main);
+  background: radial-gradient(circle at top right, var(--hl-color), var(--bg-main) 40%);
+  background-attachment: fixed;
   color: var(--text-main);
   padding: 20px 20px 60px 20px; /* Aumentado o padding inferior para não cobrir a tabela com a barra de status */
   line-height: 1.6;
@@ -117,6 +121,7 @@ table {
   min-width: 1250px; /* Mantém a rolagem horizontal em telas muito pequenas */
   border-radius: 16px;
   overflow: hidden; /* Esconder bordas que ultrapassam o radius */
+  box-shadow: var(--shadow-sm);
 }
 
 th, td {
@@ -192,6 +197,7 @@ th {
   top: 0;
   z-index: 10; /* Aumentar z-index para garantir que fique acima do conteúdo */
   border-bottom: 2px solid var(--border-color);
+  letter-spacing: 0.02em;
 }
 
 /* Ajuste para cabeçalho duplo sticky */
@@ -229,7 +235,7 @@ td[contenteditable="true"], td[role="textbox"] {
 
 /* Destaque para células com o mesmo conteúdo */
 .match-highlight {
-  outline: 3px solid var(--primary) !important;
+  box-shadow: inset 0 0 0 3px var(--primary), 0 0 15px rgba(79, 70, 229, 0.3) !important;
   outline-offset: -3px;
   z-index: 5;
 }
@@ -259,7 +265,8 @@ td[contenteditable="true"], td[role="textbox"] {
   border-radius: 10px;
   font-size: 0.9rem;
   background-color: var(--bg-card);
-  color: var(--text-main);
+  color: var(--primary);
+  font-weight: 600;
   outline: none;
   cursor: pointer;
   transition: border-color 0.2s;
@@ -287,9 +294,12 @@ td[data-teacher]::after {
   pointer-events: none; /* Garante que não atrapalhe o clique/edição */
 }
 
-td[role="textbox"]:focus {
-  background-color: #fff;
-  outline: 2px solid var(--primary);
+/* Melhoria de acessibilidade para navegação via teclado */
+td[role="textbox"]:focus-visible {
+  background-color: var(--bg-card);
+  outline: 3px solid var(--primary);
+  outline-offset: -3px;
+  box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.2);
 }
 
 /* Divisória Dupla entre os Dias */
@@ -347,11 +357,12 @@ body:not(.readonly) #lock-btn { background-color: #ef4444 !important; }
 
 /* Estilo para conflitos de horário */
 .conflict-error {
-  background-color: #fef2f2;
-  box-shadow: inset 0 0 0 2px #f87171;
+  background-color: rgba(239, 68, 68, 0.1) !important;
+  box-shadow: inset 0 0 0 2px #ef4444, 0 0 10px rgba(239, 68, 68, 0.2);
   color: #991b1b;
   animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
   cursor: help;
+  font-weight: 700;
 }
 
 @keyframes shake { 10%, 90% { transform: translate3d(-1px, 0, 0); } 20%, 80% { transform: translate3d(2px, 0, 0); } }
@@ -360,13 +371,13 @@ body:not(.readonly) #lock-btn { background-color: #ef4444 !important; }
   background-color: var(--hl-color);
 }
 .pd {
-  background-color: var(--pd-color) !important;
+  background: linear-gradient(135deg, var(--pd-color), rgba(14, 165, 233, 0.15)) !important;
 }
 .el {
-  background-color: var(--el-color) !important;
+  background: linear-gradient(135deg, var(--el-color), rgba(16, 185, 129, 0.15)) !important;
 }
 .mtf {
-  background-color: var(--mtf-color) !important;
+  background: linear-gradient(135deg, var(--mtf-color), rgba(245, 158, 11, 0.15)) !important;
 }
 .recreio {
   background: linear-gradient(to bottom, var(--bg-header), var(--bg-main));
@@ -380,8 +391,9 @@ body:not(.readonly) #lock-btn { background-color: #ef4444 !important; }
 /* Destaque para células de dados e horários atuais */
 td.current-active {
   background-color: rgba(250, 204, 21, 0.15) !important;
-  box-shadow: inset 4px 0 0 0 var(--primary);
   position: relative;
+  color: var(--primary) !important; /* Nova cor da fonte para a linha atual */
+  font-weight: 700;                /* Texto em negrito para maior destaque */
 }
 
 td.current-active::after {
@@ -403,13 +415,14 @@ th.current-active {
   /* Mantém a cor original do dia (.day-header-X) e adiciona um indicador de "Hoje" */
   box-shadow: inset 0 -6px 0 0 #fef9c3 !important; /* Barra amarela inferior interna */
   filter: brightness(1.15); /* Leve brilho para destacar atividade */
+  border-bottom: 2px solid #fef9c3 !important;
 }
 
 /* Estilo específico para a célula de horário quando ativa */
 td.current-active:first-child {
   background: linear-gradient(135deg, var(--primary), var(--primary-hover)) !important;
   color: white !important;
-  box-shadow: 4px 0 12px -4px rgba(79, 70, 229, 0.4) !important;
+  box-shadow: inset 6px 0 0 0 var(--primary-hover), 4px 0 12px -4px rgba(79, 70, 229, 0.4) !important;
   border-right-color: var(--primary-hover);
 }
 
@@ -702,6 +715,7 @@ th[title] {
   display: grid;
   grid-template-columns: 100px 1fr auto;
   gap: 10px;
+  align-items: end;
 }
 
 /* Estilos para o Autocomplete */
@@ -736,22 +750,56 @@ th[title] {
 .suggestion-item small {
   color: var(--text-muted);
 }
-  border-top: 2px solid var(--border-color);
-  align-items: end;
-}
 
 .modal-form input {
   width: 100%;
   padding: 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
 }
 
 .modal-form .btn-primary {
   height: 42px;
   white-space: nowrap;
 }
+
 .modal-footer {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
   margin-top: 12px;
+  border-top: 1px solid var(--border-color);
+  padding-top: 12px;
+}
+
+/* Sistema de Toasts */
+#toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 11000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.toast {
+  background: var(--bg-card);
+  color: var(--text-main);
+  padding: 12px 20px;
+  border-radius: 12px;
+  box-shadow: var(--shadow-md);
+  border-left: 4px solid var(--primary);
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  animation: slideIn 0.3s ease-out;
+}
+
+.toast-success { border-left-color: #10b981; }
+.toast-info { border-left-color: var(--accent); }
+
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
 }

@@ -9,6 +9,9 @@ let activeSuggestionIndex = -1;
 const historyStack = [];
 const redoStack = [];
 
+// Controle de estado para notificações
+let lastActivePeriodType = null;
+
 const LAYOUTS = {
   morning: [6, 5, 4, 4, 5],
   afternoon: [5, 4, 4, 5, 4]
@@ -111,6 +114,7 @@ const saveContent = debounce((key, text) => {
     const indicator = document.getElementById('save-indicator');
     if (indicator) {
       indicator.style.opacity = '1';
+      showToast("Alterações salvas", "success");
       setTimeout(() => { indicator.style.opacity = '0'; }, 2000);
     }
   } catch (e) {
@@ -240,6 +244,18 @@ const updateAriaStatus = () => {
   const isReadonly = document.body.classList.contains('readonly');
   cells.forEach(c => c.setAttribute('aria-readonly', isReadonly));
 };
+
+// Previne a entrada de HTML formatado ao colar texto (Excel, Word, etc)
+document.addEventListener('paste', (e) => {
+  if (e.target.getAttribute('contenteditable') === 'true') {
+    e.preventDefault();
+    const text = (e.originalEvent || e).clipboardData.getData('text/plain').toUpperCase();
+    // Insere apenas o texto puro
+    const range = window.getSelection().getRangeAt(0);
+    range.deleteContents();
+    range.insertNode(document.createTextNode(text));
+  }
+});
 
 // Gerenciamento Centralizado de Eventos (Event Delegation)
 document.addEventListener('input', (e) => {
@@ -555,6 +571,7 @@ function undo() {
   const previousState = historyStack.pop();
   localStorage.setItem(STORAGE_KEY, previousState);
   loadData();
+  showToast("Ação desfeita", "info");
 }
 
 function redo() {
@@ -564,6 +581,31 @@ function redo() {
   const nextState = redoStack.pop();
   localStorage.setItem(STORAGE_KEY, nextState);
   loadData();
+  showToast("Ação refeita", "info");
+}
+
+// Sistema de Notificação (Toast)
+function showToast(message, type = 'info') {
+  const container = document.getElementById('toast-container') || createToastContainer();
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  toast.innerHTML = `
+    <span>${message}</span>
+    <button onclick="this.parentElement.remove()">✕</button>
+  `;
+  
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.classList.add('fade-out');
+    setTimeout(() => toast.remove(), 500);
+  }, 3000);
+}
+
+function createToastContainer() {
+  const container = document.createElement('div');
+  container.id = 'toast-container';
+  document.body.appendChild(container);
+  return container;
 }
 
 function updateActiveSuggestion(items) {
@@ -602,7 +644,10 @@ function updateStatusBar(cell) {
         ? ` | <b>Regente:</b> ${teacherName}` 
         : '';
       
-      document.getElementById('statusBar').innerHTML = `
+      const statusBar = document.getElementById('statusBar');
+      statusBar.setAttribute('aria-live', 'polite'); // Acessibilidade: anuncia mudanças
+      
+      statusBar.innerHTML = `
         <div class="status-item"><b>Especialista:</b> ${nomeProf}</div>
         <div class="status-item"><b>Sala/Turma:</b> ${cell.innerText || '(vazia)'}${nomeRegente}</div>
       `;
@@ -772,16 +817,10 @@ function updateHighlights() {
       if (start !== null && currentMinutes >= start && currentMinutes < end) {
         row.cells[0].classList.add('current-active'); // Destaca a célula do horário
 
-        // Calcula o índice de início da célula baseado no layout variável
-        let cellStart = 1;
-        for (let d = 0; d < day - 1; d++) {
-          cellStart += currentLayout[d];
-        }
-
-        const colsPerDay = currentLayout[day - 1];
-        for (let j = 0; j < colsPerDay; j++) {
-          if (row.cells[cellStart + j]) row.cells[cellStart + j].classList.add('current-active');
-        }
+        // Destaca a linha inteira
+        Array.from(row.cells).forEach(cell => {
+          cell.classList.add('current-active');
+        });
       }
     }
   });
@@ -871,6 +910,28 @@ function formatTimeDifference(totalSeconds) {
   return `${minutes.toString().padStart(2, '0')}m ${seconds.toString().padStart(2, '0')}s`;
 }
 
+// Função para gerar um sinal sonoro (Beep) usando Web Audio API
+function playNotificationSound() {
+  try {
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); // Nota Lá (A5)
+    gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.5);
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+
+    oscillator.start();
+    oscillator.stop(audioCtx.currentTime + 0.5);
+  } catch (e) {
+    console.warn("Áudio bloqueado pelo navegador. Interaja com a página primeiro.");
+  }
+}
+
 // Função para atualizar o contador de tempo (início/término de aula)
 function updateTimeCounter() {
   const now = new Date();
@@ -918,6 +979,25 @@ function updateTimeCounter() {
       }
     }
   });
+
+  // Lógica de Notificação de Início/Término
+  const currentPeriodType = activePeriod ? activePeriod.type : 'fora';
+
+  if (currentPeriodType !== lastActivePeriodType) {
+    if (lastActivePeriodType !== null) { // Evita disparar ao carregar a página
+      if (currentPeriodType === 'aula') {
+        showToast("🔔 A aula começou!", "success");
+        playNotificationSound();
+      } else if (currentPeriodType === 'recreio') {
+        showToast("🍎 O recreio começou!", "info");
+        playNotificationSound();
+      } else if (currentPeriodType === 'fora' && lastActivePeriodType !== 'fora') {
+        showToast("🏁 Fim do período de aulas!", "info");
+        playNotificationSound();
+      }
+    }
+    lastActivePeriodType = currentPeriodType;
+  }
 
   let message = "";
   if (activePeriod) {
