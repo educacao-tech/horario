@@ -2,6 +2,7 @@ const STORAGE_KEY = 'school_schedule_v1';
 const THEME_KEY = 'school_schedule_theme';
 const TEACHER_REGISTRY_KEY = 'school_teachers_v1';
 const FILTER_DAY_KEY = 'school_filter_day_v1';
+const CONFIG_KEY = 'school_config_v1';
 const cells = document.querySelectorAll('[contenteditable="true"]');
 let activeSuggestionIndex = -1;
 
@@ -17,8 +18,8 @@ const LAYOUTS = {
   afternoon: [5, 4, 4, 5, 4]
 };
 
-// Mapeamento de Professores (Edite aqui para vincular nomes)
-const SPECIALIST_SIGLAS = ['A(S)', 'A(M)', 'EF(M)', 'EF(P)', 'CT(D)', 'EDM(L)', 'EDM', 'EL', 'MTF', 'PI', 'PII'];
+// Configurações iniciais (Fallback)
+const DEFAULT_SPECIALIST_SIGLAS = ['A(S)', 'A(M)', 'EF(M)', 'EF(P)', 'CT(D)', 'EDM(L)', 'EDM', 'EL', 'MTF', 'PI', 'PII'];
 const DATA_CATEGORIES = ['HL', 'HTPC', 'PD', 'EL', 'MTF'];
 
 // Mapa padrão (Fallback caso o storage esteja vazio)
@@ -54,6 +55,15 @@ const DEFAULT_TEACHER_MAP = {
 
 // Cache em memória para evitar parsing excessivo de JSON durante o uso
 let _teacherMapCache = null;
+let _specialistCache = null;
+
+// Getter para Siglas de Especialistas (Dinâmico)
+function getSpecialistSiglas() {
+  if (_specialistCache) return _specialistCache;
+  const stored = localStorage.getItem(CONFIG_KEY);
+  _specialistCache = stored ? JSON.parse(stored).specialists : DEFAULT_SPECIALIST_SIGLAS;
+  return _specialistCache;
+}
 
 // Getter centralizado para o Mapa de Professores para garantir dados sempre frescos
 function getTeacherMap() {
@@ -83,6 +93,43 @@ function refreshTableUI() {
     applyDynamicStyles(cell);
     checkConflicts(cell);
   });
+}
+
+// --- DASHBOARD DE CARGA HORÁRIA ---
+function showWorkloadReport() {
+  const map = getTeacherMap();
+  const counts = {};
+  
+  // Contabiliza as aulas
+  cells.forEach(cell => {
+    const text = cell.innerText.trim().toUpperCase();
+    if (text && text !== '*') {
+      counts[text] = (counts[text] || 0) + 1;
+    }
+  });
+
+  const reportHtml = Object.keys(counts)
+    .sort((a, b) => counts[b] - counts[a])
+    .map(sigla => {
+      const nome = map[sigla] || 'Não cadastrado';
+      return `
+        <div class="report-row">
+          <span class="report-sigla">${sigla}</span>
+          <span class="report-name">${nome}</span>
+          <span class="report-count">${counts[sigla]} aulas</span>
+        </div>`;
+    }).join('');
+
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.style.display = 'flex';
+  modal.innerHTML = `
+    <div class="modal workload-modal">
+      <h2>📊 Relatório de Carga Horária</h2>
+      <div class="teacher-list-container">${reportHtml || '<p>Nenhuma aula lançada.</p>'}</div>
+      <div class="modal-footer"><button class="btn btn-primary" onclick="this.closest('.modal-overlay').remove()">Fechar</button></div>
+    </div>`;
+  document.body.appendChild(modal);
 }
 
 // Gera uma chave única para a célula baseada no contexto (Período + Horário + Especialista)
@@ -126,7 +173,8 @@ const saveContent = debounce((key, text) => {
 // Detecta se a mesma turma está em duas salas no mesmo horário
 function checkConflicts(cell) {
   const rawText = cell.innerText.trim().toUpperCase();
-  if (!rawText || rawText === '*' || SPECIALIST_SIGLAS.includes(rawText)) {
+  const specialists = getSpecialistSiglas();
+  if (!rawText || rawText === '*' || specialists.includes(rawText)) {
     cell.classList.remove('conflict-error');
     cell.removeAttribute('title');
     return;
@@ -147,7 +195,7 @@ function checkConflicts(cell) {
     const txt = c.innerText.trim().toUpperCase();
     const base = txt.split('(')[0].trim();
     const teacher = teacherMap[txt] || teacherMap[base] || null;
-    const isSpecialist = SPECIALIST_SIGLAS.includes(txt) || txt === '*' || !txt;
+    const isSpecialist = specialists.includes(txt) || txt === '*' || !txt;
 
     if (!isSpecialist) {
       const key = teacher || txt;
@@ -180,6 +228,7 @@ function applyDynamicStyles(cell) {
   const text = cell.innerText.trim().toUpperCase();
   const baseCode = text.split('(')[0].trim(); // Extrai "3B" de "3B(N)"
   const teacherMap = getTeacherMap();
+  const specialists = getSpecialistSiglas();
   const teacherName = teacherMap[text] || teacherMap[baseCode];
 
   // Remove classes de legenda antigas
@@ -198,7 +247,7 @@ function applyDynamicStyles(cell) {
   }
 
   // Se o texto estiver no mapa de professores, exibe o nome abaixo do código
-  if (teacherName && text !== '*' && text !== '') {
+  if (teacherName && text !== '*' && text !== '' && !specialists.includes(text)) {
     // Extrai apenas o primeiro nome para não ocupar muito espaço na célula
     const fullName = teacherName.split(' (')[0];
     cell.setAttribute('data-teacher', fullName);
@@ -637,10 +686,11 @@ function updateStatusBar(cell) {
     const professorHeader = table.rows[1].cells[colIndex - 1];
     if (professorHeader) {
       const sigla = professorHeader.innerText.trim().toUpperCase();
+      const specialists = getSpecialistSiglas();
       const nomeProf = teacherMap[sigla] || `Especialista: ${sigla}`;
       
       // Tenta encontrar o nome da regente pelo conteúdo da célula
-      const nomeRegente = teacherName && !SPECIALIST_SIGLAS.includes(text) && !SPECIALIST_SIGLAS.includes(baseCode) 
+      const nomeRegente = teacherName && !specialists.includes(text) && !specialists.includes(baseCode) 
         ? ` | <b>Regente:</b> ${teacherName}` 
         : '';
       
