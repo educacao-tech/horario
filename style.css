@@ -134,7 +134,6 @@ th, td {
   min-width: 45px; /* Define um tamanho base igual para todas as colunas de dados */
   line-height: 1.4; /* Melhora a legibilidade e o respiro do texto */
   /* Remover borda direita da última coluna e borda inferior da última linha */
-  &:last-child { border-right: none; }
   
   /* Fixar a primeira coluna (Horário) */
   &:first-child {
@@ -154,6 +153,14 @@ th, td {
     box-shadow: 4px 0 8px -4px rgba(0,0,0,0.1); /* Sombra para indicar profundidade na rolagem */
   }
   tr:last-child & { border-bottom: none; }
+}
+
+th:last-child, td:last-child {
+  border-right: none;
+}
+
+tr:last-child td {
+  border-bottom: none;
 }
 
 /* New CSS for centering the table when a single day is selected */

@@ -160,6 +160,7 @@ const saveContent = debounce((key, text) => {
     
     const indicator = document.getElementById('save-indicator');
     if (indicator) {
+      indicator.innerHTML = '<span>✓</span> Salvo';
       indicator.style.opacity = '1';
       showToast("Alterações salvas", "success");
       setTimeout(() => { indicator.style.opacity = '0'; }, 2000);
@@ -639,7 +640,7 @@ function showToast(message, type = 'info') {
   const toast = document.createElement('div');
   toast.className = `toast toast-${type}`;
   toast.innerHTML = `
-    <span>${message}</span>
+    <span>${type === 'success' ? '✓ ' : 'ℹ '}${message}</span>
     <button onclick="this.parentElement.remove()">✕</button>
   `;
   
