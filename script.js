@@ -3,6 +3,11 @@ const THEME_KEY = 'school_schedule_theme';
 const TEACHER_REGISTRY_KEY = 'school_teachers_v1';
 const FILTER_DAY_KEY = 'school_filter_day_v1';
 const cells = document.querySelectorAll('[contenteditable="true"]');
+let activeSuggestionIndex = -1;
+
+// Histórico para Undo/Redo
+const historyStack = [];
+const redoStack = [];
 
 const LAYOUTS = {
   morning: [6, 5, 4, 4, 5],
@@ -89,8 +94,16 @@ function getCellKey(cell) {
   return `sched_${sectionId}_${time}_${specialist}`.replace(/[^a-zA-Z0-9]/g, '_');
 }
 
+function saveStateToHistory() {
+  const currentState = localStorage.getItem(STORAGE_KEY);
+  historyStack.push(currentState);
+  if (historyStack.length > 50) historyStack.shift(); // Limita a 50 passos
+  redoStack.length = 0; // Limpa o redo ao fazer nova alteração
+}
+
 const saveContent = debounce((key, text) => {
   try {
+    saveStateToHistory();
     const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
     data[key] = text;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
@@ -232,12 +245,17 @@ const updateAriaStatus = () => {
 document.addEventListener('input', (e) => {
   if (e.target.getAttribute('contenteditable') === 'true') {
     const key = getCellKey(e.target);
+    const text = e.target.innerText;
+    
     applyDynamicStyles(e.target);
     checkConflicts(e.target);
-    saveContent(key, e.target.innerText);
+    saveContent(key, text);
     
     // Atualiza a barra de status em tempo real enquanto digita
     updateStatusBar(e.target);
+
+    // Sistema de Sugestões (Autocomplete)
+    showSuggestions(e.target);
   }
 });
 
@@ -390,10 +408,107 @@ document.addEventListener('focusin', (e) => {
   }
 });
 
+// --- SISTEMA DE AUTOCOMPLETE ---
+
+function showSuggestions(cell) {
+  removeSuggestions();
+  const input = cell.innerText.trim().toUpperCase();
+  if (!input) return;
+
+  const map = getTeacherMap();
+  const matches = Object.keys(map).filter(sigla => 
+    sigla.startsWith(input) || map[sigla].toUpperCase().includes(input)
+  ).slice(0, 5); // Limita a 5 sugestões para não poluir a tela
+
+  if (matches.length === 0) return;
+
+  const rect = cell.getBoundingClientRect();
+  const list = document.createElement('div');
+  list.id = 'autocomplete-suggestions';
+  list.className = 'autocomplete-list';
+  list.style.top = `${rect.bottom + window.scrollY}px`;
+  list.style.left = `${rect.left + window.scrollX}px`;
+  list.style.minWidth = `${rect.width}px`;
+
+  matches.forEach((sigla, index) => {
+    const item = document.createElement('div');
+    item.className = 'suggestion-item';
+    item.innerHTML = `<strong>${sigla}</strong> - <small>${map[sigla].split(' (')[0]}</small>`;
+    item.onclick = () => {
+      cell.innerText = sigla;
+      const key = getCellKey(cell);
+      saveContent(key, sigla);
+      applyDynamicStyles(cell);
+      checkConflicts(cell);
+      removeSuggestions();
+      cell.focus();
+      // Move o cursor para o final
+      const range = document.createRange();
+      range.selectNodeContents(cell);
+      range.collapse(false);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    };
+    list.appendChild(item);
+  });
+
+  document.body.appendChild(list);
+  activeSuggestionIndex = -1;
+}
+
+function removeSuggestions() {
+  const list = document.getElementById('autocomplete-suggestions');
+  if (list) list.remove();
+}
+
+// Fecha sugestões ao clicar fora ou perder o foco
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('[contenteditable="true"]') && !e.target.closest('.autocomplete-list')) {
+    removeSuggestions();
+  }
+});
+
 // Navegação por teclado (Setas e Enter para a linha de baixo/cima)
 document.addEventListener('keydown', (e) => {
   const cell = e.target;
   if (cell.getAttribute('contenteditable') !== 'true') return;
+
+  const suggestions = document.getElementById('autocomplete-suggestions');
+
+  // Atalhos de Teclado (Undo/Redo)
+  if (e.ctrlKey && e.key.toLowerCase() === 'z') {
+    e.preventDefault();
+    undo();
+    return;
+  }
+  if (e.ctrlKey && e.key.toLowerCase() === 'y') {
+    e.preventDefault();
+    redo();
+    return;
+  }
+
+  if (suggestions) {
+    const items = suggestions.querySelectorAll('.suggestion-item');
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      activeSuggestionIndex = Math.min(activeSuggestionIndex + 1, items.length - 1);
+      updateActiveSuggestion(items);
+      return;
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      activeSuggestionIndex = Math.max(activeSuggestionIndex - 1, 0);
+      updateActiveSuggestion(items);
+      return;
+    } else if (e.key === 'Enter' && activeSuggestionIndex > -1) {
+      e.preventDefault();
+      items[activeSuggestionIndex].click();
+      return;
+    } else if (e.key === 'Escape') {
+      removeSuggestions();
+      return;
+    }
+  }
 
   const row = cell.parentElement;
   const table = cell.closest('table');
@@ -432,6 +547,30 @@ document.addEventListener('keydown', (e) => {
     sel.addRange(range);
   }
 });
+
+function undo() {
+  if (historyStack.length === 0) return;
+  const currentState = localStorage.getItem(STORAGE_KEY);
+  redoStack.push(currentState);
+  const previousState = historyStack.pop();
+  localStorage.setItem(STORAGE_KEY, previousState);
+  loadData();
+}
+
+function redo() {
+  if (redoStack.length === 0) return;
+  const currentState = localStorage.getItem(STORAGE_KEY);
+  historyStack.push(currentState);
+  const nextState = redoStack.pop();
+  localStorage.setItem(STORAGE_KEY, nextState);
+  loadData();
+}
+
+function updateActiveSuggestion(items) {
+  items.forEach((item, idx) => {
+    item.classList.toggle('active', idx === activeSuggestionIndex);
+  });
+}
 
 // Função isolada para atualizar a barra de status
 function updateStatusBar(cell) {

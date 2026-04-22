@@ -702,6 +702,40 @@ th[title] {
   display: grid;
   grid-template-columns: 100px 1fr auto;
   gap: 10px;
+}
+
+/* Estilos para o Autocomplete */
+.autocomplete-list {
+  position: absolute;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: var(--shadow-md);
+  z-index: 10001;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.suggestion-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  border-bottom: 1px solid var(--border-color);
+  transition: background 0.2s;
+}
+
+.suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.suggestion-item:hover, .suggestion-item.active {
+  background-color: var(--pd-color);
+  color: var(--primary);
+}
+
+.suggestion-item small {
+  color: var(--text-muted);
+}
   border-top: 2px solid var(--border-color);
   align-items: end;
 }
