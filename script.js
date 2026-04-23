@@ -137,34 +137,24 @@ function createModal(titleText, contentElement, footerButtons = []) {
 // --- DASHBOARD DE CARGA HORÁRIA ---
 function showWorkloadReport() {
   const map = getTeacherMap();
-  const counts = {};
-  
-  // Contabiliza as aulas
-  cells.forEach(cell => {
+
+  // Contabiliza as aulas de forma eficiente sem erros de redeclaração
   const counts = Array.from(cells).reduce((acc, cell) => {
     const text = cell.textContent.trim().toUpperCase();
     if (text && text !== '*') {
-      counts[text] = (counts[text] || 0) + 1;
+      acc[text] = (acc[text] || 0) + 1;
     }
-  });
-    if (text && text !== '*') acc[text] = (acc[text] || 0) + 1;
     return acc;
   }, {});
 
   const reportHtml = Object.keys(counts)
     .sort((a, b) => counts[b] - counts[a])
-    .map(sigla => {
-      const nome = map[sigla] || 'Não cadastrado';
-      return `
     .map(sigla => `
-        <div class="report-row">
-          <span class="report-sigla">${sigla}</span>
-          <span class="report-name">${nome}</span>
-          <span class="report-name">${map[sigla] || 'Não cadastrado'}</span>
-          <span class="report-count">${counts[sigla]} aulas</span>
-        </div>`;
-    }).join('');
-    ).join('');
+      <div class="report-row">
+        <span class="report-sigla">${sigla}</span>
+        <span class="report-name">${map[sigla] || 'Não cadastrado'}</span>
+        <span class="report-count">${counts[sigla]} aulas</span>
+      </div>`).join('');
 
   const listContainer = Object.assign(document.createElement('div'), {
     className: 'teacher-list-container',
@@ -236,31 +226,31 @@ function checkConflicts(cell) {
   const editableInRow = Array.from(row.querySelectorAll('[contenteditable="true"]'));
   if (editableInRow.length === 0) return;
   
+
   const teacherMap = getTeacherMap();
   const frequencyMap = new Map();
+  const rowData = [];
 
-  // Passo 1: Limpar estados e mapear dados em O(n)
-  const rowData = editableInRow.map(c => {
+  // Limpeza de estados e cálculo de frequências em um único passo
+  for (const c of editableInRow) {
     c.classList.remove('conflict-error');
     c.removeAttribute('title');
     const txt = c.textContent.trim().toUpperCase();
     const base = txt.split('(')[0].trim();
     const teacher = teacherMap[txt] || teacherMap[base] || null;
     const isSpecialist = specialists.includes(txt) || txt === '*' || !txt;
+    const key = teacher || txt;
 
     if (!isSpecialist) {
-      const key = teacher || txt;
       frequencyMap.set(key, (frequencyMap.get(key) || 0) + 1);
     }
+    rowData.push({ element: c, text: txt, teacher, isSpecialist, key });
+  }
 
-    return { element: c, text: txt, teacher, isSpecialist };
-  });
-
-  // Passo 2: Marcar conflitos em O(n)
+  // Identificação de conflitos
   rowData.forEach(item => {
     if (item.isSpecialist) return;
-    const key = item.teacher || item.text;
-    if (frequencyMap.get(key) > 1) {
+    if (frequencyMap.get(item.key) > 1) {
       item.element.classList.add('conflict-error');
       item.element.title = item.teacher 
         ? `Conflito: Professor ${item.teacher} em múltiplas salas.` 
