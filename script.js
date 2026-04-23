@@ -141,23 +141,30 @@ function showWorkloadReport() {
   
   // Contabiliza as aulas
   cells.forEach(cell => {
+  const counts = Array.from(cells).reduce((acc, cell) => {
     const text = cell.textContent.trim().toUpperCase();
     if (text && text !== '*') {
       counts[text] = (counts[text] || 0) + 1;
     }
   });
+    if (text && text !== '*') acc[text] = (acc[text] || 0) + 1;
+    return acc;
+  }, {});
 
   const reportHtml = Object.keys(counts)
     .sort((a, b) => counts[b] - counts[a])
     .map(sigla => {
       const nome = map[sigla] || 'Não cadastrado';
       return `
+    .map(sigla => `
         <div class="report-row">
           <span class="report-sigla">${sigla}</span>
           <span class="report-name">${nome}</span>
+          <span class="report-name">${map[sigla] || 'Não cadastrado'}</span>
           <span class="report-count">${counts[sigla]} aulas</span>
         </div>`;
     }).join('');
+    ).join('');
 
   const listContainer = Object.assign(document.createElement('div'), {
     className: 'teacher-list-container',
@@ -205,10 +212,12 @@ const saveContent = debounce((key, text) => {
       indicator.style.opacity = '1';
       showToast("Alterações salvas", "success");
       setTimeout(() => { indicator.style.opacity = '0'; }, 2000);
+      notifySave();
     }
   } catch (e) {
     console.error("Erro ao salvar no localStorage. O limite pode ter sido excedido.", e);
     alert("Erro crítico: Não foi possível salvar as alterações. Verifique o espaço do navegador.");
+    showToast("Erro ao salvar: Espaço cheio", "error");
   }
 });
 
@@ -812,6 +821,13 @@ function toggleTheme() {
   if (icon) icon.textContent = isDark ? '☀️' : '🌙';
 }
 
+function notifySave() {
+  const indicator = document.getElementById('save-indicator');
+  if (!indicator) return;
+  indicator.style.opacity = '1';
+  setTimeout(() => { indicator.style.opacity = '0'; }, 2000);
+}
+
 // Alterna entre modo de edição e modo de leitura
 function toggleLockMode() {
   const body = document.body;
@@ -875,6 +891,21 @@ function exportToCsv() {
   link.href = URL.createObjectURL(blob);
   link.setAttribute("download", `horario_escolar_${new Date().toLocaleDateString()}.csv`);
   link.click();
+}
+
+/**
+ * Limpa todos os dados de horários salvos após confirmação.
+ */
+function clearAllScheduleData() {
+  if (confirm("ATENÇÃO: Isso apagará todas as aulas lançadas permanentemente. Deseja continuar?")) {
+    saveStateToHistory();
+    localStorage.removeItem(STORAGE_KEY);
+    cells.forEach(cell => {
+      cell.textContent = '';
+      applyDynamicStyles(cell);
+    });
+    showToast("Horário limpo com sucesso", "info");
+  }
 }
 
 // Exporta todo o banco de dados (localStorage) para um arquivo JSON
