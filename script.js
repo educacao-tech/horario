@@ -34,7 +34,7 @@ function getLayouts() {
 
 // Configurações iniciais (Fallback)
 const DEFAULT_SPECIALIST_SIGLAS = ['A(S)', 'A(M)', 'EF(M)', 'EF(P)', 'CT(D)', 'EDM(L)', 'EDM', 'EL', 'MTF', 'PI', 'PII'];
-const DATA_CATEGORIES = ['HL', 'HTPC', 'PD', 'EL', 'MTF'];
+const DATA_CATEGORIES = ['HL', 'HTPC', 'PD', 'EL', 'MTF', 'A(S)', 'A(M)', 'EF(M)', 'EF(P)', 'CT(D)', 'EDM(L)'];
 
 // Mapa padrão (Fallback caso o storage esteja vazio)
 const DEFAULT_TEACHER_MAP = {
@@ -109,6 +109,31 @@ function refreshTableUI() {
   });
 }
 
+// Helper universal para criação de Modais com transições
+function createModal(titleText, contentElement, footerButtons = []) {
+  const overlay = Object.assign(document.createElement('div'), { className: 'modal-overlay' });
+  const modal = Object.assign(document.createElement('div'), { className: 'modal' });
+  const header = Object.assign(document.createElement('div'), { className: 'modal-header' });
+  header.innerHTML = `<h2>${titleText}</h2>`;
+  
+  const footer = Object.assign(document.createElement('div'), { className: 'modal-footer' });
+  footerButtons.forEach(btn => footer.appendChild(btn));
+
+  modal.append(header, contentElement, footer);
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+  
+  // Trigger para animação
+  setTimeout(() => overlay.classList.add('show'), 10);
+
+  const close = () => {
+    overlay.classList.remove('show');
+    setTimeout(() => overlay.remove(), 300);
+  };
+
+  return { overlay, close };
+}
+
 // --- DASHBOARD DE CARGA HORÁRIA ---
 function showWorkloadReport() {
   const map = getTeacherMap();
@@ -134,16 +159,18 @@ function showWorkloadReport() {
         </div>`;
     }).join('');
 
-  const modal = document.createElement('div');
-  modal.className = 'modal-overlay';
-  modal.style.display = 'flex';
-  modal.innerHTML = `
-    <div class="modal workload-modal">
-      <h2>📊 Relatório de Carga Horária</h2>
-      <div class="teacher-list-container">${reportHtml || '<p>Nenhuma aula lançada.</p>'}</div>
-      <div class="modal-footer"><button class="btn btn-primary" onclick="this.closest('.modal-overlay').remove()">Fechar</button></div>
-    </div>`;
-  document.body.appendChild(modal);
+  const listContainer = Object.assign(document.createElement('div'), {
+    className: 'teacher-list-container',
+    innerHTML: reportHtml || '<p style="padding:20px; text-align:center;">Nenhuma aula lançada.</p>'
+  });
+
+  const btnClose = Object.assign(document.createElement('button'), {
+    className: 'btn btn-primary',
+    textContent: 'Fechar'
+  });
+
+  const modal = createModal('📊 Relatório de Carga Horária', listContainer, [btnClose]);
+  btnClose.onclick = () => modal.close();
 }
 
 // Gera uma chave única para a célula baseada no contexto (Período + Horário + Especialista)
@@ -242,14 +269,18 @@ function applyDynamicStyles(cell) {
   const teacherName = teacherMap[text] || teacherMap[baseCode];
 
   // Remove classes de legenda antigas
-  cell.classList.remove('hl', 'pd', 'el', 'mtf');
+  const classesToRemove = DATA_CATEGORIES.map(cat => cat.toLowerCase().replace(/[()]/g, ''));
+  cell.classList.remove(...classesToRemove, 'hl');
+  
   cell.removeAttribute('data-teacher'); // Limpa o nome do professor exibido dentro da célula
   cell.removeAttribute('title'); // Limpa o tooltip anterior
   
-  if (text === 'HL' || text === 'HTPC') cell.classList.add('hl');
-  else if (text === 'PD') cell.classList.add('pd');
-  else if (text === 'EL') cell.classList.add('el');
-  else if (text === 'MTF') cell.classList.add('mtf');
+  if (text === 'HL' || text === 'HTPC') {
+    cell.classList.add('hl');
+  } else {
+    const catClass = text.toLowerCase().replace(/[()]/g, '');
+    if (classesToRemove.includes(catClass)) cell.classList.add(catClass);
+  }
 
   // Define o atributo 'title' para mostrar o nome completo do professor no hover
   if (teacherName) {
@@ -893,8 +924,9 @@ function updateHighlights() {
   const day = now.getDay(); // 0=Dom, 1=Seg, 2=Ter, 3=Qua, 4=Qui, 5=Sex, 6=Sab
 
   // Remove destaques antigos
-  document.querySelectorAll('.current-active').forEach(el => el.classList.remove('current-active'));
-  document.querySelectorAll('.current-row-active').forEach(el => el.classList.remove('current-row-active'));
+  document.querySelectorAll('.current-active, .current-row-active, .current-day-col').forEach(el => {
+    el.classList.remove('current-active', 'current-row-active', 'current-day-col');
+  });
 
   if (day < 1 || day > 5) return; // Não destaca nada nos fins de semana
 
@@ -904,8 +936,22 @@ function updateHighlights() {
   document.querySelectorAll('table').forEach((table) => {
     const currentLayout = table.closest('#section-morning') ? layouts.morning : layouts.afternoon;
 
-    // Destaca o cabeçalho do dia atual (Segunda é índice 1)
+    // 1. Destaca o cabeçalho do dia atual (Segunda é índice 1 no row 0)
     if (table.rows[0].cells[day]) table.rows[0].cells[day].classList.add('current-active');
+
+    // 2. Calcula e destaca a "faixa" (stripe) de colunas do dia atual
+    let colOffset = 0;
+    for (let i = 0; i < day - 1; i++) colOffset += currentLayout[i];
+    const colsInDay = currentLayout[day - 1];
+
+    for (let c = 0; c < colsInDay; c++) {
+      const specHeader = table.rows[1].cells[colOffset + c];
+      if (specHeader) specHeader.classList.add('current-active');
+      for (let r = 2; r < table.rows.length; r++) {
+        const cell = table.rows[r].cells[colOffset + c + 1];
+        if (cell) cell.classList.add('current-day-col');
+      }
+    }
 
     for (let i = 2; i < table.rows.length; i++) {
       const row = table.rows[i];
@@ -1223,19 +1269,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 function openTeacherManager() {
   const map = getTeacherMap();
   
-  // Criação de elementos de forma segura (Prevenção de XSS)
-  const overlay = Object.assign(document.createElement('div'), {
-    className: 'modal-overlay',
-    id: 'teacher-modal'
-  });
-  overlay.classList.add('show'); // Use class for transition
-
-  const modal = document.createElement('div');
-  modal.className = 'modal';
-  
-  const title = document.createElement('h2');
-  title.textContent = 'Gerenciar Professores';
-  
   const listContainer = Object.assign(document.createElement('div'), {
     className: 'teacher-list-container',
     id: 'modal-teacher-list'
@@ -1258,19 +1291,13 @@ function openTeacherManager() {
   const inputNome = Object.assign(document.createElement('input'), { id: 'new-nome', placeholder: 'Nome do Professor', className: 'search-field' });
   form.append(inputSigla, inputNome, createBtn('➕ Adicionar', 'btn-primary', addTeacherToRegistry));
 
-  const footer = document.createElement('div');
-  footer.className = 'modal-footer';
-  const closeBtn = createBtn('Fechar', '', () => {
-    overlay.classList.remove('show'); // Trigger fade-out
-    // Remove o modal do DOM após a transição para evitar que ele bloqueie interações
-    setTimeout(() => overlay.remove(), 300); 
-  });
-  const saveAndReloadBtn = createBtn('Salvar e Reiniciar', 'btn-success', saveTeacherRegistryAndReload);
-  footer.append(closeBtn, saveAndReloadBtn);
+  const wrapper = document.createElement('div');
+  wrapper.append(listContainer, form);
 
-  modal.append(title, listContainer, form, footer);
-  overlay.appendChild(modal);
-  document.body.appendChild(overlay);
+  const closeBtn = createBtn('Fechar', '', () => modal.close());
+  const saveAndReloadBtn = createBtn('Salvar e Reiniciar', 'btn-success', saveTeacherRegistryAndReload);
+  
+  const modal = createModal('Gerenciar Professores', wrapper, [closeBtn, saveAndReloadBtn]);
   renderTeacherList(map);
 }
 

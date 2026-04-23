@@ -14,6 +14,7 @@
 4. [ ] **Testes mobile** (DevTools, touch targets 48px+)
 5. [ ] **Lighthouse audit** (Performance/Accessibility 100/100)
 6. [ ] **Finalização** (update TODO + completion)
+7. [x] **Refatoração de Modais** (Unificação da lógica de overlay e animações)
 
 ## 🎨 FOCO DAS MELHORIAS
 | Área | Impacto Visual | Esforço |
