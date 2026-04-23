@@ -3,7 +3,13 @@ const THEME_KEY = 'school_schedule_theme';
 const TEACHER_REGISTRY_KEY = 'school_teachers_v1';
 const FILTER_DAY_KEY = 'school_filter_day_v1';
 const CONFIG_KEY = 'school_config_v1';
-const cells = document.querySelectorAll('[contenteditable="true"]');
+const ZOOM_KEY = 'school_zoom_v1';
+let cells = document.querySelectorAll('[contenteditable="true"]');
+
+function refreshCells() {
+  cells = document.querySelectorAll('[contenteditable="true"]');
+  updateAriaStatus();
+}
 let activeSuggestionIndex = -1;
 
 // Histórico para Undo/Redo
@@ -13,10 +19,18 @@ const redoStack = [];
 // Controle de estado para notificações
 let lastActivePeriodType = null;
 
-const LAYOUTS = {
-  morning: [6, 5, 4, 4, 5],
-  afternoon: [5, 4, 4, 5, 4]
-};
+// Configuração de Layouts (Agora suporta override via localStorage para escalabilidade)
+function getLayouts() {
+  const stored = localStorage.getItem(CONFIG_KEY);
+  if (stored) {
+    const config = JSON.parse(stored);
+    if (config.layouts) return config.layouts;
+  }
+  return {
+    morning: [6, 5, 4, 4, 5],
+    afternoon: [5, 4, 4, 5, 4]
+  };
+}
 
 // Configurações iniciais (Fallback)
 const DEFAULT_SPECIALIST_SIGLAS = ['A(S)', 'A(M)', 'EF(M)', 'EF(P)', 'CT(D)', 'EDM(L)', 'EDM', 'EL', 'MTF', 'PI', 'PII'];
@@ -102,7 +116,7 @@ function showWorkloadReport() {
   
   // Contabiliza as aulas
   cells.forEach(cell => {
-    const text = cell.innerText.trim().toUpperCase();
+    const text = cell.textContent.trim().toUpperCase();
     if (text && text !== '*') {
       counts[text] = (counts[text] || 0) + 1;
     }
@@ -139,8 +153,8 @@ function getCellKey(cell) {
   const sectionId = section ? section.id : 'unknown';
   const rowIndex = cell.parentElement.rowIndex;
   const colIndex = cell.cellIndex;
-  const time = table.rows[rowIndex].cells[0].innerText.trim();
-  const specialist = table.rows[1].cells[colIndex - 1]?.innerText.trim() || `col_${colIndex}`;
+  const time = table.rows[rowIndex].cells[0].textContent.trim();
+  const specialist = table.rows[1].cells[colIndex - 1]?.textContent.trim() || `col_${colIndex}`;
   return `sched_${sectionId}_${time}_${specialist}`.replace(/[^a-zA-Z0-9]/g, '_');
 }
 
@@ -173,7 +187,7 @@ const saveContent = debounce((key, text) => {
 
 // Detecta se a mesma turma está em duas salas no mesmo horário
 function checkConflicts(cell) {
-  const rawText = cell.innerText.trim().toUpperCase();
+  const rawText = cell.textContent.trim().toUpperCase();
   const specialists = getSpecialistSiglas();
   if (!rawText || rawText === '*' || specialists.includes(rawText)) {
     cell.classList.remove('conflict-error');
@@ -193,7 +207,7 @@ function checkConflicts(cell) {
   const rowData = editableInRow.map(c => {
     c.classList.remove('conflict-error');
     c.removeAttribute('title');
-    const txt = c.innerText.trim().toUpperCase();
+    const txt = c.textContent.trim().toUpperCase();
     const base = txt.split('(')[0].trim();
     const teacher = teacherMap[txt] || teacherMap[base] || null;
     const isSpecialist = specialists.includes(txt) || txt === '*' || !txt;
@@ -203,12 +217,7 @@ function checkConflicts(cell) {
       frequencyMap.set(key, (frequencyMap.get(key) || 0) + 1);
     }
 
-    return {
-      element: c,
-      text: txt,
-      teacher,
-      isSpecialist
-    };
+    return { element: c, text: txt, teacher, isSpecialist };
   });
 
   // Passo 2: Marcar conflitos em O(n)
@@ -226,7 +235,7 @@ function checkConflicts(cell) {
 
 // Aplica cores baseadas no texto (HL, PD, etc)
 function applyDynamicStyles(cell) {
-  const text = cell.innerText.trim().toUpperCase();
+  const text = cell.textContent.trim().toUpperCase();
   const baseCode = text.split('(')[0].trim(); // Extrai "3B" de "3B(N)"
   const teacherMap = getTeacherMap();
   const specialists = getSpecialistSiglas();
@@ -261,7 +270,7 @@ function loadData() {
   cells.forEach((cell) => {
     const key = getCellKey(cell);
     if (data[key] !== undefined) {
-      cell.innerText = data[key];
+      cell.textContent = data[key];
       applyDynamicStyles(cell);
       checkConflicts(cell); // Valida conflitos já no carregamento
     }
@@ -275,7 +284,7 @@ function loadData() {
     cell.setAttribute('role', 'textbox');
     cell.tabIndex = 0; // Permite que a célula receba foco mesmo se não for editável
     cell.setAttribute('aria-multiline', 'false');
-    const timeHeader = cell.closest('tr').querySelector('td:first-child')?.innerText || 'Horário desconhecido';
+    const timeHeader = cell.closest('tr').querySelector('td:first-child')?.textContent || 'Horário desconhecido';
     const colInfo = getDayAndColIndices(cell);
     cell.setAttribute('aria-label', `Aula de ${colInfo.specialist} às ${timeHeader}`);
   });
@@ -286,7 +295,7 @@ function loadData() {
 // Função para forçar a revalidação de todos os conflitos (útil após carga de dados)
 function validateAllConflicts() {
     cells.forEach(cell => {
-        if (cell.innerText.trim()) checkConflicts(cell);
+        if (cell.textContent.trim()) checkConflicts(cell);
     });
 }
 
@@ -311,7 +320,7 @@ document.addEventListener('paste', (e) => {
 document.addEventListener('input', (e) => {
   if (e.target.getAttribute('contenteditable') === 'true') {
     const key = getCellKey(e.target);
-    const text = e.target.innerText;
+    const text = e.target.textContent;
     
     applyDynamicStyles(e.target);
     checkConflicts(e.target);
@@ -335,7 +344,8 @@ const timeToMinutes = (str) => {
 function getDayAndColIndices(cell) {
   const table = cell.closest('table');
   const colIndex = cell.cellIndex;
-  const layout = table.closest('#section-morning') ? LAYOUTS.morning : LAYOUTS.afternoon;
+  const layouts = getLayouts();
+  const layout = table.closest('#section-morning') ? layouts.morning : layouts.afternoon;
   
   let dayIdx = 0;
   let colSum = 0;
@@ -346,7 +356,7 @@ function getDayAndColIndices(cell) {
       break;
     }
   }
-  const specialist = table.rows[1].cells[colIndex - 1]?.innerText || '';
+  const specialist = table.rows[1].cells[colIndex - 1]?.textContent || '';
   return { dayIdx, specialist, table };
 }
 
@@ -377,7 +387,8 @@ function filterByDay(selectedDayIndex) {
       container.scrollTo({ left: 0, behavior: 'smooth' });
     }
 
-    const layout = table.closest('#section-morning') ? LAYOUTS.morning : LAYOUTS.afternoon;
+    const layouts = getLayouts();
+    const layout = table.closest('#section-morning') ? layouts.morning : layouts.afternoon;
     const rows = table.rows;
 
     // 1. Ocultar/Mostrar os cabeçalhos dos dias (Linha 0)
@@ -428,7 +439,7 @@ function highlightOccurrences(text) {
   const cleanText = text.trim().toUpperCase();
   
   cells.forEach(c => {
-    const cellText = c.innerText.trim().toUpperCase();
+    const cellText = c.textContent.trim().toUpperCase();
     const cellBaseCode = cellText.split('(')[0].trim();
     
     if (cleanText && (cellText.includes(cleanText) || cellBaseCode === cleanText) && !['*', ''].includes(cleanText)) {
@@ -447,7 +458,7 @@ document.addEventListener('focusin', (e) => {
 
   if (isEditable || isReadonlyMode) {
     updateStatusBar(cell);
-    highlightOccurrences(cell.innerText);
+    highlightOccurrences(cell.textContent);
 
     const colIndex = cell.cellIndex;
     const table = cell.closest('table');
@@ -478,7 +489,7 @@ document.addEventListener('focusin', (e) => {
 
 function showSuggestions(cell) {
   removeSuggestions();
-  const input = cell.innerText.trim().toUpperCase();
+  const input = cell.textContent.trim().toUpperCase();
   if (!input) return;
 
   const map = getTeacherMap();
@@ -501,7 +512,7 @@ function showSuggestions(cell) {
     item.className = 'suggestion-item';
     item.innerHTML = `<strong>${sigla}</strong> - <small>${map[sigla].split(' (')[0]}</small>`;
     item.onclick = () => {
-      cell.innerText = sigla;
+      cell.textContent = sigla;
       const key = getCellKey(cell);
       saveContent(key, sigla);
       applyDynamicStyles(cell);
@@ -666,7 +677,7 @@ function updateActiveSuggestion(items) {
 
 // Função isolada para atualizar a barra de status
 function updateStatusBar(cell) {
-    const text = cell.innerText.trim().toUpperCase();
+    const text = cell.textContent.trim().toUpperCase();
     const baseCode = text.split('(')[0].trim();
     const teacherMap = getTeacherMap();
     const teacherName = teacherMap[text] || teacherMap[baseCode];
@@ -686,7 +697,7 @@ function updateStatusBar(cell) {
     // Usa o índice da célula para encontrar o especialista correspondente na linha 1
     const professorHeader = table.rows[1].cells[colIndex - 1];
     if (professorHeader) {
-      const sigla = professorHeader.innerText.trim().toUpperCase();
+      const sigla = professorHeader.textContent.trim().toUpperCase();
       const specialists = getSpecialistSiglas();
       const nomeProf = teacherMap[sigla] || `Especialista: ${sigla}`;
       
@@ -700,33 +711,74 @@ function updateStatusBar(cell) {
       
       statusBar.innerHTML = `
         <div class="status-item"><b>Especialista:</b> ${nomeProf}</div>
-        <div class="status-item"><b>Sala/Turma:</b> ${cell.innerText || '(vazia)'}${nomeRegente}</div>
+        <div class="status-item"><b>Sala/Turma:</b> ${cell.textContent || '(vazia)'}${nomeRegente}</div>
       `;
 
       professorHeader.classList.add('header-highlight');
     }
     
     // Sugestão de UX: Mostrar carga horária da turma selecionada
-    const count = Array.from(cells).filter(c => c.innerText.trim().toUpperCase() === text).length;
-    if (text && text !== '*') {
+    const count = Array.from(cells).filter(c => c.textContent.trim().toUpperCase() === text).length;
+    if (text && text !== '*' && text !== '') {
         document.getElementById('statusBar').innerHTML += `<div class="status-item"><b>Aulas na Semana:</b> ${count}</div>`;
     }
+}
+
+// --- CONTROLE DE ZOOM ---
+function initZoom() {
+  const savedZoom = localStorage.getItem(ZOOM_KEY) || "1";
+  applyZoom(parseFloat(savedZoom));
+
+  const container = document.getElementById('zoom-container');
+  if (!container) return;
+
+  const zoomGroup = document.createElement('div');
+  zoomGroup.className = 'header-zoom-controls';
+  
+  const btnOut = Object.assign(document.createElement('button'), { className: 'btn', textContent: 'A-', title: 'Diminuir Zoom' });
+  const btnReset = Object.assign(document.createElement('button'), { className: 'btn', textContent: '100%', title: 'Resetar Zoom' });
+  const btnIn = Object.assign(document.createElement('button'), { className: 'btn', textContent: 'A+', title: 'Aumentar Zoom' });
+
+  btnOut.onclick = () => changeZoom(-0.1);
+  btnReset.onclick = () => applyZoom(1);
+  btnIn.onclick = () => changeZoom(0.1);
+
+  zoomGroup.append(btnOut, btnReset, btnIn);
+  container.appendChild(zoomGroup);
+}
+
+function changeZoom(delta) {
+  const currentZoom = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--zoom'));
+  const newZoom = Math.min(Math.max(currentZoom + delta, 0.5), 1.5); // Limite entre 50% e 150%
+  applyZoom(newZoom);
+}
+
+function applyZoom(value) {
+  const zoomValue = value.toFixed(1);
+  document.documentElement.style.setProperty('--zoom', zoomValue);
+  localStorage.setItem(ZOOM_KEY, zoomValue);
+  
+  // Atualiza o texto do botão de reset se ele existir
+  const btnReset = document.querySelector('button[title="Resetar Zoom"]');
+  if (btnReset) btnReset.textContent = `${Math.round(zoomValue * 100)}%`;
 }
 
 function applyTheme() {
   const savedTheme = localStorage.getItem(THEME_KEY);
   const btn = document.getElementById('theme-toggle');
+  const icon = btn?.querySelector('.theme-icon');
   if (savedTheme === 'dark') {
     document.body.classList.add('dark-theme');
-    if (btn) btn.innerHTML = '☀️ Tema Claro';
+    if (icon) icon.textContent = '☀️';
   }
 }
 
 function toggleTheme() {
   const isDark = document.body.classList.toggle('dark-theme');
   const btn = document.getElementById('theme-toggle');
+  const icon = btn?.querySelector('.theme-icon');
   localStorage.setItem(THEME_KEY, isDark ? 'dark' : 'light');
-  if (btn) btn.innerHTML = isDark ? '☀️ Tema Claro' : '🌙 Tema Escuro';
+  if (icon) icon.textContent = isDark ? '☀️' : '🌙';
 }
 
 // Alterna entre modo de edição e modo de leitura
@@ -746,6 +798,7 @@ function toggleLockMode() {
   }
   
   const isReadonly = body.classList.toggle('readonly');
+  const icon = btn?.querySelector('.lock-icon');
   cells.forEach(cell => {
     cell.contentEditable = !isReadonly;
   });
@@ -753,7 +806,8 @@ function toggleLockMode() {
   updateAriaStatus();
 
   if (isReadonly) {
-    btn.innerHTML = '🔒 Modo Leitura';
+    btn.childNodes[2].textContent = ' Modo Leitura';
+    if (icon) icon.textContent = '🔒';
     btn.style.background = '#64748b';
     // Limpa destaques ao travar
     document.querySelectorAll('.row-highlight, .col-highlight, .header-highlight').forEach(el => {
@@ -763,7 +817,8 @@ function toggleLockMode() {
     searchInput.value = ''; // Limpa o campo de busca
     highlightOccurrences(''); // Remove destaques da busca
   } else {
-    btn.innerHTML = '🔓 Modo Edição';
+    btn.childNodes[2].textContent = ' Modo Edição';
+    if (icon) icon.textContent = '🔓';
     btn.style.background = 'var(--primary)';
   }
 }
@@ -774,10 +829,10 @@ function exportToCsv() {
     const table = cell.closest('table');
     const sectionEl = cell.closest('[id^="section-"]');
     const section = sectionEl ? (sectionEl.querySelector('h2')?.innerText || "Geral") : "Geral";
-    const time = table.rows[cell.parentElement.rowIndex].cells[0].innerText;
-    const specialist = table.rows[1].cells[cell.cellIndex - 1]?.innerText || "";
-    const value = cell.innerText.trim();
-    const teacher = cell.getAttribute('data-teacher') || "";
+    const time = table.rows[cell.parentElement.rowIndex].cells[0].textContent;
+    const specialist = table.rows[1].cells[cell.cellIndex - 1]?.textContent || "";
+    const value = cell.textContent.trim();
+    const teacher = getTeacherMap()[value] || "";
     
     if (value && value !== '*') {
       csv += `${section};${time};${specialist};${value};${teacher}\n`;
@@ -839,20 +894,22 @@ function updateHighlights() {
 
   // Remove destaques antigos
   document.querySelectorAll('.current-active').forEach(el => el.classList.remove('current-active'));
+  document.querySelectorAll('.current-row-active').forEach(el => el.classList.remove('current-row-active'));
 
   if (day < 1 || day > 5) return; // Não destaca nada nos fins de semana
 
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const layouts = getLayouts();
 
   document.querySelectorAll('table').forEach((table) => {
-    const currentLayout = table.closest('#section-morning') ? LAYOUTS.morning : LAYOUTS.afternoon;
+    const currentLayout = table.closest('#section-morning') ? layouts.morning : layouts.afternoon;
 
     // Destaca o cabeçalho do dia atual (Segunda é índice 1)
     if (table.rows[0].cells[day]) table.rows[0].cells[day].classList.add('current-active');
 
     for (let i = 2; i < table.rows.length; i++) {
       const row = table.rows[i];
-      const timeText = row.cells[0].innerText;
+      const timeText = row.cells[0].textContent;
       const parts = timeText.split(' - ');
       let start = null,
         end = null;
@@ -866,6 +923,7 @@ function updateHighlights() {
       }
 
       if (start !== null && currentMinutes >= start && currentMinutes < end) {
+        row.classList.add('current-row-active');
         row.cells[0].classList.add('current-active'); // Destaca a célula do horário
 
         // Destaca a linha inteira
@@ -883,7 +941,8 @@ function applyStaticDayDividers() {
     const specialistRow = table.rows[1];
     if (!specialistRow) return;
 
-    const layout = table.closest('#section-morning') ? LAYOUTS.morning : LAYOUTS.afternoon;
+    const layouts = getLayouts();
+    const layout = table.closest('#section-morning') ? layouts.morning : layouts.afternoon;
     let colOffset = 0;
 
     layout.forEach((colsInDay, dayIdx) => {
@@ -930,7 +989,7 @@ function toggleCategory(category) {
       const th = specialistRow.cells[i];
       // Verifica se o cabeçalho ou a célula de legenda tem a classe correspondente
       const isMatch = th.classList.contains(category) || 
-                      th.innerText.trim().toUpperCase() === category.toUpperCase();
+                      th.textContent.trim().toUpperCase() === category.toUpperCase();
 
       if (isMatch) {
         th.classList.toggle('category-select', isActive);
@@ -945,7 +1004,7 @@ function toggleCategory(category) {
   // Caso especial HL: destaca células que contenham o texto HL/HTPC
   if (category === 'hl') {
     cells.forEach(cell => {
-      const txt = cell.innerText.trim().toUpperCase();
+      const txt = cell.textContent.trim().toUpperCase();
       if (txt === 'HL' || txt === 'HTPC') {
         cell.classList.toggle('category-select', isActive);
       }
@@ -1000,12 +1059,13 @@ function updateTimeCounter() {
   let nextPeriod = null;
   let minSecondsToNext = Infinity;
 
+  const layouts = getLayouts();
   document.querySelectorAll('table').forEach((table) => {
-    const currentLayout = table.closest('#section-morning') ? LAYOUTS.morning : LAYOUTS.afternoon;
+    const currentLayout = table.closest('#section-morning') ? layouts.morning : layouts.afternoon;
 
     for (let i = 2; i < table.rows.length; i++) {
       const row = table.rows[i];
-      const timeText = row.cells[0].innerText;
+      const timeText = row.cells[0].textContent;
       const parts = timeText.split(' - ');
       let startMinutes = null, endMinutes = null;
 
@@ -1118,8 +1178,8 @@ async function registerSW() {
       if (window.matchMedia('(display-mode: standalone)').matches) {
         const indicator = document.createElement('span');
         indicator.id = 'pwa-indicator';
-        indicator.innerHTML = '📱 <small>PWA</small>';
-        indicator.style.cssText = 'font-size: 0.8rem; color: #10b981; background: rgba(16,185,129,0.1); padding: 4px 8px; border-radius: 12px;';
+        indicator.innerHTML = '📱 <small>PWA</small>'; // O conteúdo HTML permanece o mesmo
+        indicator.classList.add('pwa-indicator'); // Adiciona a classe CSS para estilização
         document.querySelector('.toolbar').appendChild(indicator);
       }
     } catch (error) {
@@ -1131,6 +1191,7 @@ async function registerSW() {
 // Event listener para o select de filtro de dia + PWA init
 document.addEventListener('DOMContentLoaded', async () => {
   await registerSW(); // Inicializa PWA primeiro
+  initZoom(); // Inicializa controles de zoom
   
   const dayFilterSelect = document.getElementById('day-filter-select');
   
@@ -1141,6 +1202,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     dayFilterSelect.value = savedDay;
     dayFilterSelect.addEventListener('change', (e) => {
       filterByDay(parseInt(e.target.value));
+    });
+
+    // Adiciona listener para indicar rolagem horizontal na tabela
+    document.querySelectorAll('.table-container').forEach(container => {
+      const updateScrollShadow = () => {
+        container.classList.toggle('scrolled-right', container.scrollWidth > container.clientWidth && container.scrollLeft < (container.scrollWidth - container.clientWidth - 1));
+      };
+      container.addEventListener('scroll', updateScrollShadow);
+      updateScrollShadow(); // Executa na carga inicial
     });
   }
 
@@ -1158,7 +1228,7 @@ function openTeacherManager() {
     className: 'modal-overlay',
     id: 'teacher-modal'
   });
-  overlay.style.display = 'flex';
+  overlay.classList.add('show'); // Use class for transition
 
   const modal = document.createElement('div');
   modal.className = 'modal';
@@ -1190,10 +1260,13 @@ function openTeacherManager() {
 
   const footer = document.createElement('div');
   footer.className = 'modal-footer';
-  footer.append(
-    createBtn('Fechar', '', () => overlay.remove()),
-    createBtn('Salvar e Reiniciar', 'btn-success', saveTeacherRegistryAndReload)
-  );
+  const closeBtn = createBtn('Fechar', '', () => {
+    overlay.classList.remove('show'); // Trigger fade-out
+    // Remove o modal do DOM após a transição para evitar que ele bloqueie interações
+    setTimeout(() => overlay.remove(), 300); 
+  });
+  const saveAndReloadBtn = createBtn('Salvar e Reiniciar', 'btn-success', saveTeacherRegistryAndReload);
+  footer.append(closeBtn, saveAndReloadBtn);
 
   modal.append(title, listContainer, form, footer);
   overlay.appendChild(modal);
@@ -1203,7 +1276,9 @@ function openTeacherManager() {
 
 function renderTeacherList(map) {
   const container = document.getElementById('modal-teacher-list');
-  container.innerHTML = '';
+  if (!container) return;
+  
+  const fragment = document.createDocumentFragment();
   Object.keys(map).sort().forEach(sigla => {
     const item = document.createElement('div');
     item.className = 'teacher-item';
@@ -1238,7 +1313,22 @@ function renderTeacherList(map) {
     info.append(sSpan, nSpan);
     actions.append(editBtn, delBtn);
     item.append(info, actions);
-    container.appendChild(item);
+    fragment.appendChild(item);
+  });
+
+  container.innerHTML = '';
+  container.appendChild(fragment);
+}
+
+// Função para simular ou gerenciar estado de carregamento
+function toggleSkeleton(show) {
+  const allEditable = document.querySelectorAll('td[contenteditable]');
+  allEditable.forEach(cell => {
+    if (show) {
+      cell.classList.add('skeleton');
+    } else {
+      cell.classList.remove('skeleton');
+    }
   });
 }
 
@@ -1285,7 +1375,9 @@ function saveTeacherRegistryAndReload() {
   }
 }
 
-setInterval(() => {
+function tick() {
   updateTimeCounter();
   updateClock();
-}, 1000); // Atualiza o contador de tempo e o relógio a cada 1 segundo
+}
+
+setInterval(tick, 1000);

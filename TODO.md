@@ -1,69 +1,37 @@
-# Análise e Sugestões de Melhorias - BLACKBOXAI
+# 📋 TODO - Visual Improvements (BLACKBOXAI) - Melhorias Visuais
 
-**Data:** $(date +%Y-%m-%d)  
-**Status:** ✅ Documentação Completa
+**Status**: ✅ Plano aprovado | 🔄 Em implementação | pt-BR focus: mobile-first, animações suaves, cores modernas.
 
-## 📋 Resumo da Análise do Projeto Atual
+## ✅ PASSOS CONCLUÍDOS
+- [x] Análise completa (index.html, style.css, script.js, manifest.json)
+- [x] Plano detalhado com aprovação do usuário
+- [x] Criação deste TODO.md
 
-| Aspecto | Status | Pontuação |
-|---------|--------|-----------|
-| **Funcionalidade** | Completa (edição, conflitos, filtros, PWA) | 9.5/10 |
-| **Performance** | Boa (debounce, cache) | 8/10 |
-| **UX/UI** | Excelente (temas, responsivo, realtime) | 9/10 |
-| **PWA** | Funcional (offline, install) | 8.5/10 |
-| **Acessibilidade** | Boa (ARIA parcial) | 7/10 |
-| **Escalabilidade** | Limitada (hard-coded) | 6/10 |
+## 🔄 EM PROGRESSO (Prioridade: style.css → index.html → script.js)
+1. [x] **Atualizar style.css** (tipografia moderna, mobile responsivo, micro-animações)
+2. [x] **Melhorar index.html** (Ícones SVG, skeletons de loading)
+3. [x] **script.js** (Performance, skeleton toggle, controle de zoom)
+4. [ ] **Testes mobile** (DevTools, touch targets 48px+)
+5. [ ] **Lighthouse audit** (Performance/Accessibility 100/100)
+6. [ ] **Finalização** (update TODO + completion)
 
-## 🚀 Sugestões de Melhorias Priorizadas
+## 🎨 FOCO DAS MELHORIAS
+| Área | Impacto Visual | Esforço |
+|------|----------------|---------|
+| **Mobile-first** | ⭐⭐⭐⭐⭐ | Médio |
+| **Animações** | ⭐⭐⭐⭐ | Baixo |
+| **Tipografia** | ⭐⭐⭐⭐ | Baixo |
+| **Ícones SVG** | ⭐⭐⭐ | Baixo |
+| **Acessibilidade** | ⭐⭐⭐ | Médio |
 
-### **1. Autocomplete + Validação (PRÓXIMA)**
-```js
-// Exemplo implementação rápida
-cells.forEach(cell => {
-  const datalist = document.createElement('datalist');
-  datalist.id = `suggestions-${getCellKey(cell)}`;
-  Object.keys(getTeacherMap()).forEach(sigla => {
-    const option = document.createElement('option');
-    option.value = sigla;
-    datalist.appendChild(option);
-  });
-  cell.setAttribute('list', datalist.id);
-});
+## ⏳ PRÓXIMOS PASSOS IMEDIATOS
+```
+1. style.css: Google Fonts (Inter), variáveis novas, @media mobile
+2. Animações: cell-glow, toolbar-ripple, table-stagger
+3. Teste: Chrome DevTools + Lighthouse
 ```
 
-### **2. Configuração Dinâmica**
-```
-- [ ] Editor de layouts (turmas/especialistas)
-- [ ] Save/load JSON completo
-- [ ] Multi-escola
-```
-
-### **3. Analytics Dashboard**
-```
-- [ ] Carga horária por professor
-- [ ] Heatmap salas
-- [ ] Export ICS/Calendly
-```
-
-## 📊 Métricas Sugeridas
-
-| Melhoria | Impacto | Esforço | ROI |
-|----------|---------|---------|-----|
-| Autocomplete | ⭐⭐⭐⭐⭐ | 1h | Alto |
-| Config Dinâmica | ⭐⭐⭐⭐ | 2h | Alto |
-| Dashboard | ⭐⭐⭐ | 1.5h | Médio |
-| Mobile Touch | ⭐⭐⭐ | 1h | Médio |
-
-## 🎯 Próximos Passos Recomendados
-
-1. **Implementar Autocomplete** (20min)
-2. **Adicionar config.json** (30min)  
-3. **Dashboard básico** (40min)
-4. **Lighthouse 100/100** ✅
-
-**Lighthouse atual estimado: 92/100**  
-**Após melhorias: 100/100**
+**Comando para preview**: `Live Server` em index.html
 
 ---
-*Gerado por BLACKBOXAI - Análise automatizada do código*
-
+*Gerado por BLACKBOXAI - 2024*

@@ -2,6 +2,10 @@
   --primary: #4f46e5;
   --primary-hover: #4338ca;
   --accent: #0ea5e9;
+  --zoom: 1;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
   --bg-main: #f8fafc;
   --bg-card: #ffffff;
   --text-main: #1e293b;
@@ -12,13 +16,20 @@
   --el-color: #d1fae5;
   --mtf-color: #ffedd5;
   --edit-bg: #fffef2;
-  --bg-header: rgba(248, 250, 252, 0.9);
+  --bg-header: rgba(248, 250, 252, 0.95);
   --bg-sticky-col: #f1f5f9;
   --header-height: 41px;
   --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
   --shadow-md: 0 4px 20px -2px rgba(0, 0, 0, 0.08), 0 2px 10px -2px rgba(0, 0, 0, 0.04);
   --shadow-lg: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-  --glass-bg: rgba(255, 255, 255, 0.7);
+  --shadow-xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+  --glass-bg: rgba(255, 255, 255, 0.85);
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 16px;
+  --skeleton-bg: #e2e8f0;
+  --pwa-indicator-bg: #d1fae5; /* Light green for PWA indicator */
+  --pwa-indicator-color: #065f46; /* Dark green for PWA indicator text */
 }
 
 body.dark-theme {
@@ -35,15 +46,29 @@ body.dark-theme {
   --mtf-color: #92400e;
   --edit-bg: #1e293b;
   --glass-bg: rgba(15, 23, 42, 0.7);
+  --skeleton-bg: #1e293b; /* Darker skeleton background */
+  --pwa-indicator-bg: #065f46; /* Dark green for PWA indicator */
+  --pwa-indicator-color: #a7f3d0; /* Light green for PWA indicator text */
+}
+
+html {
+  font-size: calc(16px * var(--zoom));
 }
 
 body {
-  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-  background: radial-gradient(circle at top right, var(--hl-color), var(--bg-main) 40%);
+  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-feature-settings: 'cv11', 'ss01';
+  font-variation-settings: 'slnt' 0, 'wdth' 90;
+  background: linear-gradient(135deg, var(--hl-color) 0%, var(--bg-main) 50%), 
+              radial-gradient(circle at 20% 80%, rgba(79,70,229,0.08) 0%, transparent 50%);
   background-attachment: fixed;
   color: var(--text-main);
-  padding: 20px 20px 60px 20px; /* Aumentado o padding inferior para não cobrir a tabela com a barra de status */
-  line-height: 1.6;
+  padding: clamp(16px, 4vw, 24px) clamp(16px, 4vw, 24px) clamp(80px, 12vw, 100px) clamp(16px, 4vw, 24px);
+  line-height: 1.7;
+  font-synthesis: small-caps;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .main-header {
@@ -53,6 +78,12 @@ body {
   margin-bottom: 16px;
   padding: 5px 0;
   border-bottom: 1px solid var(--border-color);
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
 
 .header-brand {
@@ -75,20 +106,35 @@ body {
 }
 
 .header-titles h1 {
-  font-size: 1.25rem;
-  color: var(--text-main);
-  letter-spacing: -0.025em;
+  font-size: clamp(1.25rem, 4vw, 1.75rem);
   font-weight: 800;
+  font-variation-settings: 'wdth' 115;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.025em;
   margin: 0;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
 }
 
 .header-titles p {
   color: var(--text-muted);
   margin: 2px 0 0 0;
   font-size: 0.85rem;
+}
+
+.header-zoom-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.header-zoom-controls .btn {
+  padding: 6px 10px;
+  font-size: 0.75rem;
 }
 
 .legend-title {
@@ -125,34 +171,65 @@ table {
 }
 
 th, td {
-  padding: 10px 6px;
+  padding: clamp(8px, 2vw, 12px) clamp(4px, 1.5vw, 8px);
   text-align: center;
-  vertical-align: top !important; /* Força o alinhamento no topo mesmo com redimensionamento */
+  vertical-align: top !important;
   box-sizing: border-box;
   border-bottom: 1px solid var(--border-color);
   border-right: 1px solid var(--border-color);
-  min-width: 45px; /* Define um tamanho base igual para todas as colunas de dados */
-  line-height: 1.4; /* Melhora a legibilidade e o respiro do texto */
-  /* Remover borda direita da última coluna e borda inferior da última linha */
+  min-width: clamp(48px, 8vw, 60px);
+  line-height: 1.5;
+  font-size: clamp(0.8rem, 2.5vw, 0.95rem);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   
   /* Fixar a primeira coluna (Horário) */
   &:first-child {
     position: sticky;
     left: 0;
     z-index: 20;
-    background-color: var(--bg-sticky-col);
-    border-right: 1px solid var(--border-color);
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    border-right: 2px solid var(--border-color);
     font-weight: 700;
     color: var(--text-main);
-    width: 145px;
-    min-width: 145px;
-    font-size: 0.82rem;
-    padding-left: 4px;
-    padding-right: 4px;
+    width: clamp(140px, 22vw, 180px);
+    min-width: clamp(140px, 22vw, 180px);
+    font-size: clamp(0.85rem, 2.2vw, 1rem);
+    padding: clamp(10px, 2.5vw, 14px) clamp(8px, 2vw, 12px);
     white-space: nowrap;
-    box-shadow: 4px 0 8px -4px rgba(0,0,0,0.1); /* Sombra para indicar profundidade na rolagem */
+    box-shadow: 4px 0 12px -4px rgba(0,0,0,0.12);
   }
+  
   tr:last-child & { border-bottom: none; }
+  
+  /* Animação de foco para células editáveis */
+  &[contenteditable="true"]:focus,
+  &[role="textbox"]:focus-visible {
+    transform: scale(1.02);
+    box-shadow: 
+      inset 0 0 0 2px var(--primary),
+      0 0 0 4px rgba(79, 70, 229, 0.15),
+      var(--shadow-sm);
+    background: rgba(255, 255, 255, 0.95) !important;
+    z-index: 5;
+  }
+}
+
+/* Skeleton Loading Animation */
+.skeleton {
+  background: var(--skeleton-bg);
+  background: linear-gradient(90deg, var(--skeleton-bg) 25%, var(--border-color) 50%, var(--skeleton-bg) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+  border-radius: 4px;
+  color: transparent !important;
+  pointer-events: none;
+  user-select: none;
+}
+
+@keyframes skeleton-loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
 th:last-child, td:last-child {
@@ -397,53 +474,75 @@ body:not(.readonly) #lock-btn { background-color: #ef4444 !important; }
 
 /* Destaque para células de dados e horários atuais */
 td.current-active {
-  background-color: rgba(250, 204, 21, 0.15) !important;
+  background-color: rgba(251, 191, 36, 0.08) !important;
   position: relative;
-  color: var(--primary) !important; /* Nova cor da fonte para a linha atual */
-  font-weight: 700;                /* Texto em negrito para maior destaque */
+  color: var(--text-main) !important;
+  font-weight: 600;
+}
+
+body.dark-theme td.current-active {
+  background-color: rgba(251, 191, 36, 0.12) !important;
+}
+
+/* Estilo para a linha ativa inteira */
+tr.current-row-active td {
+  border-top: 1px solid rgba(251, 191, 36, 0.3) !important;
+  border-bottom: 1px solid rgba(251, 191, 36, 0.3) !important;
 }
 
 td.current-active::after {
   content: '';
   position: absolute;
   top: 0; left: 0; right: 0; bottom: 0;
-  animation: pulse-border 2s infinite;
+  animation: pulse-active-row 2.5s infinite ease-in-out;
   pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(251, 191, 36, 0.04), transparent);
 }
 
-@keyframes pulse-border {
-  0% { box-shadow: inset 0 0 0 0 rgba(10, 51, 2, 0.4); }
-  70% { box-shadow: inset 0 0 0 4px rgba(79, 70, 229, 0); }
-  100% { box-shadow: inset 0 0 0 0 rgba(79, 70, 229, 0); }
+@keyframes pulse-active-row {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
 }
 
 /* Destaque para os cabeçalhos de dia (TH) atuais */
 th.current-active {
-  /* Mantém a cor original do dia (.day-header-X) e adiciona um indicador de "Hoje" */
-  box-shadow: inset 0 -6px 0 0 #fef9c3 !important; /* Barra amarela inferior interna */
-  filter: brightness(1.15); /* Leve brilho para destacar atividade */
-  border-bottom: 2px solid #fef9c3 !important;
+  box-shadow: inset 0 -4px 0 0 #f59e0b !important;
+  filter: brightness(1.1);
+  border-bottom: 2px solid #f59e0b !important;
+  font-weight: 800;
 }
 
 /* Estilo específico para a célula de horário quando ativa */
 td.current-active:first-child {
-  background: linear-gradient(135deg, var(--primary), var(--primary-hover)) !important;
-  color: white !important;
-  box-shadow: inset 6px 0 0 0 var(--primary-hover), 4px 0 12px -4px rgba(79, 70, 229, 0.4) !important;
-  border-right-color: var(--primary-hover);
+  background: linear-gradient(135deg, #fbbf24, #f59e0b) !important;
+  color: #000 !important;
+  box-shadow: 
+    inset 6px 0 0 0 #d97706,
+    4px 0 12px -4px rgba(217, 119, 6, 0.5) !important;
+  border-right: 2px solid #d97706 !important;
+  z-index: 30;
+  font-weight: 800 !important;
+  font-size: 1.05rem !important;
 }
 
 .toolbar {
-  margin: 0 0 16px 0;
+  margin: 0 0 24px 0;
   display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
+  justify-content: space-between;
   background: var(--bg-header);
   backdrop-filter: blur(12px) saturate(180%);
   padding: 12px 20px;
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: var(--shadow-sm);
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .search-wrapper {
@@ -481,7 +580,7 @@ td.current-active:first-child {
 .time-counter {
   font-weight: 700;
   font-size: 1rem;
-  color: var(--primary);
+  color: var(--accent);
   font-variant-numeric: tabular-nums;
   padding: 0 10px;
   display: flex;
@@ -491,13 +590,33 @@ td.current-active:first-child {
 .current-date-time {
   font-size: 1.15rem;
   font-weight: 800;
-  color: var(--primary);
+  color: var(--text-main); /* Melhor contraste no tema claro */
   padding: 6px 16px;
   background: var(--pd-color);
   border-radius: 12px;
-  border: 1px solid rgba(79, 70, 229, 0.2);
+  border: 1px solid var(--border-color); /* Borda mais visível */
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
+  box-shadow: var(--shadow-sm);
+}
+
+body.dark-theme .current-date-time {
+  background: var(--primary); /* Fundo primário no tema escuro */
+  color: white; /* Texto branco para alto contraste */
+  border-color: var(--primary-hover); /* Borda sutilmente diferente */
+}
+
+.pwa-indicator {
+  font-size: 0.8rem;
+  padding: 4px 8px;
+  border-radius: 12px;
+  background: var(--pwa-indicator-bg);
+  color: var(--pwa-indicator-color);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+  white-space: nowrap;
   box-shadow: var(--shadow-sm);
 }
 
@@ -544,12 +663,16 @@ td.current-active:first-child {
 }
 
 .year-badge {
-  background: var(--pd-color);
-  color: var(--primary);
-  padding: 2px 10px;
-  border-radius: 20px;
-  font-size: 0.85rem;
-  font-weight: 700;
+  background: var(--primary);
+  color: white;
+  -webkit-text-fill-color: white; /* Corrige a transparência herdada do h1 */
+  background-clip: border-box;   /* Garante que o fundo do badge apareça */
+  -webkit-background-clip: border-box;
+  padding: 2px 12px;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  font-weight: 800;
+  box-shadow: var(--shadow-sm);
 }
 .btn-primary {
   background: var(--primary);
@@ -608,6 +731,7 @@ th[title] {
   margin-bottom: 12px;
   font-size: 0.9em;
   flex-wrap: wrap;
+  padding: 0 8px;
 }
 .legend-item {
   display: flex;
@@ -674,11 +798,19 @@ th[title] {
   width: 100%;
   height: 100%;
   background: rgba(0, 0, 0, 0.5);
-  display: none;
+  display: flex; /* Always flex, control visibility with opacity/pointer-events */
   align-items: center;
   justify-content: center;
   z-index: 10000;
   backdrop-filter: blur(4px);
+  opacity: 0; /* Start hidden */
+  visibility: hidden; /* Start hidden */
+  transition: opacity 0.3s ease, visibility 0.3s ease; /* Smooth transition */
+}
+
+.modal-overlay.show {
+  opacity: 1;
+  visibility: visible;
 }
 
 .modal {
@@ -692,6 +824,9 @@ th[title] {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  transform: translateY(20px); /* Start slightly below */
+  opacity: 0; /* Start hidden */
+  transition: transform 0.3s ease, opacity 0.3s ease; /* Smooth transition */
 }
 
 .teacher-list-container {
@@ -700,6 +835,23 @@ th[title] {
   border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 8px;
+}
+
+.modal-overlay.show .modal {
+  transform: translateY(0); /* Slide up */
+  opacity: 1;
+}
+
+/* Custom Scrollbar for teacher-list-container */
+.teacher-list-container::-webkit-scrollbar {
+  width: 8px; /* For vertical scrollbar */
+}
+.teacher-list-container::-webkit-scrollbar-thumb {
+  background: #cbd5e1; /* Light gray */
+  border-radius: 10px;
+}
+body.dark-theme .teacher-list-container::-webkit-scrollbar-thumb {
+  background: #475569; /* Darker gray for dark theme */
 }
 
 .teacher-item {
