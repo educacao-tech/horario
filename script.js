@@ -191,14 +191,14 @@ function saveStateToHistory() {
 
 const saveContent = debounce((key, text) => {
   try {
-    saveStateToHistory();
     const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    if (data[key] === text) return; // Evita salvamento redundante
+
     data[key] = text;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     
     const indicator = document.getElementById('save-indicator');
     if (indicator) {
-      indicator.innerHTML = '<span>✓</span> Salvo';
       indicator.style.opacity = '1';
       showToast("Alterações salvas", "success");
       setTimeout(() => { indicator.style.opacity = '0'; }, 2000);
@@ -296,7 +296,13 @@ function applyDynamicStyles(cell) {
 
 // Carregar dados (Estado Centralizado)
 function loadData() {
-  const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+  let data = {};
+  try {
+    data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+  } catch (e) {
+    console.error("Erro ao processar dados salvos:", e);
+    showToast("Erro ao carregar banco de dados", "error");
+  }
   cells.forEach((cell) => {
     const key = getCellKey(cell);
     if (data[key] !== undefined) {
@@ -487,6 +493,11 @@ document.addEventListener('focusin', (e) => {
   const isReadonlyMode = document.body.classList.contains('readonly');
 
   if (isEditable || isReadonlyMode) {
+    // Salva o estado atual ANTES da primeira modificação para um Undo limpo
+    if (isEditable) {
+      saveStateToHistory();
+    }
+
     updateStatusBar(cell);
     highlightOccurrences(cell.textContent);
 
@@ -1040,6 +1051,41 @@ function applyStaticDayDividers() {
       colOffset += colsInDay;
     });
   });
+}
+
+/**
+ * Copia a programação de um dia para outro
+ * @param {number} fromDay (1-5)
+ * @param {number} toDay (1-5)
+ */
+function copyDaySchedule(fromDay, toDay) {
+  if (!confirm(`Deseja copiar todos os dados da ${fromDay}ª feira para a ${toDay}ª feira?`)) return;
+  
+  saveStateToHistory();
+  const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+  const layouts = getLayouts();
+  
+  document.querySelectorAll('table').forEach(table => {
+    const layout = table.closest('#section-morning') ? layouts.morning : layouts.afternoon;
+    
+    // Mapeamento de colunas de origem e destino
+    const getCols = (day) => {
+      let start = 1; // Pula coluna horário
+      for(let i=0; i < day-1; i++) start += layout[i];
+      return Array.from({length: layout[day-1]}, (_, i) => start + i);
+    };
+
+    const fromCols = getCols(fromDay);
+    const toCols = getCols(toDay);
+
+    for (let r = 2; r < table.rows.length; r++) {
+      fromCols.forEach((fromCol, idx) => {
+        if (toCols[idx]) table.rows[r].cells[toCols[idx]].textContent = table.rows[r].cells[fromCol].textContent;
+      });
+    }
+  });
+  // Forçar salvamento global e refresh
+  cells.forEach(c => { applyDynamicStyles(c); checkConflicts(c); });
 }
 
 // Função para selecionar colunas/células através da legenda
