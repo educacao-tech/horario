@@ -1,9 +1,16 @@
-const STORAGE_KEY = 'school_schedule_v1';
-const THEME_KEY = 'school_schedule_theme';
-const TEACHER_REGISTRY_KEY = 'school_teachers_v1';
-const FILTER_DAY_KEY = 'school_filter_day_v1';
-const CONFIG_KEY = 'school_config_v1';
-const ZOOM_KEY = 'school_zoom_v1';
+const APP_CONFIG = {
+  KEYS: {
+    STORAGE: 'school_schedule_v1',
+    THEME: 'school_schedule_theme',
+    TEACHER_REGISTRY: 'school_teachers_v1',
+    FILTER_DAY: 'school_filter_day_v1',
+    CONFIG: 'school_config_v1',
+    ZOOM: 'school_zoom_v1'
+  },
+  HISTORY_LIMIT: 50,
+  DEBOUNCE_DELAY: 500
+};
+
 let cells = document.querySelectorAll('[contenteditable="true"]');
 
 function refreshCells() {
@@ -21,7 +28,7 @@ let lastActivePeriodType = null;
 
 // Configuração de Layouts (Agora suporta override via localStorage para escalabilidade)
 function getLayouts() {
-  const stored = localStorage.getItem(CONFIG_KEY);
+  const stored = localStorage.getItem(APP_CONFIG.KEYS.CONFIG);
   if (stored) {
     const config = JSON.parse(stored);
     if (config.layouts) return config.layouts;
@@ -74,7 +81,7 @@ let _specialistCache = null;
 // Getter para Siglas de Especialistas (Dinâmico)
 function getSpecialistSiglas() {
   if (_specialistCache) return _specialistCache;
-  const stored = localStorage.getItem(CONFIG_KEY);
+  const stored = localStorage.getItem(APP_CONFIG.KEYS.CONFIG);
   _specialistCache = stored ? JSON.parse(stored).specialists : DEFAULT_SPECIALIST_SIGLAS;
   return _specialistCache;
 }
@@ -84,7 +91,7 @@ function getTeacherMap() {
   if (_teacherMapCache) return _teacherMapCache;
 
   try {
-    const stored = localStorage.getItem(TEACHER_REGISTRY_KEY);
+    const stored = localStorage.getItem(APP_CONFIG.KEYS.TEACHER_REGISTRY);
     _teacherMapCache = stored ? JSON.parse(stored) : DEFAULT_TEACHER_MAP;
   } catch (e) {
     _teacherMapCache = DEFAULT_TEACHER_MAP;
@@ -93,7 +100,7 @@ function getTeacherMap() {
 }
 
 // Função para atrasar o salvamento (Debounce)
-function debounce(func, timeout = 500) {
+function debounce(func, timeout = APP_CONFIG.DEBOUNCE_DELAY) {
   let timer;
   return (...args) => {
     clearTimeout(timer);
@@ -183,19 +190,19 @@ function getCellKey(cell) {
 }
 
 function saveStateToHistory() {
-  const currentState = localStorage.getItem(STORAGE_KEY);
+  const currentState = localStorage.getItem(APP_CONFIG.KEYS.STORAGE);
   historyStack.push(currentState);
-  if (historyStack.length > 50) historyStack.shift(); // Limita a 50 passos
+  if (historyStack.length > APP_CONFIG.HISTORY_LIMIT) historyStack.shift();
   redoStack.length = 0; // Limpa o redo ao fazer nova alteração
 }
 
 const saveContent = debounce((key, text) => {
   try {
-    const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    const data = JSON.parse(localStorage.getItem(APP_CONFIG.KEYS.STORAGE) || '{}');
     if (data[key] === text) return; // Evita salvamento redundante
 
     data[key] = text;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    localStorage.setItem(APP_CONFIG.KEYS.STORAGE, JSON.stringify(data));
     
     const indicator = document.getElementById('save-indicator');
     if (indicator) {
@@ -298,11 +305,12 @@ function applyDynamicStyles(cell) {
 function loadData() {
   let data = {};
   try {
-    data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    data = JSON.parse(localStorage.getItem(APP_CONFIG.KEYS.STORAGE) || '{}');
   } catch (e) {
     console.error("Erro ao processar dados salvos:", e);
     showToast("Erro ao carregar banco de dados", "error");
   }
+  
   cells.forEach((cell) => {
     const key = getCellKey(cell);
     if (data[key] !== undefined) {
@@ -411,7 +419,7 @@ function getDayIndexForColumn(colIndex, layout) {
 // Função para filtrar as colunas por dia da semana
 function filterByDay(selectedDayIndex) {
   // Salva a preferência do usuário para persistência
-  localStorage.setItem(FILTER_DAY_KEY, selectedDayIndex);
+  localStorage.setItem(APP_CONFIG.KEYS.FILTER_DAY, selectedDayIndex);
   const selectedDay = parseInt(selectedDayIndex);
 
   document.querySelectorAll('table').forEach(table => {
@@ -668,20 +676,20 @@ document.addEventListener('keydown', (e) => {
 
 function undo() {
   if (historyStack.length === 0) return;
-  const currentState = localStorage.getItem(STORAGE_KEY);
+  const currentState = localStorage.getItem(APP_CONFIG.KEYS.STORAGE);
   redoStack.push(currentState);
   const previousState = historyStack.pop();
-  localStorage.setItem(STORAGE_KEY, previousState);
+  localStorage.setItem(APP_CONFIG.KEYS.STORAGE, previousState);
   loadData();
   showToast("Ação desfeita", "info");
 }
 
 function redo() {
   if (redoStack.length === 0) return;
-  const currentState = localStorage.getItem(STORAGE_KEY);
+  const currentState = localStorage.getItem(APP_CONFIG.KEYS.STORAGE);
   historyStack.push(currentState);
   const nextState = redoStack.pop();
-  localStorage.setItem(STORAGE_KEY, nextState);
+  localStorage.setItem(APP_CONFIG.KEYS.STORAGE, nextState);
   loadData();
   showToast("Ação refeita", "info");
 }
@@ -767,7 +775,7 @@ function updateStatusBar(cell) {
 
 // --- CONTROLE DE ZOOM ---
 function initZoom() {
-  const savedZoom = localStorage.getItem(ZOOM_KEY) || "1";
+  const savedZoom = localStorage.getItem(APP_CONFIG.KEYS.ZOOM) || "1";
   applyZoom(parseFloat(savedZoom));
 
   const container = document.getElementById('zoom-container');
@@ -797,7 +805,7 @@ function changeZoom(delta) {
 function applyZoom(value) {
   const zoomValue = value.toFixed(1);
   document.documentElement.style.setProperty('--zoom', zoomValue);
-  localStorage.setItem(ZOOM_KEY, zoomValue);
+  localStorage.setItem(APP_CONFIG.KEYS.ZOOM, zoomValue);
   
   // Atualiza o texto do botão de reset se ele existir
   const btnReset = document.querySelector('button[title="Resetar Zoom"]');
@@ -805,7 +813,7 @@ function applyZoom(value) {
 }
 
 function applyTheme() {
-  const savedTheme = localStorage.getItem(THEME_KEY);
+  const savedTheme = localStorage.getItem(APP_CONFIG.KEYS.THEME);
   const btn = document.getElementById('theme-toggle');
   const icon = btn?.querySelector('.theme-icon');
   if (savedTheme === 'dark') {
@@ -818,7 +826,7 @@ function toggleTheme() {
   const isDark = document.body.classList.toggle('dark-theme');
   const btn = document.getElementById('theme-toggle');
   const icon = btn?.querySelector('.theme-icon');
-  localStorage.setItem(THEME_KEY, isDark ? 'dark' : 'light');
+  localStorage.setItem(APP_CONFIG.KEYS.THEME, isDark ? 'dark' : 'light');
   if (icon) icon.textContent = isDark ? '☀️' : '🌙';
 }
 
@@ -900,7 +908,7 @@ function exportToCsv() {
 function clearAllScheduleData() {
   if (confirm("ATENÇÃO: Isso apagará todas as aulas lançadas permanentemente. Deseja continuar?")) {
     saveStateToHistory();
-    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(APP_CONFIG.KEYS.STORAGE);
     cells.forEach(cell => {
       cell.textContent = '';
       applyDynamicStyles(cell);
@@ -911,7 +919,7 @@ function clearAllScheduleData() {
 
 // Exporta todo o banco de dados (localStorage) para um arquivo JSON
 function exportBackupJSON() {
-  const data = localStorage.getItem(STORAGE_KEY);
+  const data = localStorage.getItem(APP_CONFIG.KEYS.STORAGE);
   if (!data) return alert("Não há dados para exportar.");
   
   const blob = new Blob([data], { type: 'application/json' });
@@ -938,7 +946,7 @@ function importBackupJSON() {
         JSON.parse(content); 
         
         if (confirm("Isso irá sobrescrever todos os dados atuais. Deseja continuar?")) {
-          localStorage.setItem(STORAGE_KEY, content);
+          localStorage.setItem(APP_CONFIG.KEYS.STORAGE, content);
           window.location.reload(); // Recarrega para aplicar os novos dados
         }
       } catch (err) {
@@ -1062,7 +1070,7 @@ function copyDaySchedule(fromDay, toDay) {
   if (!confirm(`Deseja copiar todos os dados da ${fromDay}ª feira para a ${toDay}ª feira?`)) return;
   
   saveStateToHistory();
-  const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+  const data = JSON.parse(localStorage.getItem(APP_CONFIG.KEYS.STORAGE) || '{}');
   const layouts = getLayouts();
   
   document.querySelectorAll('table').forEach(table => {
@@ -1309,7 +1317,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const dayFilterSelect = document.getElementById('day-filter-select');
   
   // Recupera o filtro salvo ou padrão (0 - Todos)
-  const savedDay = localStorage.getItem(FILTER_DAY_KEY) || "0";
+  const savedDay = localStorage.getItem(APP_CONFIG.KEYS.FILTER_DAY) || "0";
   
   if (dayFilterSelect) {
     dayFilterSelect.value = savedDay;
@@ -1443,7 +1451,7 @@ function addTeacherToRegistry() {
   const map = getTeacherMap();
   map[sigla] = nome;
   _teacherMapCache = map; // Atualiza o cache
-  localStorage.setItem(TEACHER_REGISTRY_KEY, JSON.stringify(map));
+  localStorage.setItem(APP_CONFIG.KEYS.TEACHER_REGISTRY, JSON.stringify(map));
   renderTeacherList(map);
   refreshTableUI(); // Atualiza a tabela imediatamente
   
@@ -1458,7 +1466,7 @@ function removeTeacherFromRegistry(sigla) {
   const map = getTeacherMap();
   delete map[sigla];
   _teacherMapCache = map; // Atualiza o cache
-  localStorage.setItem(TEACHER_REGISTRY_KEY, JSON.stringify(map));
+  localStorage.setItem(APP_CONFIG.KEYS.TEACHER_REGISTRY, JSON.stringify(map));
   renderTeacherList(map);
   refreshTableUI(); // Atualiza a tabela imediatamente
 }
