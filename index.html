@@ -29,7 +29,8 @@
     <div class="legend-item" onclick="toggleCategory('pd')"><div class="box pd"></div> <span><b>PD</b> Plantão</span></div>
     <div class="legend-item" onclick="toggleCategory('el')"><div class="box el"></div> <span><b>EL</b> Elefante</span></div>
     <div class="legend-item" onclick="toggleCategory('mtf')"><div class="box mtf"></div> <span><b>MTF</b> Matific</span></div>
-  
+  </div>
+
   <div class="toolbar">
     <button class="btn" style="background: var(--hl-color); color: var(--text-main);" onclick="openTeacherManager()">⚙️ Professores</button>
     <button class="btn btn-primary" onclick="window.print()">🖨️ Imprimir PDF</button>
@@ -220,7 +221,7 @@
     </div>
   </div>
 
-  <div class="status-bar" id="statusBar">
+  <div class="status-bar" id="statusBar" aria-live="polite" aria-atomic="true">
     <div class="status-item">Aguardando seleção...</div>
   </div>
 

@@ -39,16 +39,11 @@
 }
 
 .zoom-controls .btn {
-  padding: 2px 10px !important;
+  padding: 2px 10px;
   height: 30px;
   justify-content: center;
   background: var(--bg-card);
   color: var(--text-main);
-}
-
-.btn-reset-zoom {
-  background: var(--primary) !important;
-  color: white !important;
 }
 
 body.dark-theme {
@@ -128,6 +123,7 @@ body {
   width: 100%;
   overflow-x: auto;
   margin-bottom: 32px;
+  padding-top: 15px; /* Padding reduzido, pois não temos mais badge flutuante */
   background: var(--bg-card);
   border-radius: 16px;
   border: 1px solid var(--border-color);
@@ -162,27 +158,30 @@ th, td {
   border-right: 1px solid var(--border-color);
   min-width: 45px; /* Define um tamanho base igual para todas as colunas de dados */
   line-height: 1.4; /* Melhora a legibilidade e o respiro do texto */
-  /* Remover borda direita da última coluna e borda inferior da última linha */
-  &:last-child { border-right: none; }
-  
-  /* Fixar a primeira coluna (Horário) */
-  &:first-child {
-    position: sticky;
-    left: 0;
-    z-index: 20;
-    background-color: var(--bg-sticky-col);
-    border-right: 1px solid var(--border-color);
-    font-weight: 700;
-    color: var(--text-main);
-    width: calc(145px * var(--table-zoom));
-    min-width: calc(145px * var(--table-zoom));
-    font-size: 0.95em;
-    padding-left: 4px;
-    padding-right: 4px;
-    white-space: nowrap;
-    box-shadow: 4px 0 8px -4px rgba(0,0,0,0.1); /* Sombra para indicar profundidade na rolagem */
-  }
-  tr:last-child & { border-bottom: none; }
+}
+
+/* Remover borda direita da última coluna */
+th:last-child, td:last-child { border-right: none; }
+
+/* Borda inferior da última linha */
+tr:last-child th, tr:last-child td { border-bottom: none; }
+
+/* Fixar a primeira coluna (Horário) */
+th:first-child, td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 20;
+  background-color: var(--bg-sticky-col);
+  border-right: 1px solid var(--border-color);
+  font-weight: 700;
+  color: var(--text-main);
+  width: calc(145px * var(--table-zoom));
+  min-width: calc(145px * var(--table-zoom));
+  font-size: 0.95em;
+  padding-left: 4px;
+  padding-right: 4px;
+  white-space: nowrap;
+  box-shadow: 4px 0 8px -4px rgba(0,0,0,0.1); /* Sombra para indicar profundidade na rolagem */
 }
 
 /* New CSS for centering the table when a single day is selected */
@@ -326,10 +325,14 @@ td[role="textbox"]:focus {
   outline: 2px solid var(--primary);
 }
 
-/* Divisória Dupla entre os Dias */
+/* Divisória entre os Dias */
 .day-divider {
-  border-right: 3px solid var(--border-color) !important;
+  border-right: 2px solid rgba(0,0,0,0.1) !important;
   background-color: rgba(79, 70, 229, 0.05); /* Destaque sutil no cabeçalho do dia */
+}
+
+body.dark-theme .day-divider {
+  border-right: 2px solid rgba(255,255,255,0.1) !important;
 }
 
 /* Identificação de Dias por Cores - Cabeçalhos */
@@ -352,14 +355,6 @@ body.dark-theme .day-cell-2 { background-color: rgba(21, 128, 61, 0.1) !importan
 body.dark-theme .day-cell-3 { background-color: rgba(88, 28, 135, 0.15) !important; }
 body.dark-theme .day-cell-4 { background-color: rgba(194, 65, 12, 0.1) !important; }
 body.dark-theme .day-cell-5 { background-color: rgba(190, 24, 93, 0.1) !important; }
-
-/* Reforço na divisória de dia para combinar com a nova estética */
-.day-divider {
-  border-right: 2px solid rgba(0,0,0,0.1) !important;
-}
-body.dark-theme .day-divider {
-  border-right: 2px solid rgba(255,255,255,0.1) !important;
-}
 
 /* Estilo para células em modo leitura */
 body.readonly td[role="textbox"]:hover {
@@ -420,11 +415,19 @@ body:not(.readonly) #lock-btn { background-color: #ef4444 !important; color: whi
 
 /* Destaque para células de dados e horários atuais */
 td.current-active:not(:first-child) {
-  background-color: rgba(79, 70, 229, 0.12) !important;
-  box-shadow: inset 0 0 0 2px var(--primary) !important;
+  background-color: #fef3c7 !important; /* Amarelo âmbar bem claro para destacar a célula alvo */
+  box-shadow: inset 0 0 0 3px #f59e0b, 0 4px 20px rgba(245, 158, 11, 0.3) !important;
   position: relative;
   z-index: 5;
   transition: background-color 0.3s ease;
+  font-weight: 700;
+  color: #92400e !important; /* Texto em marrom escuro para contraste no fundo amarelo */
+}
+
+body.dark-theme td.current-active:not(:first-child) {
+  background-color: rgba(245, 158, 11, 0.25) !important;
+  color: #fbbf24 !important;
+  box-shadow: inset 0 0 0 3px #f59e0b !important;
 }
 
 td.current-active::after {
@@ -443,24 +446,82 @@ td.current-active::after {
 
 /* Destaque para os cabeçalhos de dia (TH) atuais */
 th.current-active {
-  /* Mantém a cor original do dia (.day-header-X) e adiciona um indicador de "Hoje" */
-  box-shadow: inset 0 -4px 0 0 #fff, 0 4px 12px rgba(0,0,0,0.15) !important;
+  box-shadow: inset 0 -4px 0 0 #fff, 0 8px 15px -5px rgba(0,0,0,0.3) !important;
   filter: brightness(1.2) saturate(1.2);
   border-bottom: 2px solid #fff !important;
   z-index: 35;
+  position: relative;
+}
+
+th.current-active::before {
+  content: '⭐'; /* Estrela indicando o dia atual */
+  margin-right: 8px;
+  display: inline-block;
+  animation: bounce-pin 1s ease infinite;
+  filter: drop-shadow(0 2px 2px rgba(0,0,0,0.2));
+}
+
+/* Seta removida pois agora o emoji está alinhado ao texto */
+th.current-active::after {
+  display: none;
+}
+
+@keyframes bounce-pin {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
 }
 
 /* Destaque sutil para a linha inteira do horário atual */
 tr.current-active {
-  background-color: rgba(79, 70, 229, 0.03) !important;
+  background-color: rgba(79, 70, 229, 0.15) !important; /* Azul mais presente na linha */
+  position: relative;
+  box-shadow: inset 4px 0 0 0 var(--primary); /* Barra vertical no início da linha */
+}
+
+/* Destaque para a COLUNA inteira do dia atual */
+table.current-day-1 .day-cell-1,
+table.current-day-2 .day-cell-2,
+table.current-day-3 .day-cell-3,
+table.current-day-4 .day-cell-4,
+table.current-day-5 .day-cell-5 {
+  background-color: rgba(79, 70, 229, 0.06); /* Coluna levemente mais escura para guiar o olhar */
+  border-left: 1px solid rgba(79, 70, 229, 0.15);
+  border-right: 1px solid rgba(79, 70, 229, 0.15);
+}
+
+body.dark-theme tr.current-active {
+  background-color: rgba(234, 88, 12, 0.15) !important;
+  box-shadow: inset 4px 0 0 0 #ea580c;
 }
 
 /* Estilo específico para a célula de horário quando ativa */
 td.current-active:first-child {
-  background: linear-gradient(135deg, #f59e0b, #d97706) !important; /* Laranja vibrante para o relógio */
+  background: linear-gradient(135deg, #f59e0b, #ea580c) !important;
   color: white !important;
-  box-shadow: 4px 0 12px -4px rgba(79, 70, 229, 0.4) !important;
+  box-shadow: 5px 0 15px -3px rgba(234, 88, 12, 0.5) !important;
   border-right-color: var(--primary-hover);
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* Ponto pulsante de "Live" na célula de hora */
+td.current-active:first-child::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  background-color: #fff;
+  border-radius: 50%;
+  display: inline-block;
+  animation: pulse-live 1.5s infinite;
+}
+
+@keyframes pulse-live {
+  0% { transform: scale(0.9); opacity: 1; }
+  50% { transform: scale(1.3); opacity: 0.5; }
+  100% { transform: scale(0.9); opacity: 1; }
 }
 
 .toolbar {
@@ -676,6 +737,11 @@ th[title] {
 }
 
 @media print {
+  @page {
+    size: landscape;
+    margin: 10mm;
+  }
+
   .toolbar,
   .legend,
   .actions,
@@ -686,6 +752,8 @@ th[title] {
   }
   body {
     padding: 0;
+    background-color: white !important;
+    color: black !important;
   }
   h2 {
     margin-top: 0;
@@ -693,12 +761,15 @@ th[title] {
   table {
     page-break-inside: avoid;
     break-inside: avoid;
-    font-size: 10px; /* Reduz levemente para caber no A4 */
+    font-size: 9pt; 
+    width: 100% !important;
+    table-layout: auto !important; /* Melhora ajuste no papel */
   }
   .table-container {
     overflow: visible;
     box-shadow: none;
     border: 1px solid #000;
+    display: block !important;
   }
   td[contenteditable="true"] {
     background-color: transparent !important;
