@@ -81,6 +81,29 @@ const _dom = (() => {
   };
 })();
 
+/**
+ * Exibe uma notificação temporária na tela.
+ * @param {string} message - Mensagem a ser exibida.
+ * @param {string} type - Tipo da notificação: 'success', 'error', 'info'.
+ */
+function showToast(message, type = 'info') {
+  const container = document.getElementById('toast-container');
+  if (!container) return;
+
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  
+  const icons = { success: '✅', error: '❌', info: 'ℹ️' };
+  toast.innerHTML = `<span>${icons[type] || ''}</span> <span>${message}</span>`;
+  
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.style.animation = 'toast-in 0.3s ease-in reverse forwards';
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+
 let _teacherMapCache = null;
 let _clipboardText = null;
 
@@ -174,10 +197,7 @@ const saveContent = debounce((key, text) => {
       setTimeout(() => { indicator.style.opacity = '0'; }, 2000);
     }
   } catch (e) {
-    console.error("Erro ao salvar no localStorage:", e);
-    alert("Erro crítico: Não foi possível salvar as alterações.");
-  }
-});
+    w
 
 /**
  * Aplica estilos dinâmicos à célula com base em seu conteúdo.
@@ -393,6 +413,25 @@ document.addEventListener('keydown', (e) => {
       checkConflicts(cell);
       saveContent(getCellKey(cell), _clipboardText);
       updateStatusBar(cell);
+      return;
+    }
+
+    // Fill Down (Ctrl+D)
+    if (e.key === 'd' && isEditable) {
+      e.preventDefault();
+      const rowIndex = row.rowIndex;
+      const colIndex = cell.cellIndex;
+      const prevRow = table.rows[rowIndex - 1];
+      const cellAbove = prevRow ? prevRow.cells[colIndex] : null;
+
+      if (cellAbove && cellAbove.getAttribute('contenteditable') === 'true') {
+        pushUndo(cell, cell.innerText);
+        cell.innerText = cellAbove.innerText;
+        applyDynamicStyles(cell);
+        checkConflicts(cell);
+        saveContent(getCellKey(cell), cell.innerText);
+        showToast("Copiado da célula acima", "success");
+      }
       return;
     }
   }
@@ -750,9 +789,8 @@ function importBackupJSON() {
           window.location.reload();
         }
       } catch (err) {
-        alert(`Erro na importação: ${err.message}`);
+        showToast(`Erro na importação: ${err.message}`, "error");
       }
-    };
     reader.readAsText(file);
   };
   input.click();
@@ -804,12 +842,9 @@ function updateHighlights() {
       if (start !== null && currentMinutes >= start && currentMinutes < end) {
         row.classList.add('current-active'); 
         const timeCell = row.cells[0];
-        // Só adiciona destaque de célula se não for recreio, 
-        // para evitar que o CSS de flexbox quebre o colspan
+        // Só destaca se não for recreio para manter o colspan íntegro
         if (timeCell && !row.classList.contains('recreio')) timeCell.classList.add('current-active');
-
-        // Só faz scroll se o usuário não estiver editando algo no momento
-        if ((!window._lastActiveRow || window._lastActiveRow !== row) && !document.activeElement.isContentEditable) {
+ !== row) && !document.activeElement.isContentEditable) {
           window._lastActiveRow = row;
           row.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
