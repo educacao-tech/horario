@@ -2,6 +2,7 @@ const STORAGE_KEY = 'school_schedule_v1';
 const THEME_KEY = 'school_schedule_theme';
 const TEACHER_REGISTRY_KEY = 'school_teachers_v1';
 const FILTER_DAY_KEY = 'school_filter_day_v1';
+const ZOOM_LEVEL_KEY = 'school_zoom_level_v1';
 const cells = document.querySelectorAll('[contenteditable="true"]');
 
 const LAYOUTS = {
@@ -519,7 +520,8 @@ function toggleLockMode() {
 
   if (isReadonly) {
     btn.innerHTML = '🔒 Modo Leitura';
-    btn.style.background = '#64748b';
+    btn.style.backgroundColor = '#64748b';
+    btn.style.color = 'white';
     // Limpa destaques ao travar
     document.querySelectorAll('.row-highlight, .col-highlight, .header-highlight').forEach(el => {
       el.classList.remove('row-highlight', 'col-highlight', 'header-highlight');
@@ -529,7 +531,8 @@ function toggleLockMode() {
     highlightOccurrences(''); // Remove destaques da busca
   } else {
     btn.innerHTML = '🔓 Modo Edição';
-    btn.style.background = 'var(--primary)';
+    btn.style.backgroundColor = 'var(--primary)';
+    btn.style.color = 'white';
   }
 }
 
@@ -581,15 +584,20 @@ function importBackupJSON() {
     reader.onload = readerEvent => {
       try {
         const content = readerEvent.target.result;
-        // Validação básica de estrutura JSON
-        JSON.parse(content); 
+        const parsed = JSON.parse(content); 
+        
+        // Validação de integridade do backup
+        const hasScheduleData = Object.keys(parsed).some(key => key.startsWith('sched_'));
+        if (!hasScheduleData) {
+          throw new Error("Arquivo não contém dados de horário válidos.");
+        }
         
         if (confirm("Isso irá sobrescrever todos os dados atuais. Deseja continuar?")) {
           localStorage.setItem(STORAGE_KEY, content);
           window.location.reload(); // Recarrega para aplicar os novos dados
         }
       } catch (err) {
-        alert("Erro: Arquivo JSON inválido.");
+        alert(`Erro na importação: ${err.message}`);
       }
     };
     reader.readAsText(file);
@@ -598,16 +606,22 @@ function importBackupJSON() {
 }
 
 // Função para destacar dia e horário atual
+let _lastMinuteProcessed = -1;
+
 function updateHighlights() {
   const now = new Date();
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  
+  // Evita re-processamento se ainda estivermos no mesmo minuto
+  if (currentMinutes === _lastMinuteProcessed) return;
+  _lastMinuteProcessed = currentMinutes;
+
   const day = now.getDay(); // 0=Dom, 1=Seg, 2=Ter, 3=Qua, 4=Qui, 5=Sex, 6=Sab
 
   // Remove destaques antigos
   document.querySelectorAll('.current-active').forEach(el => el.classList.remove('current-active'));
 
   if (day < 1 || day > 5) return; // Não destaca nada nos fins de semana
-
-  const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
   document.querySelectorAll('table').forEach((table) => {
     const currentLayout = table.closest('#section-morning') ? LAYOUTS.morning : LAYOUTS.afternoon;
@@ -631,7 +645,14 @@ function updateHighlights() {
       }
 
       if (start !== null && currentMinutes >= start && currentMinutes < end) {
+        row.classList.add('current-active'); // Destaca a linha inteira
         row.cells[0].classList.add('current-active'); // Destaca a célula do horário
+
+        // Se for a primeira execução ou mudança de horário, centraliza a linha
+        if (!window._lastActiveRow || window._lastActiveRow !== row) {
+            window._lastActiveRow = row;
+            row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
 
         // Calcula o índice de início da célula baseado no layout variável
         let cellStart = 1;
@@ -826,6 +847,39 @@ function reorderSectionsByTime() {
   }
 }
 
+// --- SISTEMA DE ZOOM ---
+
+function initZoom() {
+  const savedZoom = localStorage.getItem(ZOOM_LEVEL_KEY) || "1";
+  applyZoom(parseFloat(savedZoom));
+
+  const zoomWrapper = document.createElement('div');
+  zoomWrapper.className = 'zoom-controls';
+  zoomWrapper.innerHTML = `
+    <span class="legend-title" style="font-size: 0.7rem; font-weight: 800; margin: 0">ZOOM</span>
+    <div style="display: flex; gap: 4px; align-items: center;">
+      <button class="btn" onclick="adjustZoom(-0.1)" title="Diminuir">-</button>
+      <span id="zoom-display" style="min-width: 45px; text-align: center; font-weight: bold; font-size: 0.85rem">${Math.round(parseFloat(savedZoom) * 100)}%</span>
+      <button class="btn" onclick="adjustZoom(0.1)" title="Aumentar">+</button>
+    </div>
+  `;
+  document.body.appendChild(zoomWrapper);
+}
+
+function adjustZoom(delta) {
+  const currentZoom = parseFloat(localStorage.getItem(ZOOM_LEVEL_KEY) || "1");
+  let newZoom = Math.min(Math.max(currentZoom + delta, 0.5), 2.0); // Limites: 50% a 200%
+  newZoom = Math.round(newZoom * 10) / 10; // Arredonda para 1 casa decimal
+  applyZoom(newZoom);
+}
+
+function applyZoom(level) {
+  document.documentElement.style.setProperty('--table-zoom', level);
+  localStorage.setItem(ZOOM_LEVEL_KEY, level);
+  const display = document.getElementById('zoom-display');
+  if (display) display.innerText = `${Math.round(level * 100)}%`;
+}
+
 // Inicializa e define intervalo de atualização
 loadData(); // Carrega os dados salvos
 applyTheme(); // Aplica o tema salvo
@@ -833,6 +887,7 @@ reorderSectionsByTime(); // Organiza a ordem das tabelas por relevância
 updateHighlights(); // Destaca o horário atual
 updateTimeCounter(); // Inicia o contador de tempo
 updateClock(); // Inicia o relógio
+initZoom(); // Inicia o controle de zoom
 cells.forEach(cell => cell.contentEditable = false); // Garante estado inicial bloqueado
 
 setInterval(updateHighlights, 10000); // Atualiza a cada 10 segundos para maior precisão
@@ -931,14 +986,14 @@ function renderTeacherList(map) {
     actions.style.gap = '8px';
 
     const editBtn = document.createElement('button');
-    editBtn.className = 'btn';
-    editBtn.style.cssText = 'padding: 4px 8px; font-size: 1rem; background: var(--pd-color);';
+    editBtn.className = 'btn btn-edit';
+    editBtn.style.padding = '4px 8px';
     editBtn.textContent = '✏️';
     editBtn.onclick = () => prepareEditTeacher(sigla, map[sigla]);
 
     const delBtn = document.createElement('button');
-    delBtn.className = 'btn';
-    delBtn.style.cssText = 'padding: 4px 8px; font-size: 1rem; background: #fee2e2;';
+    delBtn.className = 'btn btn-delete';
+    delBtn.style.padding = '4px 8px';
     delBtn.textContent = '🗑️';
     delBtn.onclick = () => removeTeacherFromRegistry(sigla);
 

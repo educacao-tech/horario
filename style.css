@@ -17,6 +17,38 @@
   --header-height: 41px;
   --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
   --shadow-md: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --table-zoom: 1;
+}
+
+/* Controle de Zoom Flutuante */
+.zoom-controls {
+  position: fixed;
+  top: 15px;
+  right: 20px;
+  z-index: 10005; /* Acima de outros elementos e modais */
+  background: var(--bg-header);
+  backdrop-filter: blur(12px) saturate(180%);
+  padding: 6px 12px;
+  border-radius: 50px;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-md);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(79, 70, 229, 0.2);
+}
+
+.zoom-controls .btn {
+  padding: 2px 10px !important;
+  height: 30px;
+  justify-content: center;
+  background: var(--bg-card);
+  color: var(--text-main);
+}
+
+.btn-reset-zoom {
+  background: var(--primary) !important;
+  color: white !important;
 }
 
 body.dark-theme {
@@ -101,6 +133,8 @@ body {
   border: 1px solid var(--border-color);
   box-shadow: var(--shadow-md);
   display: block; /* Garante comportamento de bloco */
+  font-size: calc(1rem * var(--table-zoom));
+  scroll-behavior: smooth;
 }
 
 #schedule-wrapper, 
@@ -140,9 +174,9 @@ th, td {
     border-right: 1px solid var(--border-color);
     font-weight: 700;
     color: var(--text-main);
-    width: 145px;
-    min-width: 145px;
-    font-size: 0.82rem;
+    width: calc(145px * var(--table-zoom));
+    min-width: calc(145px * var(--table-zoom));
+    font-size: 0.95em;
     padding-left: 4px;
     padding-right: 4px;
     white-space: nowrap;
@@ -169,9 +203,9 @@ th, td {
   border-right: 1px solid var(--border-color);
   font-weight: 700;
   color: var(--text-main);
-  width: 145px; /* Keep the fixed width for the time column */
-  min-width: 145px;
-  font-size: 0.82rem;
+  width: calc(145px * var(--table-zoom));
+  min-width: calc(145px * var(--table-zoom));
+  font-size: 0.95em;
   padding-left: 4px;
   padding-right: 4px;
   white-space: nowrap;
@@ -185,7 +219,7 @@ th {
   background-color: var(--bg-header);
   backdrop-filter: blur(8px);
   font-weight: 700;
-  font-size: 0.85rem;
+  font-size: 0.9em;
   text-transform: uppercase;
   color: var(--text-muted);
   position: sticky;
@@ -277,7 +311,7 @@ td[contenteditable="true"], td[role="textbox"] {
 td[data-teacher]::after {
   content: attr(data-teacher);
   display: block;
-  font-size: 0.75rem;
+  font-size: 0.85em;
   color: var(--text-muted);
   font-weight: 600; /* Negrito para destaque */
   margin-top: 4px;
@@ -341,9 +375,10 @@ body.readonly td[role="textbox"] {
 /* Feedback visual para o botão de trava */
 body.readonly #lock-btn {
   background-color: #64748b !important;
+  color: white !important;
   opacity: 0.9;
 }
-body:not(.readonly) #lock-btn { background-color: #ef4444 !important; }
+body:not(.readonly) #lock-btn { background-color: #ef4444 !important; color: white !important; }
 
 /* Estilo para conflitos de horário */
 .conflict-error {
@@ -352,6 +387,12 @@ body:not(.readonly) #lock-btn { background-color: #ef4444 !important; }
   color: #991b1b;
   animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
   cursor: help;
+}
+
+.conflict-error:hover {
+  filter: brightness(1.05);
+  background-color: #fee2e2;
+  box-shadow: inset 0 0 0 3px #ef4444;
 }
 
 @keyframes shake { 10%, 90% { transform: translate3d(-1px, 0, 0); } 20%, 80% { transform: translate3d(2px, 0, 0); } }
@@ -373,15 +414,17 @@ body:not(.readonly) #lock-btn { background-color: #ef4444 !important; }
   color: var(--text-muted);
   font-weight: bold;
   text-align: center;
-  font-size: 0.8rem;
+  font-size: 0.9em;
   letter-spacing: 0.05em;
 }
 
 /* Destaque para células de dados e horários atuais */
-td.current-active {
-  background-color: rgba(250, 204, 21, 0.15) !important;
-  box-shadow: inset 4px 0 0 0 var(--primary);
+td.current-active:not(:first-child) {
+  background-color: rgba(79, 70, 229, 0.12) !important;
+  box-shadow: inset 0 0 0 2px var(--primary) !important;
   position: relative;
+  z-index: 5;
+  transition: background-color 0.3s ease;
 }
 
 td.current-active::after {
@@ -401,13 +444,20 @@ td.current-active::after {
 /* Destaque para os cabeçalhos de dia (TH) atuais */
 th.current-active {
   /* Mantém a cor original do dia (.day-header-X) e adiciona um indicador de "Hoje" */
-  box-shadow: inset 0 -6px 0 0 #fef9c3 !important; /* Barra amarela inferior interna */
-  filter: brightness(1.15); /* Leve brilho para destacar atividade */
+  box-shadow: inset 0 -4px 0 0 #fff, 0 4px 12px rgba(0,0,0,0.15) !important;
+  filter: brightness(1.2) saturate(1.2);
+  border-bottom: 2px solid #fff !important;
+  z-index: 35;
+}
+
+/* Destaque sutil para a linha inteira do horário atual */
+tr.current-active {
+  background-color: rgba(79, 70, 229, 0.03) !important;
 }
 
 /* Estilo específico para a célula de horário quando ativa */
 td.current-active:first-child {
-  background: linear-gradient(135deg, var(--primary), var(--primary-hover)) !important;
+  background: linear-gradient(135deg, #f59e0b, #d97706) !important; /* Laranja vibrante para o relógio */
   color: white !important;
   box-shadow: 4px 0 12px -4px rgba(79, 70, 229, 0.4) !important;
   border-right-color: var(--primary-hover);
@@ -459,26 +509,33 @@ td.current-active:first-child {
 }
 
 .time-counter {
-  font-weight: 700;
-  font-size: 1rem;
-  color: var(--primary);
+  font-weight: 800;
+  font-size: 1.05rem;
+  color: #ffffff !important;
+  background: #d97706 !important; /* Laranja vibrante para o cronômetro */
   font-variant-numeric: tabular-nums;
-  padding: 0 10px;
+  padding: 6px 16px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  margin: 0 5px;
 }
 
 .current-date-time {
   font-size: 1.15rem;
   font-weight: 800;
-  color: var(--primary);
+  color: #ffffff !important;
+  background: var(--primary) !important; /* Fundo azul sólido */
   padding: 6px 16px;
-  background: var(--pd-color);
   border-radius: 12px;
-  border: 1px solid rgba(79, 70, 229, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
   box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
 }
 
 /* Barra de progresso da aula atual */
@@ -515,12 +572,14 @@ td.current-active:first-child {
   cursor: pointer;
   border: none;
   border-radius: 12px;
-  font-weight: 600;
+  font-weight: 700;
   font-size: 0.9rem;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
   gap: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  color: var(--text-main);
 }
 
 .year-badge {
