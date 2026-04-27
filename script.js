@@ -53,11 +53,19 @@ const DEFAULT_TEACHER_MAP = {
 // --- DOM Cache & Management ---
 const _dom = (() => {
   const cache = {};
+  let _cells = null;
   const get = (id) => cache[id] || (cache[id] = document.getElementById(id));
   
   return {
-    // Elementos dinâmicos ou que precisam de query recorrente (NodeLists)
-    cells: () => document.querySelectorAll('[contenteditable="true"]'),
+    /**
+     * Retorna um NodeList cacheado das células editáveis.
+     * @returns {NodeList}
+     */
+    cells: () => {
+      if (!_cells) _cells = document.querySelectorAll('[contenteditable="true"]');
+      return _cells;
+    },
+    invalidateCache: () => { _cells = null; },
     tables: () => document.querySelectorAll('table'),
     
     // Elementos estáticos cacheados por ID
@@ -94,7 +102,14 @@ function runMigrations() {
     localStorage.setItem(storageKeyVersion, CONFIG.SCHEMA_VERSION.toString());
   }
 }
-runMigrations();
+
+/**
+ * Inicializa o processo de migração de dados se necessário.
+ */
+function initializeData() {
+  runMigrations();
+}
+initializeData();
 
 // --- CORE FUNCTIONS ---
 
@@ -143,6 +158,11 @@ function getCellKey(cell) {
   return `sched_${sectionId}_${time}_${specialist}`.replace(/[^a-zA-Z0-9]/g, '_');
 }
 
+/**
+ * Salva o conteúdo de uma célula no localStorage com debounce.
+ * @param {string} key - Chave identificadora da célula.
+ * @param {string} text - Texto a ser salvo.
+ */
 const saveContent = debounce((key, text) => {
   try {
     const data = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY) || '{}');
@@ -234,6 +254,7 @@ function checkConflicts(cell) {
  */
 function loadData() {
   const data = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY) || '{}');
+  _dom.invalidateCache();
   _dom.cells().forEach(cell => {
     const key = getCellKey(cell);
     if (data[key] !== undefined) {
@@ -254,28 +275,46 @@ function loadData() {
   updateAriaStatus();
 }
 
+/**
+ * Varre todas as células editáveis para validar conflitos globais.
+ */
 function validateAllConflicts() {
   _dom.cells().forEach(cell => {
     if (cell.innerText.trim()) checkConflicts(cell);
   });
 }
 
-const updateAriaStatus = () => {
+/**
+ * Atualiza os atributos de acessibilidade e o estado de edição das células
+ * baseado no modo (Leitura/Edição) atual.
+ */
+function updateAriaStatus() {
   const isReadonly = document.body.classList.contains('readonly');
-  _dom.cells().forEach(c => c.setAttribute('aria-readonly', isReadonly));
-};
+  _dom.cells().forEach(c => {
+    c.setAttribute('aria-readonly', isReadonly);
+    c.contentEditable = !isReadonly;
+  });
+}
 
 // --- UNDO / REDO ---
 const _undoStack = [];
 const _redoStack = [];
 const MAX_HISTORY = 50;
 
+/**
+ * Adiciona um estado à pilha de Desfazer.
+ * @param {HTMLElement} cell - Célula alterada.
+ * @param {string} oldText - Texto anterior à alteração.
+ */
 function pushUndo(cell, oldText) {
   _undoStack.push({ cell, oldText });
   if (_undoStack.length > MAX_HISTORY) _undoStack.shift();
   _redoStack.length = 0;
 }
 
+/**
+ * Reverte a última ação do usuário.
+ */
 function undo() {
   if (_undoStack.length === 0) return;
   const action = _undoStack.pop();
@@ -288,6 +327,9 @@ function undo() {
   updateStatusBar(action.cell);
 }
 
+/**
+ * Refaz a última ação revertida.
+ */
 function redo() {
   if (_redoStack.length === 0) return;
   const action = _redoStack.pop();
@@ -361,8 +403,9 @@ document.addEventListener('keydown', (e) => {
   const table = cell.closest('table');
   const colIndex = cell.cellIndex;
   const rowIndex = row.rowIndex;
-  let nextCell;
+  let nextCell = null;
 
+  // Navegação Vertical
   if (e.key === 'Enter' || e.key === 'ArrowDown') {
     e.preventDefault();
     for (let i = rowIndex + 1; i < table.rows.length; i++) {
@@ -375,6 +418,20 @@ document.addEventListener('keydown', (e) => {
       const target = table.rows[i].cells[colIndex];
       if (target && target.getAttribute('contenteditable') === 'true') { nextCell = target; break; }
     }
+  } 
+  // Navegação Horizontal (Nova funcionalidade)
+  else if (e.key === 'ArrowRight') {
+    let target = cell.nextElementSibling;
+    while (target && target.getAttribute('contenteditable') !== 'true') {
+      target = target.nextElementSibling;
+    }
+    if (target) { e.preventDefault(); nextCell = target; }
+  } else if (e.key === 'ArrowLeft') {
+    let target = cell.previousElementSibling;
+    while (target && target.getAttribute('contenteditable') !== 'true') {
+      target = target.previousElementSibling;
+    }
+    if (target) { e.preventDefault(); nextCell = target; }
   }
 
   if (nextCell) {
@@ -423,6 +480,7 @@ function getDayAndColIndices(cell) {
 
 /**
  * Filtra a visualização para mostrar apenas um dia específico.
+ * Esconde colunas de outros dias e ajusta o layout da tabela.
  * @param {number|string} selectedDayIndex - 0 para todos, 1-5 para dias.
  */
 function filterByDay(selectedDayIndex) {
@@ -462,15 +520,32 @@ function filterByDay(selectedDayIndex) {
       }
       colOffset += colsInDay;
     });
+
+    // Atualiza o colspan das linhas de recreio para o número de colunas visíveis
+    const visibleColCount = selectedDay === 0 
+      ? 1 + layout.reduce((acc, val) => acc + val, 0) 
+      : 1 + layout[selectedDay - 1];
+
+    table.querySelectorAll('tr.recreio td').forEach(td => {
+      td.colSpan = visibleColCount;
+    });
   });
   updateHighlights();
 }
 
+/**
+ * Limpa o campo de busca e remove todos os destaques de correspondência.
+ */
 function clearSearch() {
   const searchInput = _dom.searchInput();
   if (searchInput) { searchInput.value = ''; highlightOccurrences(''); }
 }
 
+/**
+ * Destaca células que contêm o texto pesquisado ou cuja sigla do professor
+ * regente corresponde ao termo.
+ * @param {string} text - Termo de busca.
+ */
 function highlightOccurrences(text) {
   const cleanText = text.trim().toUpperCase();
   _dom.cells().forEach(c => {
@@ -555,16 +630,15 @@ function updateStatusBar(cell) {
 
 // --- TEMA ---
 function applyTheme() {
-  const savedTheme = localStorage.getItem(CONFIG.THEME_KEY);
   const btn = _dom.themeBtn();
-  if (savedTheme === 'dark') {
-    document.body.classList.add('dark-theme');
-    if (btn) btn.innerHTML = '☀️ Tema Claro';
-  }
+  // A classe .dark-theme já é aplicada no <head> do HTML.
+  // Aqui apenas sincronizamos o texto do botão.
+  const isDark = document.documentElement.classList.contains('dark-theme');
+  if (btn) btn.innerHTML = isDark ? '☀️ Tema Claro' : '🌙 Tema Escuro';
 }
 
 function toggleTheme() {
-  const isDark = document.body.classList.toggle('dark-theme');
+  const isDark = document.documentElement.classList.toggle('dark-theme');
   const btn = _dom.themeBtn();
   if (isDark) {
     localStorage.setItem(CONFIG.THEME_KEY, 'dark');
@@ -687,6 +761,10 @@ function importBackupJSON() {
 // --- DESTAQUE DO HORÁRIO ATUAL ---
 let _lastMinuteProcessed = -1;
 
+/**
+ * Atualiza os destaques visuais (linha, coluna e célula) baseados no horário
+ * e dia da semana atuais do sistema.
+ */
 function updateHighlights() {
   const now = new Date();
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
@@ -726,7 +804,9 @@ function updateHighlights() {
       if (start !== null && currentMinutes >= start && currentMinutes < end) {
         row.classList.add('current-active'); 
         const timeCell = row.cells[0];
-        if (timeCell) timeCell.classList.add('current-active');
+        // Só adiciona destaque de célula se não for recreio, 
+        // para evitar que o CSS de flexbox quebre o colspan
+        if (timeCell && !row.classList.contains('recreio')) timeCell.classList.add('current-active');
 
         // Só faz scroll se o usuário não estiver editando algo no momento
         if ((!window._lastActiveRow || window._lastActiveRow !== row) && !document.activeElement.isContentEditable) {
@@ -837,6 +917,11 @@ function clearAllScheduleData() {
   }
 }
 
+/**
+ * Calcula a diferença de tempo e formata para exibição mm:ss.
+ * @param {number} totalSeconds - Total de segundos.
+ * @returns {string} String formatada.
+ */
 function formatTimeDifference(totalSeconds) {
   if (totalSeconds < 0) return "00m 00s";
   const minutes = Math.floor(totalSeconds / 60);
@@ -844,6 +929,10 @@ function formatTimeDifference(totalSeconds) {
   return `${minutes.toString().padStart(2, '0')}m ${seconds.toString().padStart(2, '0')}s`;
 }
 
+/**
+ * Gerencia o cronômetro da barra de ferramentas, identificando se o usuário está
+ * em aula, no recreio ou fora do período letivo.
+ */
 function updateTimeCounter() {
   const now = new Date();
   const day = now.getDay();
@@ -914,6 +1003,9 @@ function updateTimeCounter() {
   if (timeCounterElement) timeCounterElement.innerText = message;
 }
 
+/**
+ * Atualiza o relógio digital na interface com segundos e data.
+ */
 function updateClock() {
   const clockElement = document.getElementById('current-date-time');
   if (!clockElement) return;
@@ -923,6 +1015,10 @@ function updateClock() {
   }).replace(/^\w/, (c) => c.toUpperCase());
 }
 
+/**
+ * Reorganiza as seções da página colocando o horário da tarde primeiro se já
+ * passar do meio-dia, otimizando o scroll para o usuário.
+ */
 function reorderSectionsByTime() {
   const now = new Date();
   const hour = now.getHours();
@@ -945,9 +1041,9 @@ function initZoom() {
   zoomWrapper.innerHTML = `
     <span class="legend-title" style="font-size: 0.7rem; font-weight: 800; margin: 0">ZOOM</span>
     <div style="display: flex; gap: 4px; align-items: center;">
-      <button class="btn" onclick="adjustZoom(-0.1)" title="Diminuir">-</button>
+      <button class="btn" type="button" onclick="adjustZoom(-0.1)" title="Diminuir" aria-label="Diminuir nível de zoom">-</button>
       <span id="zoom-display" style="min-width: 45px; text-align: center; font-weight: bold; font-size: 0.85rem">${Math.round(parseFloat(savedZoom) * 100)}%</span>
-      <button class="btn" onclick="adjustZoom(0.1)" title="Aumentar">+</button>
+      <button class="btn" type="button" onclick="adjustZoom(0.1)" title="Aumentar" aria-label="Aumentar nível de zoom">+</button>
     </div>
   `;
   document.body.appendChild(zoomWrapper);
@@ -975,14 +1071,13 @@ updateHighlights(); // Destaca o horário atual
 updateTimeCounter(); // Inicia o contador de tempo
 updateClock(); // Inicia o relógio
 initZoom(); // Inicia o controle de zoom
-const cells = _dom.cells();
-if (cells) cells.forEach(cell => cell.contentEditable = false); // Garante estado inicial bloqueado
+updateAriaStatus(); // Sincroniza estado de edição inicial
 
 setInterval(updateHighlights, 10000); // Atualiza a cada 10 segundos para maior precisão
 
 // Event listener para o select de filtro de dia
 document.addEventListener('DOMContentLoaded', () => {
-  const dayFilterSelect = document.getElementById('day-filter-select');
+  const dayFilterSelect = _dom.dayFilter();
 
   // Recupera o filtro salvo ou padrão (0 - Todos)
   const savedDay = localStorage.getItem(CONFIG.FILTER_DAY_KEY) || "0";
@@ -994,8 +1089,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Aplica o filtro inicial após um pequeno delay para garantir que o DOM e os layouts estejam prontos
-  setTimeout(() => filterByDay(parseInt(savedDay)), 50);
+  // Aplica o filtro inicial imediatamente para evitar "flash" de colunas
+  filterByDay(parseInt(savedDay));
 });
 
 // --- SISTEMA DE GERENCIAMENTO DE PROFESSORES ---
@@ -1027,6 +1122,7 @@ function openTeacherManager() {
   // Helper para criar botões rapidamente
   const createBtn = (text, cls, fn) => {
     const btn = Object.assign(document.createElement('button'), {
+      type: 'button',
       className: `btn ${cls}`,
       textContent: text
     });
@@ -1111,12 +1207,14 @@ function renderTeacherList(map) {
     actions.style.gap = '8px';
 
     const editBtn = document.createElement('button');
+    editBtn.type = 'button';
     editBtn.className = 'btn btn-edit';
     editBtn.style.padding = '4px 8px';
     editBtn.textContent = '✏️';
     editBtn.onclick = () => prepareEditTeacher(sigla, map[sigla]);
 
     const delBtn = document.createElement('button');
+    delBtn.type = 'button';
     delBtn.className = 'btn btn-delete';
     delBtn.style.padding = '4px 8px';
     delBtn.textContent = '🗑️';

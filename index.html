@@ -3,6 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Sistema de gestão e visualização de horário escolar editável com suporte a múltiplos períodos e professores.">
+  <meta name="theme-color" content="#4f46e5">
+  <script>
+    // Execução imediata para evitar flicker (piscada) do tema escuro
+    (function() {
+      const theme = localStorage.getItem('school_schedule_theme');
+      if (theme === 'dark') document.documentElement.classList.add('dark-theme');
+    })();
+  </script>
   <title>Horário Escolar Editável</title>
   <link rel="stylesheet" href="style.css">
 </head>
@@ -32,12 +41,12 @@
   </div>
 
   <div class="toolbar">
-    <button class="btn" style="background: var(--hl-color); color: var(--text-main);" onclick="openTeacherManager()">⚙️ Professores</button>
-    <button class="btn btn-primary" onclick="window.print()">🖨️ Imprimir PDF</button>
-    <button class="btn btn-success" onclick="exportToCsv()">📊 Exportar CSV</button>
+    <button type="button" class="btn" style="background: var(--hl-color); color: var(--text-main);" onclick="openTeacherManager()">⚙️ Professores</button>
+    <button type="button" class="btn btn-primary" onclick="window.print()">🖨️ Imprimir PDF</button>
+    <button type="button" class="btn btn-success" onclick="exportToCsv()">📊 Exportar CSV</button>
     <div class="search-wrapper">
       <input type="text" id="search-input" class="search-field" placeholder="🔍 Pesquisar professor ou turma..." oninput="highlightOccurrences(this.value)">
-      <button class="clear-search-btn" onclick="clearSearch()">✖</button>
+      <button type="button" class="clear-search-btn" onclick="clearSearch()" aria-label="Limpar pesquisa">✖</button>
     </div>
     <div class="day-filter-wrapper">
       <select id="day-filter-select" class="day-filter-select">
@@ -51,8 +60,8 @@
     </div>
     <span id="time-counter" class="time-counter"></span>
     <div id="current-date-time" class="current-date-time"></div>
-    <button id="theme-toggle" class="btn btn-primary" onclick="toggleTheme()">🌙 Tema Escuro</button>
-    <button id="lock-btn" class="btn btn-primary" style="background: #64748b;" onclick="toggleLockMode()">🔒 Modo Leitura</button>
+    <button type="button" id="theme-toggle" class="btn btn-primary" onclick="toggleTheme()">🌙 Tema Escuro</button>
+    <button type="button" id="lock-btn" class="btn btn-primary" style="background: #64748b;" onclick="toggleLockMode()">🔒 Modo Leitura</button>
     <span id="save-indicator">✅ Salvo</span>
   </div>
 

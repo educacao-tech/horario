@@ -5,7 +5,7 @@
   --bg-main: #f8fafc;
   --bg-card: #ffffff;
   --text-main: #1e293b;
-  --text-muted: #64748b;
+  --text-muted: #374151; /* Darker gray (Gray 700) for better contrast on pastel backgrounds */
   --border-color: #e2e8f0;
   --hl-color: #f1f5f9;
   --pd-color: #e0f2fe;
@@ -35,7 +35,6 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  border: 1px solid rgba(79, 70, 229, 0.2);
 }
 
 .zoom-controls .btn {
@@ -46,7 +45,7 @@
   color: var(--text-main);
 }
 
-body.dark-theme {
+.dark-theme {
   --bg-main: #020617;
   --bg-card: #0f172a;
   --bg-header: rgba(30, 41, 59, 0.9);
@@ -139,6 +138,13 @@ section[id^="section-"] {
   display: block;
 }
 
+/* Garante que na impressão ou em telas grandes, as seções mantenham integridade */
+section[id^="section-"] {
+  margin-bottom: 40px;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
 table {
   width: 100%;
   table-layout: fixed; /* Força as colunas a se expandirem para preencher 100% da tela */
@@ -161,13 +167,13 @@ th, td {
 }
 
 /* Remover borda direita da última coluna */
-th:last-child, td:last-child { border-right: none; }
+th:last-of-type, td:last-of-type { border-right: none; }
 
 /* Borda inferior da última linha */
 tr:last-child th, tr:last-child td { border-bottom: none; }
 
 /* Fixar a primeira coluna (Horário) */
-th:first-child, td:first-child {
+th:first-child, tr:not(.recreio) td:first-child {
   position: sticky;
   left: 0;
   z-index: 20;
@@ -187,14 +193,14 @@ th:first-child, td:first-child {
 /* New CSS for centering the table when a single day is selected */
 .table-container.single-day-active table {
   width: auto; /* Allow table to shrink to content */
-  table-layout: auto; /* Allow column widths to be determined by content */
+  table-layout: fixed; /* Keep fixed to respect defined widths */
   min-width: unset; /* Remove minimum width constraint */
   margin: 0 auto; /* Center the table itself within the container */
 }
 
 /* Ensure the first column (Horário) remains sticky and has its defined width */
 .table-container.single-day-active table th:first-child,
-.table-container.single-day-active table td:first-child {
+.table-container.single-day-active table tr:not(.recreio) td:first-child {
   position: sticky;
   left: 0;
   z-index: 20;
@@ -237,7 +243,7 @@ tr:nth-child(even) td:not(:first-child) {
   background-color: rgba(0, 0, 0, 0.015);
 }
 
-body.dark-theme tr:nth-child(even) td:not(:first-child) {
+.dark-theme tr:nth-child(even) td:not(:first-child) {
   background-color: rgba(255, 255, 255, 0.02);
 }
 
@@ -326,13 +332,15 @@ td[role="textbox"]:focus {
 }
 
 /* Divisória entre os Dias */
-.day-divider {
-  border-right: 2px solid rgba(0,0,0,0.1) !important;
-  background-color: rgba(79, 70, 229, 0.05); /* Destaque sutil no cabeçalho do dia */
+table tr th.day-divider,
+table tr td.day-divider {
+  border-right: 2px solid rgba(0, 0, 0, 0.15);
+  background-color: rgba(79, 70, 229, 0.05);
 }
 
-body.dark-theme .day-divider {
-  border-right: 2px solid rgba(255,255,255,0.1) !important;
+.dark-theme table tr th.day-divider,
+.dark-theme table tr td.day-divider {
+  border-right: 2px solid rgba(255, 255, 255, 0.2);
 }
 
 /* Identificação de Dias por Cores - Cabeçalhos */
@@ -345,16 +353,16 @@ body.dark-theme .day-divider {
 /* Identificação de Dias por Cores - Colunas (Fundo Sutil) */
 .day-cell-1 { background-color: rgba(3, 105, 161, 0.02); }
 .day-cell-2 { background-color: rgba(21, 128, 61, 0.02); }
-.day-cell-3 { background-color: rgba(88, 28, 135, 0.03); }
+.day-cell-3 { background-color: rgba(88, 28, 135, 0.02); }
 .day-cell-4 { background-color: rgba(194, 65, 12, 0.02); }
 .day-cell-5 { background-color: rgba(190, 24, 93, 0.02); }
 
 /* Ajuste para o Tema Escuro */
-body.dark-theme .day-cell-1 { background-color: rgba(3, 105, 161, 0.1) !important; }
-body.dark-theme .day-cell-2 { background-color: rgba(21, 128, 61, 0.1) !important; }
-body.dark-theme .day-cell-3 { background-color: rgba(88, 28, 135, 0.15) !important; }
-body.dark-theme .day-cell-4 { background-color: rgba(194, 65, 12, 0.1) !important; }
-body.dark-theme .day-cell-5 { background-color: rgba(190, 24, 93, 0.1) !important; }
+.dark-theme .day-cell-1 { background-color: rgba(3, 105, 161, 0.1) !important; }
+.dark-theme .day-cell-2 { background-color: rgba(21, 128, 61, 0.1) !important; }
+.dark-theme .day-cell-3 { background-color: rgba(88, 28, 135, 0.15) !important; }
+.dark-theme .day-cell-4 { background-color: rgba(194, 65, 12, 0.1) !important; }
+.dark-theme .day-cell-5 { background-color: rgba(190, 24, 93, 0.1) !important; }
 
 /* Estilo para células em modo leitura */
 body.readonly td[role="textbox"]:hover {
@@ -392,18 +400,20 @@ body:not(.readonly) #lock-btn { background-color: #ef4444 !important; color: whi
 
 @keyframes shake { 10%, 90% { transform: translate3d(-1px, 0, 0); } 20%, 80% { transform: translate3d(2px, 0, 0); } }
 
-.hl {
-  background-color: var(--hl-color);
+/* Cores de Categoria com maior especificidade para evitar !important */
+table tr td.hl, table tr th.hl { background-color: var(--hl-color); }
+table tr td.pd, table tr th.pd { background-color: var(--pd-color); }
+table tr td.el, table tr th.el { background-color: var(--el-color); }
+table tr td.mtf, table tr th.mtf { background-color: var(--mtf-color); }
+
+/* Ajuste de zebra stripe para não sobrepor cores de categoria */
+tr:nth-child(even) td.pd, 
+tr:nth-child(even) td.el, 
+tr:nth-child(even) td.mtf,
+tr:nth-child(even) td.hl {
+  filter: brightness(0.97);
 }
-.pd {
-  background-color: var(--pd-color) !important;
-}
-.el {
-  background-color: var(--el-color) !important;
-}
-.mtf {
-  background-color: var(--mtf-color) !important;
-}
+
 .recreio {
   background: linear-gradient(to bottom, var(--bg-header), var(--bg-main));
   color: var(--text-muted);
@@ -413,21 +423,26 @@ body:not(.readonly) #lock-btn { background-color: #ef4444 !important; color: whi
   letter-spacing: 0.05em;
 }
 
+.recreio td {
+  border-right: none !important;
+  width: 100%;
+}
+
 /* Destaque para células de dados e horários atuais */
-td.current-active:not(:first-child) {
-  background-color: #fef3c7 !important; /* Amarelo âmbar bem claro para destacar a célula alvo */
-  box-shadow: inset 0 0 0 3px #f59e0b, 0 4px 20px rgba(245, 158, 11, 0.3) !important;
+table tr td.current-active:not(:first-child) {
+  background-color: #fef3c7;
+  box-shadow: inset 0 0 0 3px #f59e0b, 0 4px 20px rgba(245, 158, 11, 0.3);
   position: relative;
   z-index: 5;
   transition: background-color 0.3s ease;
   font-weight: 700;
-  color: #92400e !important; /* Texto em marrom escuro para contraste no fundo amarelo */
+  color: #92400e; 
 }
 
-body.dark-theme td.current-active:not(:first-child) {
-  background-color: rgba(245, 158, 11, 0.25) !important;
-  color: #fbbf24 !important;
-  box-shadow: inset 0 0 0 3px #f59e0b !important;
+.dark-theme table tr td.current-active:not(:first-child) {
+  background-color: rgba(245, 158, 11, 0.25);
+  color: #fbbf24;
+  box-shadow: inset 0 0 0 3px #f59e0b;
 }
 
 td.current-active::after {
@@ -445,10 +460,10 @@ td.current-active::after {
 }
 
 /* Destaque para os cabeçalhos de dia (TH) atuais */
-th.current-active {
-  box-shadow: inset 0 -4px 0 0 #fff, 0 8px 15px -5px rgba(0,0,0,0.3) !important;
+table tr th.current-active {
+  box-shadow: inset 0 -4px 0 0 #fff, 0 8px 15px -5px rgba(0,0,0,0.3);
   filter: brightness(1.2) saturate(1.2);
-  border-bottom: 2px solid #fff !important;
+  border-bottom: 2px solid #fff;
   z-index: 35;
   position: relative;
 }
@@ -472,8 +487,8 @@ th.current-active::after {
 }
 
 /* Destaque sutil para a linha inteira do horário atual */
-tr.current-active {
-  background-color: rgba(79, 70, 229, 0.15) !important; /* Azul mais presente na linha */
+table tr.current-active {
+  background-color: rgba(79, 70, 229, 0.15); 
   position: relative;
   box-shadow: inset 4px 0 0 0 var(--primary); /* Barra vertical no início da linha */
 }
@@ -489,16 +504,16 @@ table.current-day-5 .day-cell-5 {
   border-right: 1px solid rgba(79, 70, 229, 0.15);
 }
 
-body.dark-theme tr.current-active {
-  background-color: rgba(234, 88, 12, 0.15) !important;
+.dark-theme table tr.current-active {
+  background-color: rgba(234, 88, 12, 0.15);
   box-shadow: inset 4px 0 0 0 #ea580c;
 }
 
 /* Estilo específico para a célula de horário quando ativa */
-td.current-active:first-child {
-  background: linear-gradient(135deg, #f59e0b, #ea580c) !important;
-  color: white !important;
-  box-shadow: 5px 0 15px -3px rgba(234, 88, 12, 0.5) !important;
+table tr:not(.recreio) td.current-active:first-child {
+  background: linear-gradient(135deg, #f59e0b, #ea580c);
+  color: white;
+  box-shadow: 5px 0 15px -3px rgba(234, 88, 12, 0.5);
   border-right-color: var(--primary-hover);
   font-weight: 800;
   display: flex;
@@ -757,6 +772,12 @@ th[title] {
   }
   h2 {
     margin-top: 0;
+  }
+  /* Força a seção da tarde a começar em uma nova página se necessário */
+  #section-afternoon {
+    page-break-before: always;
+    break-before: page;
+    margin-top: 20px;
   }
   table {
     page-break-inside: avoid;
