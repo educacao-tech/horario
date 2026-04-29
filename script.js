@@ -13,7 +13,7 @@ const CONFIG = {
   ZOOM_LEVEL_KEY: 'school_zoom_level_v1',
   LOCK_PASSWORD: 'qwe123', // Senha padrão para desbloquear o modo de edição
   LAST_UPDATE_DATE: '2024-04-29', // Data da última atualização do código
-  GITHUB_REPO: 'USUARIO/horario', // Substitua pelo seu 'usuario/repositorio' do GitHub
+  GITHUB_REPO: 'seu-usuario/seu-repositorio', // <<< EX: 'meu-usuario/meu-projeto-horario'
   LAYOUTS: {
     morning: [6, 5, 4, 4, 5],
     afternoon: [5, 4, 4, 5, 4]
@@ -692,11 +692,13 @@ function updateStatusBar(cell = null) { // Torna 'cell' opcional
     row.classList.add('row-highlight'); // Adiciona destaque à linha da célula focada
   }
 
-  // Sempre inclui a data da última atualização e a versão no canto inferior direito
-  const teacherMap = getTeacherMap();
+  // Adiciona o contêiner para informações de versão/atualização à direita
   statusContent += `
-    <div class="status-info-right">v${CONFIG.SCHEMA_VERSION} | Última atualização: ${CONFIG.LAST_UPDATE_DATE}</div>
+    <div class="status-info-right" id="github-update-info">
+      v${CONFIG.SCHEMA_VERSION} | Carregando atualização...
+    </div>
   `;
+
   sb.innerHTML = statusContent; // Atribui o conteúdo completo de uma vez
 }
 
@@ -705,22 +707,21 @@ function updateStatusBar(cell = null) { // Torna 'cell' opcional
  * Atualiza a data e o hash do commit na barra de status.
  */
 async function fetchGitHubUpdateInfo() {
-  // Impede a execução se o repositório ainda não foi configurado corretamente
-  if (!CONFIG.GITHUB_REPO || CONFIG.GITHUB_REPO.includes('USUARIO')) {
-    console.warn("GitHub Repo não configurado no CONFIG. Atualização automática desativada.");
-    return;
-  }
+  if (!CONFIG.GITHUB_REPO || CONFIG.GITHUB_REPO.includes('seu-usuario')) return;
 
   try {
+    // Busca o commit mais recente da branch main
     const response = await fetch(`https://api.github.com/repos/${CONFIG.GITHUB_REPO}/commits/main`);
     if (response.ok) {
       const data = await response.json();
-      const date = new Date(data.commit.committer.date).toLocaleDateString('pt-BR');
-      const sha = data.sha.substring(0, 7); // Pega os 7 primeiros caracteres do ID do commit
+      const date = new Date(data.commit.committer.date).toLocaleString('pt-BR', {
+        day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+      });
+      const sha = data.sha.substring(0, 7);
       
-      const infoRight = document.querySelector('.status-info-right');
+      const infoRight = document.getElementById('github-update-info');
       if (infoRight) {
-        infoRight.innerHTML = `v${CONFIG.SCHEMA_VERSION} (${sha}) | Última atualização: ${date}`;
+        infoRight.innerHTML = `v${CONFIG.SCHEMA_VERSION} (${sha}) | Atualizado em: ${date}`;
       }
     }
   } catch (err) {
@@ -1176,7 +1177,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initZoom(); 
   updateAriaStatus(); 
   updateStatusBar(); // Chama sem célula para exibir apenas a versão/data inicialmente
-  fetchGitHubUpdateInfo(); // Busca dados reais do GitHub após o carregamento
+  fetchGitHubUpdateInfo(); // Busca dados reais do GitHub
 });
 
 // Error boundary global
