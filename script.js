@@ -118,9 +118,15 @@ function runMigrations() {
     // Migração da v1 para v2 (Mudança de chave de storage)
     const oldData = localStorage.getItem('school_schedule_v1');
     if (oldData) {
-      const data = JSON.parse(oldData);
-      localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(data));
-      localStorage.removeItem('school_schedule_v1');
+      try {
+        const data = JSON.parse(oldData);
+        localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(data));
+        localStorage.removeItem('school_schedule_v1');
+      } catch (e) {
+        console.error('Erro ao migrar dados antigos (v1 para v2):', e);
+        showToast('Erro ao migrar dados antigos. Dados podem estar corrompidos.', 'error');
+        localStorage.removeItem('school_schedule_v1'); // Remove corrupted data to prevent future errors
+      }
     }
     localStorage.setItem(storageKeyVersion, CONFIG.SCHEMA_VERSION.toString());
   }
@@ -172,12 +178,17 @@ function debounce(func, timeout = 500) {
  */
 function getCellKey(cell) {
   const table = cell.closest('table');
+  const row = cell.parentElement;
+  
+  // Fallback de segurança caso a célula esteja fora de uma estrutura de tabela válida
+  if (!table || !row || typeof row.rowIndex === 'undefined') {
+    return `cell_fallback_${Math.random().toString(36).substr(2, 9)}`;
+  }
+
   const section = cell.closest('section, div[id^="section-"]');
   const sectionId = section ? section.id : 'unknown';
-  const rowIndex = cell.parentElement.rowIndex;
-  const colIndex = cell.cellIndex;
-  const time = table.rows[rowIndex].cells[0].innerText.trim();
-  const specialist = table.rows[1].cells[colIndex - 1]?.innerText.trim() || `col_${colIndex}`;
+  const time = table.rows[row.rowIndex]?.cells[0]?.innerText.trim() || 'time_unknown';
+  const specialist = table.rows[1]?.cells[cell.cellIndex - 1]?.innerText.trim() || `col_${cell.cellIndex}`;
   return `sched_${sectionId}_${time}_${specialist}`.replace(/[^a-zA-Z0-9]/g, '_');
 }
 
@@ -197,7 +208,10 @@ const saveContent = debounce((key, text) => {
       setTimeout(() => { indicator.style.opacity = '0'; }, 2000);
     }
   } catch (e) {
-    w
+    showToast('Erro ao salvar: ' + e.message, 'error');
+    console.error('Save error:', e);
+  }
+});
 
 /**
  * Aplica estilos dinâmicos à célula com base em seu conteúdo.
@@ -399,7 +413,15 @@ document.addEventListener('focusout', (e) => {
 
 document.addEventListener('keydown', (e) => {
   const cell = e.target;
+  // Verifica se o alvo é um elemento válido
+  if (!cell || typeof cell.getAttribute !== 'function') return;
+
   const isEditable = cell.getAttribute('contenteditable') === 'true';
+  if (!isEditable) return;
+
+  const row = cell.parentElement;
+  const table = cell.closest('table');
+  if (!row || !table) return;
 
   if ((e.ctrlKey || e.metaKey)) {
     if (e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); return; }
@@ -421,7 +443,7 @@ document.addEventListener('keydown', (e) => {
       e.preventDefault();
       const rowIndex = row.rowIndex;
       const colIndex = cell.cellIndex;
-      const prevRow = table.rows[rowIndex - 1];
+      const prevRow = table.rows ? table.rows[rowIndex - 1] : null;
       const cellAbove = prevRow ? prevRow.cells[colIndex] : null;
 
       if (cellAbove && cellAbove.getAttribute('contenteditable') === 'true') {
@@ -436,24 +458,18 @@ document.addEventListener('keydown', (e) => {
     }
   }
 
-  if (!isEditable) return;
-
-  const row = cell.parentElement;
-  const table = cell.closest('table');
-  const colIndex = cell.cellIndex;
-  const rowIndex = row.rowIndex;
   let nextCell = null;
 
   // Navegação Vertical
   if (e.key === 'Enter' || e.key === 'ArrowDown') {
     e.preventDefault();
-    for (let i = rowIndex + 1; i < table.rows.length; i++) {
+    for (let i = row.rowIndex + 1; i < table.rows.length; i++) {
       const target = table.rows[i].cells[colIndex];
       if (target && target.getAttribute('contenteditable') === 'true') { nextCell = target; break; }
     }
   } else if (e.key === 'ArrowUp') {
     e.preventDefault();
-    for (let i = rowIndex - 1; i >= 2; i--) {
+    for (let i = row.rowIndex - 1; i >= 2; i--) {
       const target = table.rows[i].cells[colIndex];
       if (target && target.getAttribute('contenteditable') === 'true') { nextCell = target; break; }
     }
@@ -638,6 +654,7 @@ function updateStatusBar(cell) {
   const colIndex = cell.cellIndex;
   const table = cell.closest('table');
   const row = cell.parentElement;
+  if (!table || !row) return;
 
   document.querySelectorAll('tr').forEach(r => r.classList.remove('row-highlight'));
   row.classList.add('row-highlight');
@@ -647,7 +664,7 @@ function updateStatusBar(cell) {
   const sb = _dom.statusBar();
   if (!sb) return;
 
-  if (professorHeader) {
+  if (professorHeader && table.rows[1]) {
     const sigla = professorHeader.innerText.trim().toUpperCase();
     const nomeProf = teacherMap[sigla] || `Especialista: ${sigla}`;
     const nomeRegente = teacherName && !CONFIG.SPECIALIST_SIGLAS.includes(text) && !CONFIG.SPECIALIST_SIGLAS.includes(baseCode)
@@ -791,6 +808,7 @@ function importBackupJSON() {
       } catch (err) {
         showToast(`Erro na importação: ${err.message}`, "error");
       }
+    };
     reader.readAsText(file);
   };
   input.click();
@@ -844,7 +862,12 @@ function updateHighlights() {
         const timeCell = row.cells[0];
         // Só destaca se não for recreio para manter o colspan íntegro
         if (timeCell && !row.classList.contains('recreio')) timeCell.classList.add('current-active');
- !== row) && !document.activeElement.isContentEditable) {
+        
+        // Verificação robusta para evitar erros em navegadores antigos ou sem foco
+        const active = document.activeElement;
+        const isEditing = active && active.isContentEditable;
+        
+        if (active && row !== active.parentElement && !isEditing) {
           window._lastActiveRow = row;
           row.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
@@ -1099,19 +1122,30 @@ function applyZoom(level) {
 }
 
 // Inicialização e intervalos
-loadData(); // Carrega os dados salvos
-applyTheme(); // Aplica o tema salvo
-reorderSectionsByTime(); // Organiza a ordem das tabelas por relevância
-updateHighlights(); // Destaca o horário atual
-updateTimeCounter(); // Inicia o contador de tempo
-updateClock(); // Inicia o relógio
-initZoom(); // Inicia o controle de zoom
-updateAriaStatus(); // Sincroniza estado de edição inicial
+document.addEventListener('DOMContentLoaded', () => {
+  loadData(); 
+  applyTheme(); 
+  reorderSectionsByTime(); 
+  updateHighlights(); 
+  updateTimeCounter(); 
+  updateClock(); 
+  initZoom(); 
+  updateAriaStatus(); 
+});
+
+// Error boundary global
+window.addEventListener('error', (e) => {
+  showToast('Erro na página: ' + e.message, 'error');
+  console.error(e);
+});
 
 setInterval(updateHighlights, 10000); // Atualiza a cada 10 segundos para maior precisão
+setInterval(() => {
+  updateTimeCounter();
+  updateClock();
+}, 1000); // Atualiza o contador de tempo e o relógio a cada 1 segundo
 
-// Event listener para o select de filtro de dia
-document.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('load', () => {
   const dayFilterSelect = _dom.dayFilter();
 
   // Recupera o filtro salvo ou padrão (0 - Todos)
@@ -1319,8 +1353,3 @@ function refreshTableUI() {
     checkConflicts(cell);
   });
 }
-
-setInterval(() => {
-  updateTimeCounter();
-  updateClock();
-}, 1000); // Atualiza o contador de tempo e o relógio a cada 1 segundo

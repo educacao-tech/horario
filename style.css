@@ -8,7 +8,7 @@
   --text-muted: #374151; /* Darker gray (Gray 700) for better contrast on pastel backgrounds */
   --border-color: #e2e8f0;
   --hl-color: #f1f5f9;
-  --pd-color: #e0f2fe;
+--pd-color: #bae6fd;
   --el-color: #d1fae5;
   --mtf-color: #ffedd5;
   --edit-bg: #fffef2;
@@ -158,7 +158,7 @@ table {
 th, td {
   padding: 10px 6px;
   text-align: center;
-  vertical-align: top !important; /* Força o alinhamento no topo mesmo com redimensionamento */
+  vertical-align: top;
   box-sizing: border-box;
   border-bottom: 1px solid var(--border-color);
   border-right: 1px solid var(--border-color);
@@ -229,8 +229,9 @@ th {
   color: var(--text-muted);
   position: sticky;
   top: 0;
-  z-index: 10; /* Aumentar z-index para garantir que fique acima do conteúdo */
+  z-index: 25;
   border-bottom: 2px solid var(--border-color);
+  transition: all 0.3s ease;
 }
 
 /* Ajuste para cabeçalho duplo sticky */
@@ -377,11 +378,11 @@ body.readonly td[role="textbox"] {
 
 /* Feedback visual para o botão de trava */
 body.readonly #lock-btn {
-  background-color: #64748b !important;
-  color: white !important;
+  background-color: #64748b;
+  color: white;
   opacity: 0.9;
 }
-body:not(.readonly) #lock-btn { background-color: #ef4444 !important; color: white !important; }
+body:not(.readonly) #lock-btn { background-color: #ef4444; color: white; }
 
 /* Estilo para conflitos de horário */
 .conflict-error {
@@ -430,28 +431,31 @@ tr:nth-child(even) td.hl {
 
 /* Destaque para células de dados e horários atuais */
 table tr td.current-active:not(:first-child) {
-  background-color: #fef3c7;
-  box-shadow: inset 0 0 0 3px #f59e0b, 0 4px 20px rgba(245, 158, 11, 0.3);
+  background-color: #fffbeb !important;
+  box-shadow: inset 0 0 0 2px #f59e0b, 0 0 15px rgba(245, 158, 11, 0.2);
   position: relative;
-  z-index: 5;
-  transition: background-color 0.3s ease;
+  z-index: 2;
   font-weight: 700;
   color: #92400e; 
+  animation: current-pulse 4s infinite ease-in-out;
 }
 
 .dark-theme table tr td.current-active:not(:first-child) {
-  background-color: rgba(245, 158, 11, 0.25);
+  background-color: rgba(245, 158, 11, 0.15) !important;
   color: #fbbf24;
-  box-shadow: inset 0 0 0 3px #f59e0b;
+  box-shadow: inset 0 0 0 2px #f59e0b;
 }
 
-td.current-active::after {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  animation: pulse-border 2s infinite;
-  pointer-events: none;
+@keyframes current-pulse {
+  0%, 100% { background-color: #fffbeb; }
+  50% { background-color: #fef3c7; }
 }
+.dark-theme @keyframes current-pulse {
+  0%, 100% { background-color: rgba(245, 158, 11, 0.15); }
+  50% { background-color: rgba(245, 158, 11, 0.25); }
+}
+
+td.current-active::after { display: none; } /* Removido em favor da animação de fundo */
 
 @keyframes pulse-border {
   0% { box-shadow: inset 0 0 0 0 rgba(79, 70, 229, 0.4); }
@@ -461,10 +465,11 @@ td.current-active::after {
 
 /* Destaque para os cabeçalhos de dia (TH) atuais */
 table tr th.current-active {
-  box-shadow: inset 0 -4px 0 0 #fff, 0 8px 15px -5px rgba(0,0,0,0.3);
-  filter: brightness(1.2) saturate(1.2);
-  border-bottom: 2px solid #fff;
-  z-index: 35;
+  background-color: var(--primary) !important;
+  color: white !important;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+  border-bottom: 4px solid var(--accent);
+  z-index: 45;
   position: relative;
 }
 
@@ -488,9 +493,10 @@ th.current-active::after {
 
 /* Destaque sutil para a linha inteira do horário atual */
 table tr.current-active {
-  background-color: rgba(79, 70, 229, 0.15); 
+  background-color: rgba(79, 70, 229, 0.08) !important; 
   position: relative;
-  box-shadow: inset 4px 0 0 0 var(--primary); /* Barra vertical no início da linha */
+  /* Cria uma borda superior e inferior na linha inteira */
+  box-shadow: inset 0 2px 0 0 var(--primary), inset 0 -2px 0 0 var(--primary);
 }
 
 /* Destaque para a COLUNA inteira do dia atual */
@@ -499,27 +505,37 @@ table.current-day-2 .day-cell-2,
 table.current-day-3 .day-cell-3,
 table.current-day-4 .day-cell-4,
 table.current-day-5 .day-cell-5 {
-  background-color: rgba(79, 70, 229, 0.06); /* Coluna levemente mais escura para guiar o olhar */
-  border-left: 1px solid rgba(79, 70, 229, 0.15);
-  border-right: 1px solid rgba(79, 70, 229, 0.15);
+  background-color: rgba(79, 70, 229, 0.03);
+  border-left: 1px solid rgba(79, 70, 229, 0.1);
+  border-right: 1px solid rgba(79, 70, 229, 0.1);
+}
+.dark-theme table.current-day-1 .day-cell-1,
+.dark-theme table.current-day-2 .day-cell-2,
+.dark-theme table.current-day-3 .day-cell-3,
+.dark-theme table.current-day-4 .day-cell-4,
+.dark-theme table.current-day-5 .day-cell-5 {
+  background-color: rgba(79, 70, 229, 0.08) !important;
 }
 
 .dark-theme table tr.current-active {
-  background-color: rgba(234, 88, 12, 0.15);
-  box-shadow: inset 4px 0 0 0 #ea580c;
+  background-color: rgba(245, 158, 11, 0.12) !important;
+  box-shadow: inset 0 2px 0 0 #f59e0b, inset 0 -2px 0 0 #f59e0b;
 }
 
 /* Estilo específico para a célula de horário quando ativa */
 table tr:not(.recreio) td.current-active:first-child {
-  background: linear-gradient(135deg, #f59e0b, #ea580c);
+  background: linear-gradient(135deg, #f59e0b, #ea580c) !important;
   color: white;
-  box-shadow: 5px 0 15px -3px rgba(234, 88, 12, 0.5);
-  border-right-color: var(--primary-hover);
+  /* Adiciona uma barra de destaque branca à esquerda para enfatizar o horário */
+  border-left: 8px solid var(--primary) !important;
+  box-shadow: 5px 0 15px rgba(234, 88, 12, 0.4);
+  border-right: 1px solid rgba(255,255,255,0.2) !important;
   font-weight: 800;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
+  z-index: 30;
 }
 
 /* Ponto pulsante de "Live" na célula de hora */
@@ -587,15 +603,15 @@ td.current-active:first-child::before {
 .time-counter {
   font-weight: 800;
   font-size: 1.05rem;
-  color: #ffffff !important;
-  background: #d97706 !important; /* Laranja vibrante para o cronômetro */
+  color: #fff !important;
+  background: linear-gradient(135deg, #f59e0b, #d97706) !important;
   font-variant-numeric: tabular-nums;
   padding: 6px 16px;
   border-radius: 12px;
   display: flex;
   align-items: center;
-  box-shadow: var(--shadow-sm);
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(217, 119, 6, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   margin: 0 5px;
 }
 
@@ -603,13 +619,13 @@ td.current-active:first-child::before {
   font-size: 1.15rem;
   font-weight: 800;
   color: #ffffff !important;
-  background: var(--primary) !important; /* Fundo azul sólido */
+  background: linear-gradient(135deg, var(--primary), var(--primary-hover)) !important;
   padding: 6px 16px;
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
   display: flex;
   align-items: center;
 }
@@ -741,7 +757,7 @@ th[title] {
 .box {
   width: 20px;
   height: 20px;
-  border: 1px solid var(--border-color); /* Usar variável para a borda */
+  border: 1px solid var(--border-color);
   border-radius: 3px;
 }
 
