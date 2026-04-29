@@ -715,6 +715,12 @@ td.current-active:first-child::before {
   border-right: 1px solid #555;
   padding-right: 15px;
 }
+
+.status-info-right {
+  margin-left: auto; /* Empurra para a direita */
+  font-size: 0.8em;
+  color: var(--text-muted); /* Usa a cor de texto mutada para se adaptar ao tema */
+}
 .header-highlight {
   background-color: var(--primary) !important;
   color: white !important;

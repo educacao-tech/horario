@@ -11,7 +11,9 @@ const CONFIG = {
   TEACHER_REGISTRY_KEY: 'school_teachers_v1',
   FILTER_DAY_KEY: 'school_filter_day_v1',
   ZOOM_LEVEL_KEY: 'school_zoom_level_v1',
-  LOCK_PASSWORD: 'qwe123',
+  LOCK_PASSWORD: 'qwe123', // Senha padrão para desbloquear o modo de edição
+  LAST_UPDATE_DATE: '2024-04-29', // Data da última atualização do código
+  GITHUB_REPO: 'USUARIO/horario', // Substitua pelo seu 'usuario/repositorio' do GitHub
   LAYOUTS: {
     morning: [6, 5, 4, 4, 5],
     afternoon: [5, 4, 4, 5, 4]
@@ -645,42 +647,84 @@ document.addEventListener('focusin', (e) => {
  * Atualiza a barra de status com informações da célula selecionada.
  * @param {HTMLElement} cell - Célula focada.
  */
-function updateStatusBar(cell) {
-  const text = cell.innerText.trim().toUpperCase();
-  const baseCode = text.split('(')[0].trim();
-  const teacherMap = getTeacherMap();
-  const teacherName = teacherMap[text] || teacherMap[baseCode];
-
-  const colIndex = cell.cellIndex;
-  const table = cell.closest('table');
-  const row = cell.parentElement;
-  if (!table || !row) return;
-
-  document.querySelectorAll('tr').forEach(r => r.classList.remove('row-highlight'));
-  row.classList.add('row-highlight');
-  document.querySelectorAll('th').forEach(th => th.classList.remove('header-highlight'));
-
-  const professorHeader = table.rows[1].cells[colIndex - 1];
+function updateStatusBar(cell = null) { // Torna 'cell' opcional
   const sb = _dom.statusBar();
   if (!sb) return;
 
-  if (professorHeader && table.rows[1]) {
-    const sigla = professorHeader.innerText.trim().toUpperCase();
-    const nomeProf = teacherMap[sigla] || `Especialista: ${sigla}`;
-    const nomeRegente = teacherName && !CONFIG.SPECIALIST_SIGLAS.includes(text) && !CONFIG.SPECIALIST_SIGLAS.includes(baseCode)
-      ? ` | <b>Regente:</b> ${teacherName}`
-      : '';
+  let statusContent = '';
+  let professorHeader = null;
 
-    sb.innerHTML = `
-      <div class="status-item"><b>Especialista:</b> ${nomeProf}</div>
-      <div class="status-item"><b>Sala/Turma:</b> ${cell.innerText || '(vazia)'}${nomeRegente}</div>
-    `;
-    professorHeader.classList.add('header-highlight');
+  // Limpa destaques de linha e cabeçalho, se houver uma célula válida
+  document.querySelectorAll('tr').forEach(r => r.classList.remove('row-highlight'));
+  document.querySelectorAll('th').forEach(th => th.classList.remove('header-highlight'));
+
+  // Processa informações específicas da célula apenas se uma célula válida for fornecida
+  if (cell && cell.closest && cell.parentElement) {
+    const text = cell.innerText.trim().toUpperCase();
+    const baseCode = text.split('(')[0].trim();
+    const teacherMap = getTeacherMap();
+    const teacherName = teacherMap[text] || teacherMap[baseCode];
+
+    const colIndex = cell.cellIndex;
+    const table = cell.closest('table');
+    const row = cell.parentElement;
+
+    if (table && row && table.rows[1]) { // Garante que a tabela e a linha são válidas
+      professorHeader = table.rows[1].cells[colIndex - 1];
+
+      const sigla = professorHeader.innerText.trim().toUpperCase();
+      const nomeProf = teacherMap[sigla] || `Especialista: ${sigla}`;
+      const nomeRegente = teacherName && !CONFIG.SPECIALIST_SIGLAS.includes(text) && !CONFIG.SPECIALIST_SIGLAS.includes(baseCode)
+        ? ` | <b>Regente:</b> ${teacherName}`
+        : '';
+
+      statusContent += `
+        <div class="status-item"><b>Especialista:</b> ${nomeProf}</div>
+        <div class="status-item"><b>Sala/Turma:</b> ${cell.innerText || '(vazia)'}${nomeRegente}</div>
+      `;
+      professorHeader.classList.add('header-highlight');
+    }
+
+    const count = Array.from(_dom.cells()).filter(c => c.innerText.trim().toUpperCase() === text).length;
+    if (text && text !== '*') {
+      statusContent += `<div class="status-item"><b>Aulas na Semana:</b> ${count}</div>`;
+    }
+    row.classList.add('row-highlight'); // Adiciona destaque à linha da célula focada
   }
 
-  const count = Array.from(_dom.cells()).filter(c => c.innerText.trim().toUpperCase() === text).length;
-  if (text && text !== '*') {
-    sb.innerHTML += `<div class="status-item"><b>Aulas na Semana:</b> ${count}</div>`;
+  // Sempre inclui a data da última atualização e a versão no canto inferior direito
+  const teacherMap = getTeacherMap();
+  statusContent += `
+    <div class="status-info-right">v${CONFIG.SCHEMA_VERSION} | Última atualização: ${CONFIG.LAST_UPDATE_DATE}</div>
+  `;
+  sb.innerHTML = statusContent; // Atribui o conteúdo completo de uma vez
+}
+
+/**
+ * Busca informações da última atualização diretamente da API do GitHub.
+ * Atualiza a data e o hash do commit na barra de status.
+ */
+async function fetchGitHubUpdateInfo() {
+  // Impede a execução se o repositório ainda não foi configurado corretamente
+  if (!CONFIG.GITHUB_REPO || CONFIG.GITHUB_REPO.includes('USUARIO')) {
+    console.warn("GitHub Repo não configurado no CONFIG. Atualização automática desativada.");
+    return;
+  }
+
+  try {
+    const response = await fetch(`https://api.github.com/repos/${CONFIG.GITHUB_REPO}/commits/main`);
+    if (response.ok) {
+      const data = await response.json();
+      const date = new Date(data.commit.committer.date).toLocaleDateString('pt-BR');
+      const sha = data.sha.substring(0, 7); // Pega os 7 primeiros caracteres do ID do commit
+      
+      const infoRight = document.querySelector('.status-info-right');
+      if (infoRight) {
+        infoRight.innerHTML = `v${CONFIG.SCHEMA_VERSION} (${sha}) | Última atualização: ${date}`;
+      }
+    }
+  } catch (err) {
+    console.error("Erro ao buscar dados do GitHub:", err);
   }
 }
 
@@ -1131,6 +1175,8 @@ document.addEventListener('DOMContentLoaded', () => {
   updateClock(); 
   initZoom(); 
   updateAriaStatus(); 
+  updateStatusBar(); // Chama sem célula para exibir apenas a versão/data inicialmente
+  fetchGitHubUpdateInfo(); // Busca dados reais do GitHub após o carregamento
 });
 
 // Error boundary global
