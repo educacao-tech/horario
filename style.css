@@ -132,14 +132,27 @@ body {
   scroll-behavior: smooth;
 }
 
+/* --- Modo Compacto --- */
+body.compact-mode {
+  padding-top: 10px;
+}
+body.compact-mode th, 
+body.compact-mode td {
+  padding: 4px 2px;
+  font-size: 0.85em;
+}
+body.compact-mode .table-container {
+  margin-bottom: 16px;
+}
+
 #schedule-wrapper, 
-section[id^="section-"] {
+div[id^="section-"] {
   width: 100%;
   display: block;
 }
 
 /* Garante que na impressão ou em telas grandes, as seções mantenham integridade */
-section[id^="section-"] {
+div[id^="section-"] {
   margin-bottom: 40px;
   page-break-inside: avoid;
   break-inside: avoid;
@@ -336,7 +349,6 @@ td[role="textbox"]:focus {
 table tr th.day-divider,
 table tr td.day-divider {
   border-right: 2px solid rgba(0, 0, 0, 0.15);
-  background-color: rgba(79, 70, 229, 0.05);
 }
 
 .dark-theme table tr th.day-divider,
@@ -776,39 +788,64 @@ th[title] {
 }
 
 @media print {
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
   @page {
     size: landscape;
     margin: 10mm;
   }
 
+  .main-header,
   .toolbar,
   .legend,
   .actions,
   .status-bar,
+  .zoom-controls,
+  .toast-container,
+  .modal-overlay,
+  .progress-container,
   button,
-  h1 {
+  #save-indicator {
     display: none !important;
   }
   body {
     padding: 0;
     background-color: white !important;
-    color: black !important;
+    color: #333 !important; /* Darker text for better readability */
   }
   h2 {
     margin-top: 0;
+    color: #333 !important; /* Ensure h2 is also dark */
   }
-  /* Força a seção da tarde a começar em uma nova página se necessário */
-  #section-afternoon {
+  /* Força uma quebra de página entre as divisões de período (Manhã e Tarde) na impressão */
+  div[id^="section-"] + div[id^="section-"] {
     page-break-before: always;
     break-before: page;
-    margin-top: 20px;
   }
   table {
     page-break-inside: avoid;
     break-inside: avoid;
-    font-size: 9pt; 
+    font-size: 11pt; /* Increased font size for better readability */
     width: 100% !important;
-    table-layout: auto !important; /* Melhora ajuste no papel */
+    table-layout: fixed !important; /* Use fixed layout for consistent column widths */
+  }
+  th, td {
+    padding: 8px 4px !important; /* Adjust padding for print */
+    border: 1px solid #ccc !important; /* Clearer borders */
+    color: #333 !important; /* Ensure all text in cells is dark */
+  }
+  th:first-child, tr:not(.recreio) td:first-child {
+    background-color: #f0f0f0 !important; /* Slightly shaded first column */
+    color: #333 !important;
+    box-shadow: none !important; /* Remove shadows */
+  }
+  thead th {
+    background-color: #e0e0e0 !important; /* Darker header background */
+    color: #333 !important;
+    border-bottom: 2px solid #999 !important; /* Stronger header border */
   }
   .table-container {
     overflow: visible;
@@ -818,6 +855,27 @@ th[title] {
   }
   td[contenteditable="true"] {
     background-color: transparent !important;
+  }
+  /* Specific overrides for various colored/highlighted elements */
+  .recreio {
+    background: #f0f0f0 !important; /* Light gray for recreio */
+    color: #555 !important;
+  }
+  .day-divider {
+    border-right: 2px solid #999 !important; /* Stronger day divider */
+  }
+  .current-active, .match-highlight, .category-select, .conflict-error {
+    background-color: transparent !important; /* Remove all dynamic highlights */
+    box-shadow: none !important;
+    outline: none !important;
+    color: #333 !important;
+    animation: none !important;
+  }
+  .current-active::before, .current-active::after {
+    display: none !important; /* Remove active indicators */
+  }
+  td[data-teacher]::after {
+    color: #555 !important; /* Ensure teacher name is visible */
   }
 }
 
@@ -924,6 +982,44 @@ th[title] {
   align-items: center;
   gap: 10px;
   pointer-events: auto;
+}
+
+.conflict-badge {
+  background: #ef4444;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 10px;
+  font-weight: 800;
+  font-size: 0.8rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+  transition: transform 0.2s;
+}
+.conflict-badge:hover { transform: scale(1.05); background: #dc2626; }
+
+/* Estilos para o Modal de Atalhos */
+.shortcut-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.shortcut-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-color);
+}
+.shortcut-key {
+  background: var(--hl-color);
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-family: monospace;
+  font-weight: 700;
+  border: 1px solid var(--border-color);
 }
 
 .toast.success { border-left: 4px solid #10b981; }

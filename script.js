@@ -13,7 +13,7 @@ const CONFIG = {
   ZOOM_LEVEL_KEY: 'school_zoom_level_v1',
   LOCK_PASSWORD: 'qwe123', // Senha padrão para desbloquear o modo de edição
   LAST_UPDATE_DATE: '2024-04-29', // Data da última atualização do código
-  GITHUB_REPO: 'seu-usuario/seu-repositorio', // <<< EX: 'meu-usuario/meu-projeto-horario'
+  GITHUB_REPO: 'SEU_USUARIO_GITHUB/SEU_REPOSITORIO', // <<< VOCÊ PRECISA MUDAR ISSO! Ex: 'meu-usuario/meu-projeto-horario'
   LAYOUTS: {
     morning: [6, 5, 4, 4, 5],
     afternoon: [5, 4, 4, 5, 4]
@@ -108,6 +108,7 @@ function showToast(message, type = 'info') {
 
 let _teacherMapCache = null;
 let _clipboardText = null;
+let _gitHubInfoCache = null; // Cache para persistir os dados do GitHub
 
 // --- SCHEMA MIGRATION ---
 function runMigrations() {
@@ -283,6 +284,32 @@ function checkConflicts(cell) {
         : `Conflito: Turma ${item.text} em múltiplas salas.`;
     }
   });
+  updateGlobalConflictCount();
+}
+
+/**
+ * Atualiza o contador global de conflitos na interface.
+ */
+function updateGlobalConflictCount() {
+  const total = document.querySelectorAll('.conflict-error').length;
+  let badge = document.getElementById('global-conflict-badge');
+  
+  if (total > 0) {
+    if (!badge) {
+      const toolbar = document.querySelector('.toolbar');
+      if (toolbar) {
+        badge = document.createElement('div');
+        badge.id = 'global-conflict-badge';
+        badge.className = 'conflict-badge';
+        badge.title = "Clique para ir ao primeiro conflito";
+        badge.onclick = () => document.querySelector('.conflict-error')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        toolbar.prepend(badge);
+      }
+    }
+    if (badge) badge.innerHTML = `⚠️ ${total} Conflito${total > 1 ? 's' : ''}`;
+  } else if (badge) {
+    badge.remove();
+  }
 }
 
 /**
@@ -309,6 +336,7 @@ function loadData() {
     cell.setAttribute('aria-label', `Aula de ${colInfo.specialist} às ${timeHeader}`);
   });
   updateAriaStatus();
+  updateGlobalConflictCount();
 }
 
 /**
@@ -394,6 +422,7 @@ document.addEventListener('input', (e) => {
     applyDynamicStyles(e.target);
     checkConflicts(e.target);
     saveContent(key, e.target.innerText);
+    updateGlobalConflictCount();
     updateStatusBar(e.target);
   }
 });
@@ -423,6 +452,7 @@ document.addEventListener('keydown', (e) => {
 
   const row = cell.parentElement;
   const table = cell.closest('table');
+  const colIndex = cell.cellIndex; // Movido para cima para evitar ReferenceError
   if (!row || !table) return;
 
   if ((e.ctrlKey || e.metaKey)) {
@@ -444,7 +474,6 @@ document.addEventListener('keydown', (e) => {
     if (e.key === 'd' && isEditable) {
       e.preventDefault();
       const rowIndex = row.rowIndex;
-      const colIndex = cell.cellIndex;
       const prevRow = table.rows ? table.rows[rowIndex - 1] : null;
       const cellAbove = prevRow ? prevRow.cells[colIndex] : null;
 
@@ -462,7 +491,6 @@ document.addEventListener('keydown', (e) => {
 
   let nextCell = null;
 
-  // Navegação Vertical
   if (e.key === 'Enter' || e.key === 'ArrowDown') {
     e.preventDefault();
     for (let i = row.rowIndex + 1; i < table.rows.length; i++) {
@@ -692,11 +720,12 @@ function updateStatusBar(cell = null) { // Torna 'cell' opcional
     row.classList.add('row-highlight'); // Adiciona destaque à linha da célula focada
   }
 
+  // Usa o cache do GitHub se disponível, caso contrário mostra o estado inicial
+  const gitInfoText = _gitHubInfoCache || `v${CONFIG.SCHEMA_VERSION} | Carregando atualização...`;
+
   // Adiciona o contêiner para informações de versão/atualização à direita
   statusContent += `
-    <div class="status-info-right" id="github-update-info">
-      v${CONFIG.SCHEMA_VERSION} | Carregando atualização...
-    </div>
+    <div class="status-info-right" id="github-update-info">${gitInfoText}</div>
   `;
 
   sb.innerHTML = statusContent; // Atribui o conteúdo completo de uma vez
@@ -707,25 +736,42 @@ function updateStatusBar(cell = null) { // Torna 'cell' opcional
  * Atualiza a data e o hash do commit na barra de status.
  */
 async function fetchGitHubUpdateInfo() {
-  if (!CONFIG.GITHUB_REPO || CONFIG.GITHUB_REPO.includes('seu-usuario')) return;
+  // Se já tivermos o dado ou o repositório não estiver configurado, não busca novamente
+  if (_gitHubInfoCache) { // Se já carregou, não precisa buscar de novo
+    return;
+  }
+  if (!CONFIG.GITHUB_REPO || CONFIG.GITHUB_REPO.includes('SEU_USUARIO_GITHUB')) {
+    console.warn("fetchGitHubUpdateInfo: GITHUB_REPO não configurado ou ainda é o placeholder. Por favor, atualize CONFIG.GITHUB_REPO no script.js.");
+    return;
+  }
+
+  console.log(`fetchGitHubUpdateInfo: Tentando buscar dados do GitHub para ${CONFIG.GITHUB_REPO}...`);
 
   try {
     // Busca o commit mais recente da branch main
-    const response = await fetch(`https://api.github.com/repos/${CONFIG.GITHUB_REPO}/commits/main`);
+    const apiUrl = `https://api.github.com/repos/${CONFIG.GITHUB_REPO}/commits/main`;
+    console.log(`fetchGitHubUpdateInfo: URL da API: ${apiUrl}`);
+    const response = await fetch(apiUrl);
+    
     if (response.ok) {
       const data = await response.json();
+      console.log("fetchGitHubUpdateInfo: Dados do GitHub recebidos com sucesso.", data);
       const date = new Date(data.commit.committer.date).toLocaleString('pt-BR', {
         day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
       });
       const sha = data.sha.substring(0, 7);
       
+      // Armazena no cache para que o updateStatusBar não sobrescreva com "Carregando..."
+      _gitHubInfoCache = `v${CONFIG.SCHEMA_VERSION} (${sha}) | Atualizado em: ${date}`;
+      
       const infoRight = document.getElementById('github-update-info');
       if (infoRight) {
-        infoRight.innerHTML = `v${CONFIG.SCHEMA_VERSION} (${sha}) | Atualizado em: ${date}`;
+        infoRight.innerHTML = _gitHubInfoCache;
+        console.log("fetchGitHubUpdateInfo: Rodapé atualizado com informações do GitHub.");
       }
     }
   } catch (err) {
-    console.error("Erro ao buscar dados do GitHub:", err);
+    console.error("fetchGitHubUpdateInfo: Erro na requisição ao GitHub:", err);
   }
 }
 
@@ -1166,6 +1212,15 @@ function applyZoom(level) {
   if (display) display.innerText = `${Math.round(level * 100)}%`;
 }
 
+/**
+ * Alterna entre o modo de visualização normal e compacto.
+ */
+function toggleCompactMode() {
+  const isCompact = document.body.classList.toggle('compact-mode');
+  localStorage.setItem('school_compact_mode', isCompact);
+  showToast(isCompact ? "Modo compacto ativado" : "Modo normal ativado", "info");
+}
+
 // Inicialização e intervalos
 document.addEventListener('DOMContentLoaded', () => {
   loadData(); 
@@ -1178,6 +1233,10 @@ document.addEventListener('DOMContentLoaded', () => {
   updateAriaStatus(); 
   updateStatusBar(); // Chama sem célula para exibir apenas a versão/data inicialmente
   fetchGitHubUpdateInfo(); // Busca dados reais do GitHub
+
+  if (localStorage.getItem('school_compact_mode') === 'true') {
+    document.body.classList.add('compact-mode');
+  }
 });
 
 // Error boundary global
@@ -1195,18 +1254,23 @@ setInterval(() => {
 window.addEventListener('load', () => {
   const dayFilterSelect = _dom.dayFilter();
 
-  // Recupera o filtro salvo ou padrão (0 - Todos)
-  const savedDay = localStorage.getItem(CONFIG.FILTER_DAY_KEY) || "0";
+  // Obtém o dia da semana atual (1 para Segunda, 5 para Sexta). 0 e 6 são Domingo/Sábado.
+  const today = new Date().getDay();
+  
+  // Define o dia inicial: Se for dia de semana (1-5), seleciona hoje. 
+  // Caso contrário (fim de semana), usa o filtro salvo anteriormente ou "0" (Todos).
+  const initialDay = (today >= 1 && today <= 5) 
+    ? today.toString() 
+    : (localStorage.getItem(CONFIG.FILTER_DAY_KEY) || "0");
 
   if (dayFilterSelect) {
-    dayFilterSelect.value = savedDay;
+    dayFilterSelect.value = initialDay;
     dayFilterSelect.addEventListener('change', (e) => {
       filterByDay(parseInt(e.target.value));
     });
   }
 
-  // Aplica o filtro inicial imediatamente para evitar "flash" de colunas
-  filterByDay(parseInt(savedDay));
+  filterByDay(parseInt(initialDay));
 });
 
 // --- SISTEMA DE GERENCIAMENTO DE PROFESSORES ---
@@ -1399,4 +1463,45 @@ function refreshTableUI() {
     applyDynamicStyles(cell);
     checkConflicts(cell);
   });
+}
+
+/**
+ * Abre o modal de atalhos de teclado.
+ */
+function openShortcutsModal() {
+  const shortcuts = [
+    { key: 'Enter / ↓', desc: 'Ir para a aula de baixo' },
+    { key: '↑', desc: 'Ir para a aula de cima' },
+    { key: '← / →', desc: 'Navegação horizontal' },
+    { key: 'Ctrl + D', desc: 'Copiar aula de cima (Fill Down)' },
+    { key: 'Ctrl + C / V', desc: 'Copiar e colar conteúdo' },
+    { key: 'Ctrl + Z / Y', desc: 'Desfazer e Refazer' }
+  ];
+
+  const overlay = Object.assign(document.createElement('div'), { className: 'modal-overlay' });
+  overlay.style.display = 'flex';
+
+  const modal = Object.assign(document.createElement('div'), { className: 'modal' });
+  const title = Object.assign(document.createElement('h2'), { textContent: '⌨️ Atalhos de Teclado' });
+  
+  const list = Object.assign(document.createElement('div'), { className: 'shortcut-list' });
+  
+  shortcuts.forEach(s => {
+    const item = Object.assign(document.createElement('div'), { className: 'shortcut-item' });
+    item.innerHTML = `<span class="shortcut-desc">${s.desc}</span><span class="shortcut-key">${s.key}</span>`;
+    list.appendChild(item);
+  });
+
+  const footer = Object.assign(document.createElement('div'), { className: 'modal-footer' });
+  const closeBtn = Object.assign(document.createElement('button'), { 
+    className: 'btn btn-primary', 
+    textContent: 'Entendido',
+    onclick: () => overlay.remove() 
+  });
+
+  footer.appendChild(closeBtn);
+  modal.append(title, list, footer);
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+  setupFocusTrap(overlay);
 }
