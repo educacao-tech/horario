@@ -742,44 +742,44 @@ function updateStatusBar(cell = null) { // Torna 'cell' opcional
  * Atualiza a data e o hash do commit na barra de status.
  */
 async function fetchGitHubUpdateInfo() {
-  // Se já tivermos o dado ou o repositório não estiver configurado, não busca novamente
-  if (_gitHubInfoCache) { // Se já carregou, não precisa buscar de novo
-    return;
-  }
-  if (!CONFIG.GITHUB_REPO || CONFIG.GITHUB_REPO.includes('SEU_USUARIO_GITHUB')) {
-    _gitHubInfoCache = `v${CONFIG.SCHEMA_VERSION} | Atualizado em: ${CONFIG.LAST_UPDATE_DATE}`;
-    const infoRight = document.getElementById('github-update-info');
-    if (infoRight) infoRight.innerHTML = _gitHubInfoCache;
-    return;
-  }
+  if (_gitHubInfoCache) return;
 
-  console.log(`fetchGitHubUpdateInfo: Tentando buscar dados do GitHub para ${CONFIG.GITHUB_REPO}...`);
+  const infoRight = document.getElementById('github-update-info');
+  
+  // Função auxiliar para atualizar o cache e o elemento na tela
+  const setInfo = (text) => {
+    _gitHubInfoCache = text;
+    if (infoRight) infoRight.innerHTML = text;
+  };
+
+  if (!CONFIG.GITHUB_REPO || CONFIG.GITHUB_REPO.includes('SEU_USUARIO_GITHUB')) {
+    setInfo(`v${CONFIG.SCHEMA_VERSION} | Atualizado em: ${CONFIG.LAST_UPDATE_DATE}`);
+    return;
+  }
 
   try {
-    // Busca o commit mais recente da branch main
-    const apiUrl = `https://api.github.com/repos/${CONFIG.GITHUB_REPO}/commits/main`;
-    console.log(`fetchGitHubUpdateInfo: URL da API: ${apiUrl}`);
-    const response = await fetch(apiUrl);
+    // Tenta buscar na branch 'main' (padrão atual do GitHub)
+    let response = await fetch(`https://api.github.com/repos/${CONFIG.GITHUB_REPO}/commits/main`);
     
-    if (response.ok) {
+    // Caso não encontre (404), tenta na branch 'master' (repositórios antigos)
+    if (response.status === 404) {
+      response = await fetch(`https://api.github.com/repos/${CONFIG.GITHUB_REPO}/commits/master`);
+    }
+
+    if (response && response.ok) {
       const data = await response.json();
-      console.log("fetchGitHubUpdateInfo: Dados do GitHub recebidos com sucesso.", data);
       const date = new Date(data.commit.committer.date).toLocaleString('pt-BR', {
         day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
       });
       const sha = data.sha.substring(0, 7);
-      
-      // Armazena no cache para que o updateStatusBar não sobrescreva com "Carregando..."
-      _gitHubInfoCache = `v${CONFIG.SCHEMA_VERSION} (${sha}) | Atualizado em: ${date}`;
-      
-      const infoRight = document.getElementById('github-update-info');
-      if (infoRight) {
-        infoRight.innerHTML = _gitHubInfoCache;
-        console.log("fetchGitHubUpdateInfo: Rodapé atualizado com informações do GitHub.");
-      }
+      setInfo(`v${CONFIG.SCHEMA_VERSION} (${sha}) | Atualizado em: ${date}`);
+    } else {
+      throw new Error(`Resposta HTTP: ${response.status}`);
     }
   } catch (err) {
-    console.error("fetchGitHubUpdateInfo: Erro na requisição ao GitHub:", err);
+    console.warn("fetchGitHubUpdateInfo: Falha ao obter dados do GitHub. Usando data local.", err);
+    // Fallback: se o GitHub falhar, usa a data estática do CONFIG
+    setInfo(`v${CONFIG.SCHEMA_VERSION} | Atualizado em: ${CONFIG.LAST_UPDATE_DATE}`);
   }
 }
 

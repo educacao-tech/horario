@@ -71,8 +71,10 @@
   padding-right: 20px; /* Padding lateral original do body */
   padding-bottom: 16px; /* Espaçamento abaixo da toolbar */
   box-sizing: border-box;
-  width: 100%;
+  width: 100vw; /* Garante que não ultrapasse a largura da janela */
+  max-width: 100%;
   border-bottom: 1px solid var(--border-color); /* Borda sutil para separar do conteúdo */
+  overflow-x: hidden; /* Evita que o wrapper cause scroll horizontal na página */
 }
 
 body {
@@ -92,9 +94,11 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px; /* Mantém o espaçamento interno */
-  padding: 5px 0; /* Mantém o padding interno */
+  margin-bottom: 16px;
+  padding: 5px 20px; /* Adiciona padding lateral para alinhar com o resto do conteúdo */
   border-bottom: none; /* A borda agora é no wrapper sticky */
+  flex-wrap: wrap; /* Permite que título e logo quebrem linha se necessário em telas minúsculas */
+  gap: 10px;
 }
 
 .header-brand {
@@ -316,6 +320,7 @@ td[contenteditable="true"], td[role="textbox"] {
   gap: 8px;
   border-left: 2px solid var(--border-color);
   padding-left: 16px;
+  padding-left: 8px;
 }
 
 .day-filter-select {
@@ -584,12 +589,22 @@ td.current-active:first-child::before {
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
+  gap: 6px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch; /* Rolagem suave no iOS */
   background: var(--bg-header);
   backdrop-filter: blur(12px) saturate(180%);
   padding: 12px 0; /* O padding horizontal é dado pelo .top-area-sticky-wrapper */
   border-radius: 16px; /* Mantém o border-radius */
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: var(--shadow-sm);
+  align-items: center;
+  scrollbar-width: none; /* Esconde scrollbar no Firefox */
+}
+
+.toolbar::-webkit-scrollbar {
+  display: none; /* Esconde scrollbar no Chrome/Safari para manter o visual limpo */
 }
 
 .search-wrapper {
@@ -600,10 +615,12 @@ td.current-active:first-child::before {
 
 .search-field {
   padding: 10px 16px;
+  padding: 8px 12px;
   border: 1px solid var(--border-color);
   border-radius: 10px;
   font-size: 0.85rem;
   min-width: 250px;
+  min-width: 160px;
   outline: none;
   transition: border-color 0.2s;
   padding-right: 30px; /* Espaço para o botão de limpar */
@@ -627,10 +644,12 @@ td.current-active:first-child::before {
 .time-counter {
   font-weight: 800;
   font-size: 1.05rem;
+  font-size: 0.9rem;
   color: #fff !important;
   background: linear-gradient(135deg, #f59e0b, #d97706) !important;
   font-variant-numeric: tabular-nums;
   padding: 6px 16px;
+  padding: 4px 10px;
   border-radius: 12px;
   display: flex;
   align-items: center;
@@ -641,10 +660,12 @@ td.current-active:first-child::before {
 
 .current-date-time {
   font-size: 1.15rem;
+  font-size: 1rem;
   font-weight: 800;
   color: #ffffff !important;
   background: linear-gradient(135deg, var(--primary), var(--primary-hover)) !important;
   padding: 6px 16px;
+  padding: 4px 10px;
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   white-space: nowrap;
@@ -685,17 +706,20 @@ td.current-active:first-child::before {
 
 .btn {
   padding: 8px 14px;
+  padding: 6px 10px;
   cursor: pointer;
   border: none;
   border-radius: 12px;
   font-weight: 700;
   font-size: 0.9rem;
+  font-size: 0.85rem;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
   gap: 8px;
   border: 1px solid rgba(0, 0, 0, 0.05);
   color: var(--text-main);
+  white-space: nowrap;
 }
 
 .year-badge {
@@ -725,8 +749,8 @@ td.current-active:first-child::before {
   bottom: 0;
   left: 0;
   width: 100%;
-  background: rgba(15, 23, 42, 0.8);
-  color: #fff;
+  background: var(--bg-header); /* Usa o fundo do cabeçalho para consistência */
+  color: var(--text-main); /* Cor do texto principal do tema */
   padding: 12px 24px;
   font-size: 0.9em;
   display: flex;
@@ -743,8 +767,28 @@ td.current-active:first-child::before {
 .status-info-right {
   margin-left: auto; /* Empurra para o canto direito */
   font-size: 0.85em;
-  color: rgba(255, 255, 255, 0.7); /* Cor clara fixa para garantir legibilidade no fundo escuro */
+  color: var(--text-muted); /* Usa a cor de texto mutada do tema */
   opacity: 0.8;
+  white-space: nowrap;
+}
+
+/* Ajustes para Telas Pequenas (Mobile) */
+@media (max-width: 768px) {
+  .top-area-sticky-wrapper {
+    padding: 10px 10px 8px 10px;
+  }
+  
+  div[id^="section-"] {
+    padding: 0 10px;
+  }
+
+  .header-titles h1 {
+    font-size: 1.1rem;
+  }
+
+  .main-header {
+    padding: 5px 10px; /* Ajusta o padding lateral para mobile */
+  }
 }
 
 .header-highlight {
