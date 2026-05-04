@@ -718,10 +718,16 @@ function updateStatusBar(cell = null) { // Torna 'cell' opcional
       statusContent += `<div class="status-item"><b>Aulas na Semana:</b> ${count}</div>`;
     }
     row.classList.add('row-highlight'); // Adiciona destaque à linha da célula focada
+  } else {
+    statusContent = '<div class="status-item">Aguardando seleção de aula...</div>';
   }
 
   // Usa o cache do GitHub se disponível, caso contrário mostra o estado inicial
-  const gitInfoText = _gitHubInfoCache || `v${CONFIG.SCHEMA_VERSION} | Carregando atualização...`;
+  // Se o repositório for o placeholder, mostra a data local imediatamente
+  const gitInfoText = _gitHubInfoCache || 
+    (CONFIG.GITHUB_REPO.includes('SEU_USUARIO_GITHUB') 
+      ? `v${CONFIG.SCHEMA_VERSION} | Atualizado em: ${CONFIG.LAST_UPDATE_DATE}` 
+      : `v${CONFIG.SCHEMA_VERSION} | Carregando atualização...`);
 
   // Adiciona o contêiner para informações de versão/atualização à direita
   statusContent += `
@@ -741,7 +747,9 @@ async function fetchGitHubUpdateInfo() {
     return;
   }
   if (!CONFIG.GITHUB_REPO || CONFIG.GITHUB_REPO.includes('SEU_USUARIO_GITHUB')) {
-    console.warn("fetchGitHubUpdateInfo: GITHUB_REPO não configurado ou ainda é o placeholder. Por favor, atualize CONFIG.GITHUB_REPO no script.js.");
+    _gitHubInfoCache = `v${CONFIG.SCHEMA_VERSION} | Atualizado em: ${CONFIG.LAST_UPDATE_DATE}`;
+    const infoRight = document.getElementById('github-update-info');
+    if (infoRight) infoRight.innerHTML = _gitHubInfoCache;
     return;
   }
 

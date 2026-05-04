@@ -60,11 +60,31 @@
   --edit-bg: #1e293b;
 }
 
+/* Wrapper para a área superior que ficará fixa */
+.top-area-sticky-wrapper {
+  position: sticky;
+  top: 0;
+  z-index: 1000; /* Garante que fique acima de outros conteúdos */
+  background-color: var(--bg-main); /* Para cobrir o conteúdo que rola por baixo */
+  padding-top: 20px; /* Padding superior original do body */
+  padding-left: 20px; /* Padding lateral original do body */
+  padding-right: 20px; /* Padding lateral original do body */
+  padding-bottom: 16px; /* Espaçamento abaixo da toolbar */
+  box-sizing: border-box;
+  width: 100%;
+  border-bottom: 1px solid var(--border-color); /* Borda sutil para separar do conteúdo */
+}
+
 body {
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
   background-color: var(--bg-main);
   color: var(--text-main);
-  padding: 20px 20px 60px 20px; /* Aumentado o padding inferior para não cobrir a tabela com a barra de status */
+  /* O padding superior e lateral agora é tratado pelo .top-area-sticky-wrapper */
+  /* O padding inferior é mantido para não cobrir a tabela com a barra de status */
+  padding-top: 0;
+  padding-left: 0;
+  padding-right: 0;
+  padding-bottom: 60px;
   line-height: 1.6;
 }
 
@@ -72,9 +92,9 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
-  padding: 5px 0;
-  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 16px; /* Mantém o espaçamento interno */
+  padding: 5px 0; /* Mantém o padding interno */
+  border-bottom: none; /* A borda agora é no wrapper sticky */
 }
 
 .header-brand {
@@ -118,10 +138,17 @@ body {
   color: var(--text-muted);
 }
 
+.legend {
+  margin-bottom: 12px; /* Mantém o espaçamento interno */
+  font-size: 0.9em;
+  flex-wrap: wrap;
+  display: flex; /* Adicionado para garantir o layout flex */
+  gap: 12px; /* Adicionado para garantir o layout flex */
+}
+
 .table-container {
   width: 100%;
   overflow-x: auto;
-  margin-bottom: 32px;
   padding-top: 15px; /* Padding reduzido, pois não temos mais badge flutuante */
   background: var(--bg-card);
   border-radius: 16px;
@@ -132,10 +159,14 @@ body {
   scroll-behavior: smooth;
 }
 
-/* --- Modo Compacto --- */
-body.compact-mode {
+/* --- Modo Compacto: Ajusta o padding do wrapper sticky --- */
+body.compact-mode .top-area-sticky-wrapper {
   padding-top: 10px;
 }
+
+/* O padding inferior do body.compact-mode é herdado do body principal */
+
+
 body.compact-mode th, 
 body.compact-mode td {
   padding: 4px 2px;
@@ -143,7 +174,7 @@ body.compact-mode td {
 }
 body.compact-mode .table-container {
   margin-bottom: 16px;
-}
+} /* Mantém o margin-bottom do container da tabela */
 
 #schedule-wrapper, 
 div[id^="section-"] {
@@ -156,6 +187,7 @@ div[id^="section-"] {
   margin-bottom: 40px;
   page-break-inside: avoid;
   break-inside: avoid;
+  padding: 0 20px; /* Adiciona padding horizontal para alinhar com o cabeçalho fixo */
 }
 
 table {
@@ -210,26 +242,6 @@ th:first-child, tr:not(.recreio) td:first-child {
   min-width: unset; /* Remove minimum width constraint */
   margin: 0 auto; /* Center the table itself within the container */
 }
-
-/* Ensure the first column (Horário) remains sticky and has its defined width */
-.table-container.single-day-active table th:first-child,
-.table-container.single-day-active table tr:not(.recreio) td:first-child {
-  position: sticky;
-  left: 0;
-  z-index: 20;
-  background-color: var(--bg-sticky-col);
-  border-right: 1px solid var(--border-color);
-  font-weight: 700;
-  color: var(--text-main);
-  width: calc(145px * var(--table-zoom));
-  min-width: calc(145px * var(--table-zoom));
-  font-size: 0.95em;
-  padding-left: 4px;
-  padding-right: 4px;
-  white-space: nowrap;
-  box-shadow: 4px 0 8px -4px rgba(0,0,0,0.1);
-}
-
 
 /* Estilo base para cabeçalhos */
 thead th, 
@@ -568,14 +580,14 @@ td.current-active:first-child::before {
 }
 
 .toolbar {
-  margin: 0 0 16px 0;
+  margin: 0; /* Remove todas as margens, o espaçamento é dado pelo padding-bottom do wrapper */
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
   background: var(--bg-header);
   backdrop-filter: blur(12px) saturate(180%);
-  padding: 12px 20px;
-  border-radius: 16px;
+  padding: 12px 0; /* O padding horizontal é dado pelo .top-area-sticky-wrapper */
+  border-radius: 16px; /* Mantém o border-radius */
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: var(--shadow-sm);
 }
@@ -731,7 +743,7 @@ td.current-active:first-child::before {
 .status-info-right {
   margin-left: auto; /* Empurra para o canto direito */
   font-size: 0.85em;
-  color: var(--text-muted);
+  color: rgba(255, 255, 255, 0.7); /* Cor clara fixa para garantir legibilidade no fundo escuro */
   opacity: 0.8;
 }
 
@@ -753,13 +765,6 @@ th[title] {
   border-radius: 10px;
 }
 
-.legend {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 12px;
-  font-size: 0.9em;
-  flex-wrap: wrap;
-}
 .legend-item {
   display: flex;
   align-items: center;
@@ -768,6 +773,10 @@ th[title] {
   padding: 4px 8px;
   border-radius: 8px;
   transition: all 0.2s ease;
+  background: none;
+  border: none;
+  font: inherit;
+  color: inherit;
 }
 .legend-item:hover { background-color: var(--hl-color); }
 .legend-item.active {
@@ -806,6 +815,7 @@ th[title] {
   .zoom-controls,
   .toast-container,
   .modal-overlay,
+  .top-area-sticky-wrapper, /* Esconde o wrapper sticky na impressão */
   .progress-container,
   button,
   #save-indicator {
