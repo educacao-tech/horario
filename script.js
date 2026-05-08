@@ -986,15 +986,6 @@ function updateHighlights() {
         const timeCell = row.cells[0];
         // Só destaca se não for recreio para manter o colspan íntegro
         if (timeCell && !row.classList.contains('recreio')) timeCell.classList.add('current-active');
-        
-        // Verificação robusta para evitar erros em navegadores antigos ou sem foco
-        const active = document.activeElement;
-        const isEditing = active && active.isContentEditable;
-        
-        if (active && row !== active.parentElement && !isEditing) {
-          window._lastActiveRow = row;
-          row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
 
         let cellStart = 1;
         for (let d = 0; d < day - 1; d++) {
@@ -1228,7 +1219,8 @@ function initZoom() {
       <button class="btn" type="button" onclick="adjustZoom(0.1)" title="Aumentar" aria-label="Aumentar nível de zoom">+</button>
     </div>
   `;
-  document.body.appendChild(zoomWrapper);
+  const toolbar = document.querySelector('.toolbar');
+  if (toolbar) toolbar.appendChild(zoomWrapper);
 }
 
 function adjustZoom(delta) {
@@ -1246,6 +1238,60 @@ function applyZoom(level) {
 }
 
 /**
+ * Inicializa o botão de atalho para rolar até a aula atual.
+ */
+function initScrollToNow() {
+  const toolbar = document.querySelector('.toolbar');
+  if (!toolbar) return;
+
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'btn';
+  btn.style.backgroundColor = 'var(--accent)';
+  btn.style.color = 'white';
+  btn.innerHTML = '📍 Agora';
+  btn.title = 'Rolar até a aula atual';
+
+  btn.onclick = () => {
+    const current = document.querySelector('tr.current-active');
+    if (current) {
+      current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else {
+      showToast("Não há aula ocorrendo no momento", "info");
+    }
+  };
+
+  // Insere antes do zoom para manter a organização
+  const zoom = toolbar.querySelector('.zoom-controls');
+  if (zoom) toolbar.insertBefore(btn, zoom);
+  else toolbar.appendChild(btn);
+}
+
+/**
+ * Inicializa o menu hambúrguer para dispositivos móveis.
+ */
+function initMobileMenu() {
+  const toolbar = document.querySelector('.toolbar');
+  if (!toolbar) return;
+
+  const menuBtn = document.createElement('button');
+  menuBtn.type = 'button';
+  menuBtn.className = 'btn mobile-menu-btn';
+  menuBtn.innerHTML = '☰';
+  menuBtn.title = 'Menu de opções';
+  
+  menuBtn.onclick = (e) => {
+    e.stopPropagation();
+    toolbar.classList.toggle('menu-open');
+  };
+
+  toolbar.appendChild(menuBtn);
+
+  // Fecha o menu ao clicar fora
+  document.addEventListener('click', () => toolbar.classList.remove('menu-open'));
+}
+
+/**
  * Alterna entre o modo de visualização normal e compacto.
  */
 function toggleCompactMode() {
@@ -1254,8 +1300,25 @@ function toggleCompactMode() {
   showToast(isCompact ? "Modo compacto ativado" : "Modo normal ativado", "info");
 }
 
+/**
+ * Inicializa o efeito de encolhimento do cabeçalho ao rolar a página.
+ */
+function initScrollEffect() {
+  const wrapper = document.querySelector('.top-area-sticky-wrapper');
+  if (!wrapper) return;
+
+  window.addEventListener('scroll', () => {
+    if (window.scrollY > 20) {
+      wrapper.classList.add('scrolled');
+    } else {
+      wrapper.classList.remove('scrolled');
+    }
+  }, { passive: true });
+}
+
 // Inicialização e intervalos
 document.addEventListener('DOMContentLoaded', () => {
+  window.scrollTo(0, 0); // Garante que a página inicie no topo ao carregar/recarregar
   loadData(); 
   applyTheme(); 
   reorderSectionsByTime(); 
@@ -1263,6 +1326,9 @@ document.addEventListener('DOMContentLoaded', () => {
   updateTimeCounter(); 
   updateClock(); 
   initZoom(); 
+  initScrollToNow();
+  initMobileMenu();
+  initScrollEffect();
   updateAriaStatus(); 
   updateStatusBar(); // Chama sem célula para exibir apenas a versão/data inicialmente
   fetchGitHubUpdateInfo(); // Busca dados reais do GitHub

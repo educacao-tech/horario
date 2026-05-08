@@ -20,22 +20,14 @@
   --table-zoom: 1;
 }
 
-/* Controle de Zoom Flutuante */
+/* Controle de Zoom na Toolbar */
 .zoom-controls {
-  position: fixed;
-  top: 15px;
-  top: 10px;
-  right: 20px;
-  z-index: 10005; /* Acima de outros elementos e modais */
-  background: var(--bg-header);
-  backdrop-filter: blur(12px) saturate(180%);
-  padding: 6px 12px;
-  border-radius: 50px;
-  border: 1px solid var(--border-color);
-  box-shadow: var(--shadow-md);
   display: flex;
   align-items: center;
   gap: 8px;
+  border-left: 2px solid var(--border-color);
+  padding-left: 12px;
+  margin-left: 4px;
 }
 
 .zoom-controls .btn {
@@ -65,29 +57,47 @@
 .top-area-sticky-wrapper {
   position: sticky;
   top: 0;
-  z-index: 1000; /* Garante que fique acima de outros conteúdos */
-  background-color: var(--bg-main); /* Para cobrir o conteúdo que rola por baixo */
-  padding-top: 20px; /* Padding superior original do body */
-  padding-top: 12px; /* Reduzido para ganhar espaço */
-  padding-left: 20px; /* Padding lateral original do body */
-  padding-right: 20px; /* Padding lateral original do body */
-  padding-bottom: 16px; /* Espaçamento abaixo da toolbar */
-  padding-bottom: 10px; /* Reduzido para ganhar espaço */
+  z-index: 1000;
+  background-color: var(--bg-main);
+  padding: 12px 20px 10px 20px; /* Unificado para evitar erros de cálculo */
   box-sizing: border-box;
-  width: 100vw; /* Garante que não ultrapasse a largura da janela */
-  max-width: 100%;
+  width: 100%; /* 100% respeita a largura do body sem contar a scrollbar vertical */
+  left: 0; /* Garante alinhamento total à esquerda */
   border-bottom: 1px solid var(--border-color); /* Borda sutil para separar do conteúdo */
-  overflow-x: hidden; /* Evita que o wrapper cause scroll horizontal na página */
+  transition: padding 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease;
   display: grid;
   grid-template-areas: 
     "header legend"
     "toolbar toolbar";
-  grid-template-columns: 1fr auto;
+  grid-template-columns: auto 1fr; /* O cabeçalho ocupa o necessário e a legenda o resto */
   align-items: center;
   gap: 4px 15px;
 }
 
+/* Estado encolhido do cabeçalho ao rolar */
+.top-area-sticky-wrapper.scrolled {
+  padding-top: 6px;
+  padding-bottom: 4px;
+  box-shadow: var(--shadow-md);
+  background-color: var(--bg-header);
+}
+
+.top-area-sticky-wrapper.scrolled .header-logo {
+  width: 32px;
+  height: 32px;
+}
+
+.top-area-sticky-wrapper.scrolled .header-titles h1 {
+  font-size: 1.1rem;
+}
+
+.top-area-sticky-wrapper.scrolled .header-titles p {
+  display: none; /* Oculta o subtítulo para ganhar espaço vertical */
+}
+
 body {
+  margin: 0; /* Remove a margem padrão do navegador que causa o estouro horizontal */
+  overflow-x: hidden; /* Garante que nada escape lateralmente no nível da página */
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
   background-color: var(--bg-main);
   color: var(--text-main);
@@ -103,13 +113,10 @@ body {
 .main-header {
   grid-area: header;
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
-  margin-bottom: 16px;
-  margin-bottom: 8px; /* Reduzido de 16px */
-  padding: 5px 20px; /* Adiciona padding lateral para alinhar com o resto do conteúdo */
-  margin-bottom: 0; 
-  padding: 0; /* Removido padding interno para alinhar com o grid */
+  margin: 0;
+  padding: 0;
   border-bottom: none; /* A borda agora é no wrapper sticky */
   flex-wrap: wrap; /* Permite que título e logo quebrem linha se necessário em telas minúsculas */
   gap: 10px;
@@ -119,6 +126,7 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-shrink: 0; /* Impede que o logo seja esmagado */
 }
 
 .header-logo {
@@ -220,6 +228,7 @@ div[id^="section-"] {
   page-break-inside: avoid;
   break-inside: avoid;
   padding: 0 20px; /* Adiciona padding horizontal para alinhar com o cabeçalho fixo */
+  box-sizing: border-box; /* Garante que o padding seja incluído na largura total */
 }
 
 table {
@@ -227,7 +236,7 @@ table {
   table-layout: fixed; /* Força as colunas a se expandirem para preencher 100% da tela */
   border-collapse: separate;
   border-spacing: 0;
-  min-width: 1250px; /* Mantém a rolagem horizontal em telas muito pequenas */
+  min-width: 1000px; /* Reduzido para permitir melhor ajuste em telas médias */
   border-radius: 16px;
   overflow: hidden; /* Esconder bordas que ultrapassam o radius */
 }
@@ -617,11 +626,12 @@ td.current-active:first-child::before {
   margin: 0; /* Remove todas as margens, o espaçamento é dado pelo padding-bottom do wrapper */
   display: flex;
   gap: 8px;
-  flex-wrap: wrap;
-  overflow-x: hidden;
+  flex-wrap: nowrap; /* Impede que os botões quebrem linha, forçando a rolagem interna se necessário */
+  overflow-x: auto; /* Permite rolar os botões se eles não couberem na largura da tela */
   -webkit-overflow-scrolling: touch; /* Rolagem suave no iOS */
   background: var(--bg-header);
   backdrop-filter: blur(12px) saturate(180%);
+  position: relative; /* Necessário para posicionar o menu mobile */
   padding: 12px 0; /* O padding horizontal é dado pelo .top-area-sticky-wrapper */
   padding: 8px 0; /* Reduzido de 12px */
   border-radius: 16px; /* Mantém o border-radius */
@@ -629,6 +639,11 @@ td.current-active:first-child::before {
   box-shadow: var(--shadow-sm);
   align-items: center;
   scrollbar-width: none; /* Esconde scrollbar no Firefox */
+}
+
+.toolbar::-webkit-scrollbar {
+  height: 4px; /* Barra de rolagem bem discreta para a toolbar se necessário */
+  display: block; 
 }
 
 .toolbar::-webkit-scrollbar {
@@ -647,8 +662,8 @@ td.current-active:first-child::before {
   border: 1px solid var(--border-color);
   border-radius: 10px;
   font-size: 0.85rem;
-  min-width: 250px;
-  min-width: 160px;
+  width: 200px; /* Largura fixa para o campo de busca */
+  flex-shrink: 0;
   outline: none;
   transition: border-color 0.2s;
   padding-right: 30px; /* Espaço para o botão de limpar */
@@ -748,6 +763,7 @@ td.current-active:first-child::before {
   border: 1px solid rgba(0, 0, 0, 0.05);
   color: var(--text-main);
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .year-badge {
@@ -845,11 +861,56 @@ td.current-active:first-child::before {
     font-size: 0.75rem; /* Texto menor para economizar largura */
     gap: 4px; /* Espaço menor entre o emoji e o texto do botão */
   }
+
+  /* Menu Mobile (Hambúrguer) */
+  .mobile-menu-btn {
+    display: flex !important;
+    background: var(--primary);
+    color: white;
+    order: 99; /* Garante que fique no final da toolbar */
+    margin-left: auto;
+  }
+
+  .toolbar.menu-open .time-counter,
+  .toolbar.menu-open .current-date-time,
+  .toolbar.menu-open #theme-toggle {
+    display: flex !important;
+    position: absolute;
+    right: 0;
+    z-index: 2000;
+    width: 220px;
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border-color);
+  }
+
+  .toolbar.menu-open .current-date-time { top: 60px; }
+  .toolbar.menu-open .time-counter { top: 105px; }
+  .toolbar.menu-open #theme-toggle { 
+    top: 150px; 
+    background: var(--bg-card) !important;
+    color: var(--text-main) !important;
+  }
+
+  /* Esconde por padrão no mobile se o menu não estiver aberto */
+  .toolbar:not(.menu-open) .time-counter,
+  .toolbar:not(.menu-open) .current-date-time,
+  .toolbar:not(.menu-open) #theme-toggle {
+    display: none !important;
+  }
+
+  /* Ajusta o campo de busca para ocupar mais espaço se os outros elementos forem ocultados */
+  .search-field {
+    width: 100%;
+  }
 }
 
 .header-highlight {
   background-color: var(--primary) !important;
   color: white !important;
+}
+
+.mobile-menu-btn {
+  display: none; /* Escondido no desktop */
 }
 th[title] {
   cursor: help;
