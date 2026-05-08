@@ -24,6 +24,7 @@
 .zoom-controls {
   position: fixed;
   top: 15px;
+  top: 10px;
   right: 20px;
   z-index: 10005; /* Acima de outros elementos e modais */
   background: var(--bg-header);
@@ -67,14 +68,23 @@
   z-index: 1000; /* Garante que fique acima de outros conteúdos */
   background-color: var(--bg-main); /* Para cobrir o conteúdo que rola por baixo */
   padding-top: 20px; /* Padding superior original do body */
+  padding-top: 12px; /* Reduzido para ganhar espaço */
   padding-left: 20px; /* Padding lateral original do body */
   padding-right: 20px; /* Padding lateral original do body */
   padding-bottom: 16px; /* Espaçamento abaixo da toolbar */
+  padding-bottom: 10px; /* Reduzido para ganhar espaço */
   box-sizing: border-box;
   width: 100vw; /* Garante que não ultrapasse a largura da janela */
   max-width: 100%;
   border-bottom: 1px solid var(--border-color); /* Borda sutil para separar do conteúdo */
   overflow-x: hidden; /* Evita que o wrapper cause scroll horizontal na página */
+  display: grid;
+  grid-template-areas: 
+    "header legend"
+    "toolbar toolbar";
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 4px 15px;
 }
 
 body {
@@ -91,11 +101,15 @@ body {
 }
 
 .main-header {
+  grid-area: header;
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 16px;
+  margin-bottom: 8px; /* Reduzido de 16px */
   padding: 5px 20px; /* Adiciona padding lateral para alinhar com o resto do conteúdo */
+  margin-bottom: 0; 
+  padding: 0; /* Removido padding interno para alinhar com o grid */
   border-bottom: none; /* A borda agora é no wrapper sticky */
   flex-wrap: wrap; /* Permite que título e logo quebrem linha se necessário em telas minúsculas */
   gap: 10px;
@@ -108,16 +122,26 @@ body {
 }
 
 .header-logo {
-  width: 40px;
-  height: 40px;
-  background: linear-gradient(135deg, var(--primary), var(--accent));
+  width: 50px;
+  height: 50px;
+  width: 42px; /* Reduzido de 50px para compactar o cabeçalho */
+  height: 42px;
+  background: url('https://raw.githubusercontent.com/educacao-tech/horario/main/eaba.png') center/contain no-repeat;
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
+  color: transparent; /* Esconde o emoji/texto interno para não sobrepor o logo */
   font-size: 1.25rem;
   box-shadow: var(--shadow-sm);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+
+.header-logo:hover {
+  transform: scale(1.1) rotate(5deg);
+  box-shadow: 0 0 15px rgba(79, 70, 229, 0.5);
+  filter: brightness(1.1);
 }
 
 .header-titles h1 {
@@ -144,10 +168,14 @@ body {
 
 .legend {
   margin-bottom: 12px; /* Mantém o espaçamento interno */
+  margin-bottom: 8px; /* Reduzido de 12px */
+  grid-area: legend;
+  margin-bottom: 0;
   font-size: 0.9em;
   flex-wrap: wrap;
   display: flex; /* Adicionado para garantir o layout flex */
   gap: 12px; /* Adicionado para garantir o layout flex */
+  justify-content: flex-end;
 }
 
 .table-container {
@@ -585,17 +613,17 @@ td.current-active:first-child::before {
 }
 
 .toolbar {
+  grid-area: toolbar;
   margin: 0; /* Remove todas as margens, o espaçamento é dado pelo padding-bottom do wrapper */
   display: flex;
-  gap: 12px;
+  gap: 8px;
   flex-wrap: wrap;
-  gap: 6px;
-  flex-wrap: nowrap;
-  overflow-x: auto;
+  overflow-x: hidden;
   -webkit-overflow-scrolling: touch; /* Rolagem suave no iOS */
   background: var(--bg-header);
   backdrop-filter: blur(12px) saturate(180%);
   padding: 12px 0; /* O padding horizontal é dado pelo .top-area-sticky-wrapper */
+  padding: 8px 0; /* Reduzido de 12px */
   border-radius: 16px; /* Mantém o border-radius */
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: var(--shadow-sm);
@@ -751,17 +779,22 @@ td.current-active:first-child::before {
   width: 100%;
   background: var(--bg-header); /* Usa o fundo do cabeçalho para consistência */
   color: var(--text-main); /* Cor do texto principal do tema */
-  padding: 12px 24px;
+  padding: 8px 16px;
   font-size: 0.9em;
   display: flex;
-  gap: 32px;
+  align-items: center;
+  gap: 15px;
   z-index: 1000;
   backdrop-filter: blur(20px) saturate(180%);
   border-top: 1px solid rgba(255, 255, 255, 0.1);
+  box-sizing: border-box;
 }
 .status-item {
   border-right: 1px solid #555;
-  padding-right: 15px;
+  padding-right: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .status-info-right {
@@ -770,6 +803,9 @@ td.current-active:first-child::before {
   color: var(--text-muted); /* Usa a cor de texto mutada do tema */
   opacity: 0.8;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 45%; /* Evita que mensagens longas quebrem o layout */
 }
 
 /* Ajustes para Telas Pequenas (Mobile) */
@@ -788,6 +824,26 @@ td.current-active:first-child::before {
 
   .main-header {
     padding: 5px 10px; /* Ajusta o padding lateral para mobile */
+  }
+
+  .top-area-sticky-wrapper {
+    grid-template-areas: 
+      "header"
+      "legend"
+      "toolbar";
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .toolbar {
+    gap: 6px; /* Reduz o espaço entre os botões na barra */
+    padding: 8px 0;
+  }
+
+  .btn {
+    padding: 4px 8px; /* Botões mais baixos e estreitos */
+    font-size: 0.75rem; /* Texto menor para economizar largura */
+    gap: 4px; /* Espaço menor entre o emoji e o texto do botão */
   }
 }
 
@@ -812,9 +868,9 @@ th[title] {
 .legend-item {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   cursor: pointer;
-  padding: 4px 8px;
+  padding: 2px 6px;
   border-radius: 8px;
   transition: all 0.2s ease;
   background: none;
@@ -828,8 +884,8 @@ th[title] {
   font-weight: 700;
 }
 .box {
-  width: 20px;
-  height: 20px;
+  width: 14px;
+  height: 14px;
   border: 1px solid var(--border-color);
   border-radius: 3px;
 }
@@ -1083,4 +1139,15 @@ th[title] {
 @keyframes toast-in {
   from { transform: translateY(-20px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
+}
+
+/* Animação de entrada das tabelas ao filtrar */
+@keyframes tableFadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.table-fade-in {
+  animation: tableFadeIn 0.4s ease-out forwards;
+  will-change: opacity, transform;
 }

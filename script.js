@@ -13,13 +13,14 @@ const CONFIG = {
   ZOOM_LEVEL_KEY: 'school_zoom_level_v1',
   LOCK_PASSWORD: 'qwe123', // Senha padrão para desbloquear o modo de edição
   LAST_UPDATE_DATE: '2024-04-29', // Data da última atualização do código
-  GITHUB_REPO: 'SEU_USUARIO_GITHUB/SEU_REPOSITORIO', // <<< VOCÊ PRECISA MUDAR ISSO! Ex: 'meu-usuario/meu-projeto-horario'
+  GITHUB_REPO: 'seu-usuario-real/seu-repositorio-horario', 
   LAYOUTS: {
     morning: [6, 5, 4, 4, 5],
     afternoon: [5, 4, 4, 5, 4]
   },
   SPECIALIST_SIGLAS: ['A(S)', 'A(M)', 'EF(M)', 'EF(P)', 'CT(D)', 'EDM(L)', 'EDM', 'EL', 'MTF', 'PI', 'PII'],
-  DATA_CATEGORIES: ['HL', 'HTPC', 'PD', 'EL', 'MTF']
+  DATA_CATEGORIES: ['HL', 'HTPC', 'PD', 'EL', 'MTF'],
+  SPECIALIST_SET: new Set(['A(S)', 'A(M)', 'EF(M)', 'EF(P)', 'CT(D)', 'EDM(L)', 'EDM', 'EL', 'MTF', 'PI', 'PII'])
 };
 
 const DEFAULT_TEACHER_MAP = {
@@ -246,44 +247,42 @@ function applyDynamicStyles(cell) {
  * @param {HTMLElement} cell - Célula que foi modificada.
  */
 function checkConflicts(cell) {
-  const rawText = cell.innerText.trim().toUpperCase();
-  if (!rawText || rawText === '*' || CONFIG.SPECIALIST_SIGLAS.includes(rawText)) {
-    cell.classList.remove('conflict-error');
-    cell.removeAttribute('title');
-    return;
-  }
-
   const row = cell.parentElement;
-  const editableInRow = Array.from(row.querySelectorAll('[contenteditable="true"]'));
-  if (editableInRow.length === 0) return;
+  if (!row) return;
 
   const teacherMap = getTeacherMap();
   const frequencyMap = new Map();
+  const cellsToProcess = [];
 
-  const rowData = editableInRow.map(c => {
+  // Primeira passada: Limpa estados e mapeia frequências na linha
+  for (let i = 0; i < row.cells.length; i++) {
+    const c = row.cells[i];
+    if (c.getAttribute('contenteditable') !== 'true') continue;
+
     c.classList.remove('conflict-error');
     c.removeAttribute('title');
+
     const txt = c.innerText.trim().toUpperCase();
+    if (!txt || txt === '*' || CONFIG.SPECIALIST_SET.has(txt)) continue;
+
     const base = txt.split('(')[0].trim();
     const teacher = teacherMap[txt] || teacherMap[base] || null;
-    const isSpecialist = CONFIG.SPECIALIST_SIGLAS.includes(txt) || txt === '*' || !txt;
-    if (!isSpecialist) {
-      const key = teacher || txt;
-      frequencyMap.set(key, (frequencyMap.get(key) || 0) + 1);
-    }
-    return { element: c, text: txt, teacher, isSpecialist };
-  });
+    const key = teacher || txt;
 
-  rowData.forEach(item => {
-    if (item.isSpecialist) return;
-    const key = item.teacher || item.text;
-    if (frequencyMap.get(key) > 1) {
+    frequencyMap.set(key, (frequencyMap.get(key) || 0) + 1);
+    cellsToProcess.push({ element: c, key, teacher, text: txt });
+  }
+
+  // Segunda passada: Aplica erros apenas onde há duplicidade
+  for (const item of cellsToProcess) {
+    if (frequencyMap.get(item.key) > 1) {
       item.element.classList.add('conflict-error');
       item.element.title = item.teacher
         ? `Conflito: Professor ${item.teacher} em múltiplas salas.`
         : `Conflito: Turma ${item.text} em múltiplas salas.`;
     }
-  });
+  }
+
   updateGlobalConflictCount();
 }
 
@@ -317,15 +316,24 @@ function updateGlobalConflictCount() {
  */
 function loadData() {
   const data = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY) || '{}');
+  const processedRows = new Set();
+  
   _dom.invalidateCache();
   _dom.cells().forEach(cell => {
     const key = getCellKey(cell);
     if (data[key] !== undefined) {
       cell.innerText = data[key];
       applyDynamicStyles(cell);
-      checkConflicts(cell);
+      processedRows.add(cell.parentElement);
     }
   });
+
+  // Valida cada linha afetada apenas uma vez
+  processedRows.forEach(row => {
+    const firstEditable = row.querySelector('[contenteditable="true"]');
+    if (firstEditable) checkConflicts(firstEditable);
+  });
+
   applyStaticDayDividers();
   _dom.cells().forEach(cell => {
     cell.setAttribute('role', 'textbox');
@@ -343,8 +351,11 @@ function loadData() {
  * Varre todas as células editáveis para validar conflitos globais.
  */
 function validateAllConflicts() {
-  _dom.cells().forEach(cell => {
-    if (cell.innerText.trim()) checkConflicts(cell);
+  const rows = new Set();
+  _dom.cells().forEach(c => rows.add(c.parentElement));
+  rows.forEach(row => {
+    const firstEditable = row.querySelector('[contenteditable="true"]');
+    if (firstEditable) checkConflicts(firstEditable);
   });
 }
 
@@ -571,10 +582,24 @@ function getDayAndColIndices(cell) {
 function filterByDay(selectedDayIndex) {
   localStorage.setItem(CONFIG.FILTER_DAY_KEY, selectedDayIndex);
   const selectedDay = parseInt(selectedDayIndex);
+  const dayNames = ['', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira'];
 
   _dom.tables().forEach(table => {
+    // Reinicia a animação de fade-in para suavizar a transição de colunas
+    table.classList.remove('table-fade-in');
+    void table.offsetWidth; // Força reflow para reiniciar a animação
+    table.classList.add('table-fade-in');
+
     const container = table.closest('.table-container');
     if (container) {
+      let label = container.querySelector('.filter-day-label');
+      if (!label) {
+        label = document.createElement('div');
+        container.prepend(label);
+      }
+      label.className = `filter-day-label day-color-${selectedDay}`;
+      label.textContent = dayNames[selectedDay] || '';
+
       container.classList.toggle('single-day-active', selectedDay !== 0);
       container.scrollTo({ left: 0, behavior: 'smooth' });
     }
@@ -697,10 +722,10 @@ function updateStatusBar(cell = null) { // Torna 'cell' opcional
     const table = cell.closest('table');
     const row = cell.parentElement;
 
-    if (table && row && table.rows[1]) { // Garante que a tabela e a linha são válidas
+    // Só tenta buscar o cabeçalho do professor se não for a primeira coluna (Horário)
+    if (table && row && table.rows[1] && colIndex > 0) {
       professorHeader = table.rows[1].cells[colIndex - 1];
-
-      const sigla = professorHeader.innerText.trim().toUpperCase();
+      const sigla = professorHeader ? professorHeader.innerText.trim().toUpperCase() : '';
       const nomeProf = teacherMap[sigla] || `Especialista: ${sigla}`;
       const nomeRegente = teacherName && !CONFIG.SPECIALIST_SIGLAS.includes(text) && !CONFIG.SPECIALIST_SIGLAS.includes(baseCode)
         ? ` | <b>Regente:</b> ${teacherName}`
@@ -710,7 +735,7 @@ function updateStatusBar(cell = null) { // Torna 'cell' opcional
         <div class="status-item"><b>Especialista:</b> ${nomeProf}</div>
         <div class="status-item"><b>Sala/Turma:</b> ${cell.innerText || '(vazia)'}${nomeRegente}</div>
       `;
-      professorHeader.classList.add('header-highlight');
+      if (professorHeader) professorHeader.classList.add('header-highlight');
     }
 
     const count = Array.from(_dom.cells()).filter(c => c.innerText.trim().toUpperCase() === text).length;
@@ -725,9 +750,9 @@ function updateStatusBar(cell = null) { // Torna 'cell' opcional
   // Usa o cache do GitHub se disponível, caso contrário mostra o estado inicial
   // Se o repositório for o placeholder, mostra a data local imediatamente
   const gitInfoText = _gitHubInfoCache || 
-    (CONFIG.GITHUB_REPO.includes('SEU_USUARIO_GITHUB') 
+    (CONFIG.GITHUB_REPO.includes('seu-usuario-real') 
       ? `v${CONFIG.SCHEMA_VERSION} | Atualizado em: ${CONFIG.LAST_UPDATE_DATE}` 
-      : `v${CONFIG.SCHEMA_VERSION} | Carregando atualização...`);
+      : `v${CONFIG.SCHEMA_VERSION} | Sincronizando com GitHub...`);
 
   // Adiciona o contêiner para informações de versão/atualização à direita
   statusContent += `
@@ -743,16 +768,15 @@ function updateStatusBar(cell = null) { // Torna 'cell' opcional
  */
 async function fetchGitHubUpdateInfo() {
   if (_gitHubInfoCache) return;
-
-  const infoRight = document.getElementById('github-update-info');
   
   // Função auxiliar para atualizar o cache e o elemento na tela
   const setInfo = (text) => {
     _gitHubInfoCache = text;
+    const infoRight = document.getElementById('github-update-info');
     if (infoRight) infoRight.innerHTML = text;
   };
 
-  if (!CONFIG.GITHUB_REPO || CONFIG.GITHUB_REPO.includes('SEU_USUARIO_GITHUB')) {
+  if (!CONFIG.GITHUB_REPO || CONFIG.GITHUB_REPO.includes('seu-usuario-real')) {
     setInfo(`v${CONFIG.SCHEMA_VERSION} | Atualizado em: ${CONFIG.LAST_UPDATE_DATE}`);
     return;
   }
@@ -772,7 +796,8 @@ async function fetchGitHubUpdateInfo() {
         day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
       });
       const sha = data.sha.substring(0, 7);
-      setInfo(`v${CONFIG.SCHEMA_VERSION} (${sha}) | Atualizado em: ${date}`);
+      const message = data.commit.message.split('\n')[0].substring(0, 30);
+      setInfo(`v${CONFIG.SCHEMA_VERSION} (${sha}) | Sincronizado: "${message}..." em ${date}`);
     } else {
       throw new Error(`Resposta HTTP: ${response.status}`);
     }
