@@ -43,12 +43,27 @@
     </div>
 
     <div class="toolbar">
-      <button type="button" class="btn" style="background: var(--hl-color); color: var(--text-main);" onclick="openTeacherManager()">⚙️ Professores</button>
-      <button type="button" class="btn btn-primary" onclick="window.print()">🖨️ Imprimir PDF</button>
-      <button type="button" class="btn btn-success" onclick="exportToCsv()">📊 Exportar CSV</button>
+      <div class="menu-dropdown-wrapper">
+        <button type="button" class="btn btn-primary" id="main-menu-btn" onclick="toggleMainMenu(event)">
+          ☰ Menu
+        </button>
+        <div id="main-menu-dropdown" class="menu-dropdown">
+          <button type="button" class="btn-menu-item" onclick="openTeacherManager()">⚙️ Gerenciar Professores</button>
+          <button type="button" class="btn-menu-item" onclick="openSettingsModal()">🎨 Personalizar Cores</button>
+          <button type="button" class="btn-menu-item" onclick="openShortcutsModal()">⌨️ Atalhos de Teclado</button>
+          <button type="button" class="btn-menu-item" onclick="showWorkloadModal()">📊 Carga Horária</button>
+          <button type="button" class="btn-menu-item" onclick="showBackupHistoryModal()">📦 Histórico de Backups</button>
+          <button type="button" class="btn-menu-item" onclick="exportBackupJSON()">💾 Exportar Backup Total</button>
+          <button type="button" class="btn-menu-item" onclick="importBackupJSON()">📂 Importar Backup Total</button>
+          <button type="button" id="theme-toggle" class="btn-menu-item" onclick="toggleTheme()">🌙 Alternar Tema</button>
+          <button type="button" id="lock-btn" class="btn-menu-item" onclick="toggleLockMode()">🔒 Modo Leitura</button>
+        </div>
+      </div>
+
       <div class="search-wrapper">
-        <input type="text" id="search-input" class="search-field" placeholder="🔍 Pesquisar professor ou turma..." oninput="highlightOccurrences(this.value)">
+        <input type="text" id="search-input" class="search-field" placeholder="🔍 Pesquisar professor ou turma..." autocomplete="off">
         <button type="button" class="clear-search-btn" onclick="clearSearch()" aria-label="Limpar pesquisa">✖</button>
+        <div id="search-suggestions" class="search-suggestions"></div>
       </div>
       <div class="day-filter-wrapper">
         <select id="day-filter-select" class="day-filter-select">
@@ -62,8 +77,6 @@
       </div>
       <span id="time-counter" class="time-counter"></span>
       <div id="current-date-time" class="current-date-time"></div>
-      <button type="button" id="theme-toggle" class="btn btn-primary" onclick="toggleTheme()">🌙 Tema Escuro</button>
-      <button type="button" id="lock-btn" class="btn btn-primary" style="background: #64748b;" onclick="toggleLockMode()">🔒 Modo Leitura</button>
       <span id="save-indicator">✅ Salvo</span>
     </div>
   </div>

@@ -11,6 +11,8 @@ const CONFIG = {
   TEACHER_REGISTRY_KEY: 'school_teachers_v1',
   FILTER_DAY_KEY: 'school_filter_day_v1',
   ZOOM_LEVEL_KEY: 'school_zoom_level_v1',
+  HISTORY_KEY: 'school_history_v2',
+  COLORS_KEY: 'school_custom_colors_v1',
   LOCK_PASSWORD: 'qwe123', // Senha padrão para desbloquear o modo de edição
   LAST_UPDATE_DATE: '2024-04-29', // Data da última atualização do código
   GITHUB_REPO: 'seu-usuario-real/seu-repositorio-horario', 
@@ -80,7 +82,9 @@ const _dom = (() => {
     themeBtn: () => get('theme-toggle'),
     lockBtn: () => get('lock-btn'),
     searchInput: () => get('search-input'),
-    dayFilter: () => get('day-filter-select')
+    dayFilter: () => get('day-filter-select'),
+    searchSuggestions: () => get('search-suggestions'),
+    mainMenu: () => get('main-menu-dropdown')
   };
 })();
 
@@ -110,6 +114,8 @@ function showToast(message, type = 'info') {
 let _teacherMapCache = null;
 let _clipboardText = null;
 let _gitHubInfoCache = null; // Cache para persistir os dados do GitHub
+let _activeSuggestionIndex = -1; // Rastreia o item focado via teclado no autocomplete
+let _saveIndicatorTimeout = null; // Controla o tempo de exibição do feedback de salvamento
 
 // --- SCHEMA MIGRATION ---
 function runMigrations() {
@@ -137,12 +143,25 @@ function runMigrations() {
 }
 
 /**
+ * Normaliza uma string para comparação: remove acentos e converte para maiúsculas.
+ * @param {string} str - String original.
+ * @returns {string} String normalizada.
+ */
+function normalizeString(str) {
+  if (!str) return '';
+  return str
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase()
+    .trim();
+}
+
+/**
  * Inicializa o processo de migração de dados se necessário.
  */
 function initializeData() {
   runMigrations();
 }
-initializeData();
 
 // --- CORE FUNCTIONS ---
 
@@ -206,10 +225,12 @@ const saveContent = debounce((key, text) => {
     const data = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY) || '{}');
     data[key] = text;
     localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(data));
+    createSnapshot(); // Salva no histórico após cada alteração
     const indicator = _dom.saveIndicator();
     if (indicator) {
+      clearTimeout(_saveIndicatorTimeout);
       indicator.style.opacity = '1';
-      setTimeout(() => { indicator.style.opacity = '0'; }, 2000);
+      _saveIndicatorTimeout = setTimeout(() => { indicator.style.opacity = '0'; }, 2000);
     }
   } catch (e) {
     showToast('Erro ao salvar: ' + e.message, 'error');
@@ -461,6 +482,12 @@ document.addEventListener('keydown', (e) => {
   const isEditable = cell.getAttribute('contenteditable') === 'true';
   if (!isEditable) return;
 
+  // Atalho para focar busca (/)
+  if (e.key === '/' && document.activeElement.tagName !== 'INPUT' && !isEditable) {
+    e.preventDefault();
+    _dom.searchInput()?.focus();
+  }
+
   const row = cell.parentElement;
   const table = cell.closest('table');
   const colIndex = cell.cellIndex; // Movido para cima para evitar ReferenceError
@@ -648,7 +675,108 @@ function filterByDay(selectedDayIndex) {
  */
 function clearSearch() {
   const searchInput = _dom.searchInput();
-  if (searchInput) { searchInput.value = ''; highlightOccurrences(''); }
+  if (searchInput) { 
+    searchInput.value = ''; 
+    highlightOccurrences(''); 
+    _dom.searchSuggestions().classList.remove('active');
+  }
+}
+
+/**
+ * Versão debounced da função de destaque para melhorar performance na busca.
+ */
+const debouncedSearch = debounce((text) => {
+  highlightOccurrences(text);
+  updateSearchSuggestions(text);
+}, 300);
+
+/**
+ * Gera e exibe sugestões de busca baseadas no mapa de professores.
+ */
+function updateSearchSuggestions(text) {
+  const container = _dom.searchSuggestions();
+  if (!container) return;
+
+  const normalizedSearch = normalizeString(text);
+  if (normalizedSearch.length < 1) {
+    container.classList.remove('active');
+    _activeSuggestionIndex = -1;
+    return;
+  }
+
+  const teacherMap = getTeacherMap();
+  const suggestions = Object.entries(teacherMap)
+    .filter(([sigla, nome]) => normalizeString(sigla).includes(normalizedSearch) || normalizeString(nome).includes(normalizedSearch))
+    .slice(0, 8); // Limita a 8 sugestões para não poluir a tela
+
+  if (suggestions.length === 0) {
+    container.classList.remove('active');
+    _activeSuggestionIndex = -1;
+    return;
+  }
+
+  _activeSuggestionIndex = -1; // Reseta o índice ao gerar nova lista
+  container.innerHTML = suggestions.map(([sigla, nome]) => `
+    <div class="suggestion-item" onclick="selectSuggestion('${sigla}')">
+      <span>${nome}</span>
+      <span class="sigla-tag">${sigla}</span>
+    </div>
+  `).join('');
+  container.classList.add('active');
+}
+
+/**
+ * Alterna a exibição do menu principal de ações.
+ */
+function toggleMainMenu(event) {
+  if (event) event.stopPropagation();
+  const menu = _dom.mainMenu();
+  if (menu) menu.classList.toggle('active');
+}
+
+// Fecha o menu ao clicar fora dele
+document.addEventListener('click', (e) => {
+  const menu = _dom.mainMenu();
+  if (menu && menu.classList.contains('active') && !e.target.closest('.menu-dropdown-wrapper')) {
+    menu.classList.remove('active');
+  }
+});
+
+window.selectSuggestion = function(sigla) {
+  const input = _dom.searchInput();
+  if (input) {
+    input.value = sigla;
+    highlightOccurrences(sigla);
+    _dom.searchSuggestions().classList.remove('active');
+  }
+};
+
+/**
+ * Move o destaque visual entre as sugestões de busca usando as setas do teclado.
+ * @param {string} direction - 'up' ou 'down'.
+ */
+function moveSuggestionFocus(direction) {
+  const container = _dom.searchSuggestions();
+  if (!container || !container.classList.contains('active')) return;
+
+  const items = container.querySelectorAll('.suggestion-item');
+  if (items.length === 0) return;
+
+  // Remove o destaque do item anterior
+  if (_activeSuggestionIndex >= 0 && _activeSuggestionIndex < items.length) {
+    items[_activeSuggestionIndex].classList.remove('keyboard-active');
+  }
+
+  if (direction === 'down') {
+    _activeSuggestionIndex = (_activeSuggestionIndex + 1) % items.length;
+  } else if (direction === 'up') {
+    _activeSuggestionIndex = (_activeSuggestionIndex - 1 + items.length) % items.length;
+  }
+
+  // Aplica o novo destaque e garante visibilidade (scroll)
+  const activeItem = items[_activeSuggestionIndex];
+  activeItem.classList.add('keyboard-active');
+  activeItem.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 }
 
 /**
@@ -657,15 +785,22 @@ function clearSearch() {
  * @param {string} text - Termo de busca.
  */
 function highlightOccurrences(text) {
-  const cleanText = text.trim().toUpperCase();
+  const normalizedSearch = normalizeString(text);
+  const teacherMap = getTeacherMap();
+
   _dom.cells().forEach(c => {
-    const cellText = c.innerText.trim().toUpperCase();
+    const cellText = c.innerText.trim();
     const cellBaseCode = cellText.split('(')[0].trim();
-    if (cleanText && (cellText.includes(cleanText) || cellBaseCode === cleanText) && !['*', ''].includes(cleanText)) {
-      c.classList.add('match-highlight');
-    } else {
-      c.classList.remove('match-highlight');
-    }
+    
+    // Obtém o nome do professor para permitir busca por nome completo
+    const teacherName = teacherMap[cellText] || teacherMap[cellBaseCode] || "";
+
+    // Critério de correspondência: texto da célula OU nome do professor
+    const isMatch = normalizedSearch && 
+                    !['*', ''].includes(normalizedSearch) && 
+                    (normalizeString(cellText).includes(normalizedSearch) || normalizeString(teacherName).includes(normalizedSearch));
+
+    c.classList.toggle('match-highlight', !!isMatch);
   });
 }
 
@@ -895,17 +1030,28 @@ function exportToCsv() {
   link.click();
 }
 
-function exportBackupJSON() {
-  const data = localStorage.getItem(CONFIG.STORAGE_KEY);
-  if (!data) return alert("Não há dados para exportar.");
+/**
+ * Exporta todos os dados do sistema (Horários, Professores e Cores) em um único arquivo JSON.
+ */
+ function exportBackupJSON() {
+  const backup = {
+    version: CONFIG.SCHEMA_VERSION,
+    timestamp: new Date().toISOString(),
+    schedule: JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY) || '{}'),
+    teachers: JSON.parse(localStorage.getItem(CONFIG.TEACHER_REGISTRY_KEY) || 'null'),
+    colors: JSON.parse(localStorage.getItem(CONFIG.COLORS_KEY) || 'null')
+  };
 
-  const blob = new Blob([data], { type: 'application/json' });
+  const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
   link.download = `backup_horario_${new Date().toISOString().split('T')[0]}.json`;
   link.click();
 }
 
+/**
+ * Importa um arquivo de backup completo e atualiza o sistema.
+ */
 function importBackupJSON() {
   const input = document.createElement('input');
   input.type = 'file';
@@ -917,16 +1063,16 @@ function importBackupJSON() {
 
     reader.onload = readerEvent => {
       try {
-        const content = readerEvent.target.result;
-        const parsed = JSON.parse(content);
+        const backup = JSON.parse(readerEvent.target.result);
+        
+        if (!backup.schedule) throw new Error("Arquivo de backup inválido.");
 
-        const hasScheduleData = Object.keys(parsed).some(key => key.startsWith('sched_'));
-        if (!hasScheduleData) {
-          throw new Error("Arquivo não contém dados de horário válidos.");
-        }
-
-        if (confirm("Isso irá sobrescrever todos os dados atuais. Deseja continuar?")) {
-          localStorage.setItem(CONFIG.STORAGE_KEY, content);
+        if (confirm("Deseja restaurar este backup total? Isso sobrescreverá horários, professores e cores.")) {
+          localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(backup.schedule));
+          if (backup.teachers) localStorage.setItem(CONFIG.TEACHER_REGISTRY_KEY, JSON.stringify(backup.teachers));
+          if (backup.colors) localStorage.setItem(CONFIG.COLORS_KEY, JSON.stringify(backup.colors));
+          
+          showToast("Backup restaurado com sucesso!", "success");
           window.location.reload();
         }
       } catch (err) {
@@ -1288,7 +1434,11 @@ function initMobileMenu() {
   toolbar.appendChild(menuBtn);
 
   // Fecha o menu ao clicar fora
-  document.addEventListener('click', () => toolbar.classList.remove('menu-open'));
+  document.addEventListener('click', (e) => {
+    if (!toolbar.contains(e.target) && toolbar.classList.contains('menu-open')) {
+      toolbar.classList.remove('menu-open');
+    }
+  });
 }
 
 /**
@@ -1319,6 +1469,8 @@ function initScrollEffect() {
 // Inicialização e intervalos
 document.addEventListener('DOMContentLoaded', () => {
   window.scrollTo(0, 0); // Garante que a página inicie no topo ao carregar/recarregar
+  initializeData();
+  loadCustomColors();
   loadData(); 
   applyTheme(); 
   reorderSectionsByTime(); 
@@ -1327,7 +1479,6 @@ document.addEventListener('DOMContentLoaded', () => {
   updateClock(); 
   initZoom(); 
   initScrollToNow();
-  initMobileMenu();
   initScrollEffect();
   updateAriaStatus(); 
   updateStatusBar(); // Chama sem célula para exibir apenas a versão/data inicialmente
@@ -1335,6 +1486,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (localStorage.getItem('school_compact_mode') === 'true') {
     document.body.classList.add('compact-mode');
+  }
+
+  // Listener para busca com debounce
+  const searchInput = _dom.searchInput();
+  if (searchInput) {
+    searchInput.addEventListener('input', (e) => debouncedSearch(e.target.value));
+
+    // Atalho: Enter seleciona a primeira sugestão se o menu estiver aberto
+    searchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const suggestions = _dom.searchSuggestions();
+        if (suggestions && suggestions.classList.contains('active')) {
+          const firstItem = suggestions.querySelector('.suggestion-item');
+          if (firstItem) {
+            e.preventDefault(); // Evita outros comportamentos do Enter
+            firstItem.click();  // Aciona a função selectSuggestion vinculada ao item
+          }
+        }
+      }
+    });
+
+    // Fecha sugestões ao clicar fora
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.search-wrapper')) 
+        _dom.searchSuggestions().classList.remove('active');
+    });
   }
 });
 
@@ -1600,6 +1777,234 @@ function openShortcutsModal() {
 
   footer.appendChild(closeBtn);
   modal.append(title, list, footer);
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+  setupFocusTrap(overlay);
+}
+
+/**
+ * Carrega e aplica as cores personalizadas do localStorage.
+ */
+function loadCustomColors() {
+  const savedColors = JSON.parse(localStorage.getItem(CONFIG.COLORS_KEY) || '{}');
+  Object.entries(savedColors).forEach(([category, color]) => {
+    document.documentElement.style.setProperty(`--${category}-color`, color);
+  });
+}
+
+/**
+ * Abre o modal para personalização de cores das categorias.
+ */
+function openSettingsModal() {
+  const categories = [
+    { id: 'hl', label: 'HL (Livre/HTPC)', default: '#f1f5f9' },
+    { id: 'pd', label: 'PD (Plantão)', default: '#bae6fd' },
+    { id: 'el', label: 'EL (Elefante)', default: '#d1fae5' },
+    { id: 'mtf', label: 'MTF (Matific)', default: '#ffedd5' }
+  ];
+
+  const savedColors = JSON.parse(localStorage.getItem(CONFIG.COLORS_KEY) || '{}');
+  const overlay = Object.assign(document.createElement('div'), { className: 'modal-overlay' });
+  overlay.style.display = 'flex';
+
+  const modal = Object.assign(document.createElement('div'), { className: 'modal' });
+  const title = Object.assign(document.createElement('h2'), { textContent: '🎨 Personalizar Cores' });
+  const container = Object.assign(document.createElement('div'), { className: 'teacher-list-container' });
+
+  categories.forEach(cat => {
+    const currentVal = savedColors[cat.id] || getComputedStyle(document.documentElement).getPropertyValue(`--${cat.id}-color`).trim() || cat.default;
+    
+    const item = Object.assign(document.createElement('div'), { className: 'color-setting-item' });
+    item.innerHTML = `
+      <span>${cat.label}</span>
+      <div class="color-input-wrapper">
+        <input type="color" id="color-${cat.id}" value="${currentVal.length === 4 ? expandHex(currentVal) : currentVal}">
+      </div>
+    `;
+    container.appendChild(item);
+  });
+
+  const footer = Object.assign(document.createElement('div'), { className: 'modal-footer' });
+  
+  const btnReset = Object.assign(document.createElement('button'), { 
+    className: 'btn', textContent: 'Restaurar Padrões', 
+    onclick: () => {
+      if(confirm("Deseja voltar para as cores originais?")) {
+        localStorage.removeItem(CONFIG.COLORS_KEY);
+        window.location.reload();
+      }
+    }
+  });
+
+  const btnSave = Object.assign(document.createElement('button'), { 
+    className: 'btn btn-success', textContent: 'Salvar Cores',
+    onclick: () => {
+      const newColors = {};
+      categories.forEach(cat => {
+        const val = document.getElementById(`color-${cat.id}`).value;
+        newColors[cat.id] = val;
+        document.documentElement.style.setProperty(`--${cat.id}-color`, val);
+      });
+      localStorage.setItem(CONFIG.COLORS_KEY, JSON.stringify(newColors));
+      showToast("Cores atualizadas!", "success");
+      overlay.remove();
+    }
+  });
+
+  footer.append(btnReset, btnSave);
+  modal.append(title, container, footer);
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+  setupFocusTrap(overlay);
+}
+
+/**
+ * Expande hexadecimais curtos (#ABC para #AABBCC) para compatibilidade com input color.
+ */
+function expandHex(hex) {
+  if (hex.length !== 4) return hex;
+  return '#' + hex[1] + hex[1] + hex[2] + hex[2] + hex[3] + hex[3];
+}
+
+/**
+ * Cria um snapshot (ponto de restauração) do estado atual dos horários.
+ * Mantém apenas os últimos 5 backups no localStorage.
+ */
+function createSnapshot() {
+  const currentData = localStorage.getItem(CONFIG.STORAGE_KEY);
+  if (!currentData) return;
+
+  let history = JSON.parse(localStorage.getItem(CONFIG.HISTORY_KEY) || '[]');
+  
+  // Evita criar snapshots idênticos seguidos
+  if (history.length > 0 && history[0].data === currentData) return;
+
+  const newSnapshot = {
+    id: Date.now(),
+    timestamp: new Date().toLocaleString('pt-BR'),
+    data: currentData
+  };
+
+  history.unshift(newSnapshot);
+  if (history.length > 5) history.pop(); // Limita a 5 itens
+
+  localStorage.setItem(CONFIG.HISTORY_KEY, JSON.stringify(history));
+}
+
+/**
+ * Restaura o sistema para um ponto de backup específico.
+ * @param {number} snapshotId - ID (timestamp) do backup.
+ */
+function restoreSnapshot(snapshotId) {
+  const history = JSON.parse(localStorage.getItem(CONFIG.HISTORY_KEY) || '[]');
+  const snapshot = history.find(s => s.id === snapshotId);
+
+  if (snapshot && confirm(`Deseja restaurar o backup de ${snapshot.timestamp}? Isso substituirá o horário atual.`)) {
+    localStorage.setItem(CONFIG.STORAGE_KEY, snapshot.data);
+    showToast("Backup restaurado com sucesso!", "success");
+    setTimeout(() => window.location.reload(), 1000);
+  }
+}
+
+/**
+ * Abre o modal para visualização e restauração de backups automáticos.
+ */
+function showBackupHistoryModal() {
+  const history = JSON.parse(localStorage.getItem(CONFIG.HISTORY_KEY) || '[]');
+  
+  const overlay = Object.assign(document.createElement('div'), { className: 'modal-overlay' });
+  overlay.style.display = 'flex';
+
+  const modal = Object.assign(document.createElement('div'), { className: 'modal' });
+  const title = Object.assign(document.createElement('h2'), { textContent: '📦 Histórico de Backups Automáticos' });
+  
+  const container = Object.assign(document.createElement('div'), { className: 'teacher-list-container' });
+
+  if (history.length === 0) {
+    container.innerHTML = '<p style="padding: 20px; text-align: center; color: var(--text-muted);">Nenhum backup encontrado ainda.</p>';
+  } else {
+    container.innerHTML = history.map(s => `
+      <div class="backup-item">
+        <div>
+          <div class="backup-date">${s.timestamp}</div>
+          <div style="font-size: 0.75rem; color: var(--text-muted);">Backup automático do sistema</div>
+        </div>
+        <button class="btn btn-primary" style="padding: 4px 10px;" onclick="restoreSnapshot(${s.id})">Restaurar</button>
+      </div>
+    `).join('');
+  }
+
+  const footer = Object.assign(document.createElement('div'), { className: 'modal-footer' });
+  footer.append(Object.assign(document.createElement('button'), { 
+    className: 'btn', textContent: 'Fechar', onclick: () => overlay.remove() 
+  }));
+
+  modal.append(title, container, footer);
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+  setupFocusTrap(overlay);
+}
+
+/**
+ * Calcula a carga horária total de cada professor/turma.
+ * @returns {Object} Objeto com contagem de aulas.
+ */
+function calculateWorkload() {
+  const counts = {};
+  _dom.cells().forEach(cell => {
+    const text = cell.innerText.trim().toUpperCase();
+    if (text && text !== '*') {
+      counts[text] = (counts[text] || 0) + 1;
+    }
+  });
+  return counts;
+}
+
+/**
+ * Abre um modal exibindo a carga horária resumida de todos os professores/turmas.
+ */
+function showWorkloadModal() {
+  const workload = calculateWorkload();
+  const teacherMap = getTeacherMap();
+  
+  const overlay = Object.assign(document.createElement('div'), { className: 'modal-overlay' });
+  overlay.style.display = 'flex';
+
+  const modal = Object.assign(document.createElement('div'), { className: 'modal' });
+  const title = Object.assign(document.createElement('h2'), { textContent: '📊 Resumo de Carga Horária' });
+  
+  const container = Object.assign(document.createElement('div'), { className: 'teacher-list-container' });
+  
+  const table = document.createElement('table');
+  table.className = 'workload-table';
+  table.innerHTML = `
+    <thead>
+      <tr>
+        <th>Identificação</th>
+        <th>Nome/Descrição</th>
+        <th>Total Aulas</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${Object.entries(workload)
+        .sort((a, b) => b[1] - a[1])
+        .map(([key, count]) => `
+          <tr>
+            <td><strong>${key}</strong></td>
+            <td>${teacherMap[key] || '---'}</td>
+            <td>${count} aulas</td>
+          </tr>
+        `).join('')}
+    </tbody>
+  `;
+
+  const footer = Object.assign(document.createElement('div'), { className: 'modal-footer' });
+  footer.append(Object.assign(document.createElement('button'), { 
+    className: 'btn btn-primary', textContent: 'Fechar', onclick: () => overlay.remove() 
+  }));
+
+  container.appendChild(table);
+  modal.append(title, container, footer);
   overlay.appendChild(modal);
   document.body.appendChild(overlay);
   setupFocusTrap(overlay);

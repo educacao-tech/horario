@@ -627,7 +627,7 @@ td.current-active:first-child::before {
   display: flex;
   gap: 8px;
   flex-wrap: nowrap; /* Impede que os botões quebrem linha, forçando a rolagem interna se necessário */
-  overflow-x: auto; /* Permite rolar os botões se eles não couberem na largura da tela */
+  overflow: visible; /* Alterado de overflow-x: auto para permitir que o dropdown apareça */
   -webkit-overflow-scrolling: touch; /* Rolagem suave no iOS */
   background: var(--bg-header);
   backdrop-filter: blur(12px) saturate(180%);
@@ -638,17 +638,51 @@ td.current-active:first-child::before {
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: var(--shadow-sm);
   align-items: center;
-  scrollbar-width: none; /* Esconde scrollbar no Firefox */
 }
 
-.toolbar::-webkit-scrollbar {
-  height: 4px; /* Barra de rolagem bem discreta para a toolbar se necessário */
-  display: block; 
+/* Menu Dropdown para economizar espaço na Toolbar */
+.menu-dropdown-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
 }
 
-.toolbar::-webkit-scrollbar {
-  display: none; /* Esconde scrollbar no Chrome/Safari para manter o visual limpo */
+.menu-dropdown {
+  display: none;
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  background-color: var(--bg-card);
+  min-width: 240px;
+  box-shadow: var(--shadow-md);
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  z-index: 1200;
+  padding: 8px;
+  flex-direction: column;
+  gap: 4px;
 }
+
+.menu-dropdown.active { display: flex; }
+
+.btn-menu-item {
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 8px;
+  color: var(--text-main);
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: background 0.2s;
+}
+
+.btn-menu-item:hover { background-color: var(--hl-color); }
 
 .search-wrapper {
   position: relative;
@@ -683,6 +717,45 @@ td.current-active:first-child::before {
 .search-field:not(:placeholder-shown) + .clear-search-btn {
   display: block; /* Mostra quando o input tem texto */
 }
+
+/* Dropdown de Sugestões de Busca */
+.search-suggestions {
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 0;
+  right: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3); /* Sombra mais forte para flutuar sobre a tabela */
+  max-height: 250px;
+  overflow-y: auto;
+  display: none;
+  z-index: 1100;
+}
+
+.search-suggestions.active { display: block; }
+
+.suggestion-item {
+  padding: 10px 14px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  border-bottom: 1px solid var(--border-color);
+  transition: background 0.2s;
+  display: flex;
+  justify-content: space-between;
+}
+.suggestion-item:last-child { border-bottom: none; }
+.suggestion-item:hover { background: var(--hl-color); }
+.suggestion-item:first-child { background: rgba(79, 70, 229, 0.08); } /* Destaque para o item que o Enter selecionará */
+
+/* Destaque via navegação de teclado */
+.suggestion-item.keyboard-active {
+  background-color: var(--hl-color) !important;
+  box-shadow: inset 4px 0 0 0 var(--primary);
+}
+
+.suggestion-item .sigla-tag { color: var(--primary); font-weight: bold; font-size: 0.75rem; }
 
 .time-counter {
   font-weight: 800;
@@ -852,6 +925,11 @@ td.current-active:first-child::before {
   }
 
   .toolbar {
+    overflow-x: auto; /* No mobile, mantemos a rolagem se os botões não couberem */
+    padding-bottom: 5px;
+  }
+
+  .toolbar {
     gap: 6px; /* Reduz o espaço entre os botões na barra */
     padding: 8px 0;
   }
@@ -940,6 +1018,33 @@ th[title] {
   color: inherit;
 }
 .legend-item:hover { background-color: var(--hl-color); }
+
+/* Estilos para o Histórico de Backups */
+.backup-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  border-bottom: 1px solid var(--border-color);
+  transition: background 0.2s;
+}
+.backup-item:hover { background: var(--hl-color); }
+.backup-date { font-size: 0.85rem; font-weight: 600; }
+
+/* Estilos para o Modal de Cores */
+.color-setting-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  border-bottom: 1px solid var(--border-color);
+}
+.color-setting-item:last-child { border-bottom: none; }
+.color-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
 .legend-item.active {
   background-color: var(--border-color);
   font-weight: 700;
