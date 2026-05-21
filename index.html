@@ -21,6 +21,18 @@
     <div id="main-progress-bar" class="progress-bar"></div>
   </div>
 
+  <!-- Cabeçalho exclusivo para impressão -->
+  <div class="print-header">
+    <div class="print-header-content">
+      <img src="https://raw.githubusercontent.com/educacao-tech/horario/main/eaba.png" alt="Logo" class="print-logo">
+      <div class="print-titles">
+        <h2>Quadro de Horário Escolar - 2026</h2>
+        <p>EMEB Professora Anna Bonagura de Andrade</p>
+      </div>
+    </div>
+    <div class="print-meta">Documento gerado em: <span id="print-date"></span></div>
+  </div>
+
   <header class="main-header">
     <div class="header-brand">
       <div class="header-logo">📚</div>
@@ -245,6 +257,9 @@
   </div>
     </div>
   </div>
+
+  <!-- Legenda exclusiva para o final da impressão -->
+  <div id="print-footer-legend" class="print-footer-legend"></div>
 
   <div class="status-bar" id="statusBar" aria-live="polite" aria-atomic="true">
     <div class="status-item">Aguardando seleção...</div>

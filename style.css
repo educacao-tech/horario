@@ -6,9 +6,12 @@
   --bg-card: #ffffff;
   --text-main: #1e293b;
   --text-muted: #374151; /* Darker gray (Gray 700) for better contrast on pastel backgrounds */
+  --text-muted: #374151;
   --border-color: #e2e8f0;
   --hl-color: #f1f5f9;
 --pd-color: #bae6fd;
+  --hl-color: #e0e5ea; /* Melhor contraste */
+  --pd-color: #90d0f0; /* Melhor contraste */
   --el-color: #d1fae5;
   --mtf-color: #ffedd5;
   --edit-bg: #fffef2;
@@ -48,9 +51,16 @@
   --border-color: #475569;
   --hl-color: #334155;
   --pd-color: #1e40af;
+  --hl-color: #334155; /* Manter para tema escuro */
+  --pd-color: #1e40af; /* Manter para tema escuro */
   --el-color: #065f46;
   --mtf-color: #92400e;
   --edit-bg: #1e293b;
+}
+
+/* Melhoria na visibilidade da seleção no tema escuro */
+.dark-theme .cell-selected {
+  background-color: rgba(79, 70, 229, 0.35) !important;
 }
 
 /* Wrapper para a área superior que ficará fixa */
@@ -338,6 +348,13 @@ td[contenteditable="true"], td[role="textbox"] {
   outline: 3px solid var(--primary) !important;
   outline-offset: -3px;
   z-index: 5;
+}
+
+/* Destaque para seleção múltipla */
+.cell-selected {
+  background-color: rgba(79, 70, 229, 0.15) !important;
+  box-shadow: inset 0 0 0 2px var(--primary) !important;
+  z-index: 4;
 }
 
 /* Destaque para seleção via legenda */
@@ -877,6 +894,7 @@ td.current-active:first-child::before {
   backdrop-filter: blur(20px) saturate(180%);
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   box-sizing: border-box;
+  aria-live: polite;
 }
 .status-item {
   border-right: 1px solid #555;
@@ -1062,6 +1080,9 @@ th[title] {
   100% { box-shadow: inset 0 0 0 2px #22c55e; }
 }
 
+/* Elementos ocultos por padrão, visíveis apenas na impressão */
+.print-header, .print-footer-legend { display: none; }
+
 @media print {
   * {
     -webkit-print-color-adjust: exact !important;
@@ -1070,8 +1091,26 @@ th[title] {
 
   @page {
     size: landscape;
-    margin: 10mm;
+    margin: 8mm;
   }
+
+  .print-header {
+    display: block !important;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #000;
+    padding-bottom: 10px;
+  }
+
+  .print-header-content {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .print-logo { width: 60px; height: 60px; object-fit: contain; }
+  .print-titles h2 { margin: 0; font-size: 1.5rem; color: #000 !important; }
+  .print-titles p { margin: 5px 0 0 0; font-size: 1rem; color: #333 !important; }
+  .print-meta { text-align: right; font-size: 0.75rem; color: #666; margin-top: 5px; }
 
   .main-header,
   .toolbar,
@@ -1081,78 +1120,114 @@ th[title] {
   .zoom-controls,
   .toast-container,
   .modal-overlay,
-  .top-area-sticky-wrapper, /* Esconde o wrapper sticky na impressão */
+  .top-area-sticky-wrapper,
   .progress-container,
   button,
   #save-indicator {
     display: none !important;
   }
+
   body {
     padding: 0;
+    margin: 0;
     background-color: white !important;
-    color: #333 !important; /* Darker text for better readability */
+    color: #000 !important;
   }
-  h2 {
-    margin-top: 0;
-    color: #333 !important; /* Ensure h2 is also dark */
-  }
-  /* Força uma quebra de página entre as divisões de período (Manhã e Tarde) na impressão */
+
+  h2 { margin: 15px 0 10px 0; color: #000 !important; font-size: 1.2rem; page-break-after: avoid; }
+
   div[id^="section-"] + div[id^="section-"] {
     page-break-before: always;
-    break-before: page;
   }
+
   table {
     page-break-inside: avoid;
-    break-inside: avoid;
-    font-size: 11pt; /* Increased font size for better readability */
+    font-size: 10pt; 
     width: 100% !important;
-    table-layout: fixed !important; /* Use fixed layout for consistent column widths */
+    table-layout: fixed !important;
+    border: 1.5pt solid #000 !important;
+    border-collapse: collapse !important;
   }
+
   th, td {
-    padding: 8px 4px !important; /* Adjust padding for print */
-    border: 1px solid #ccc !important; /* Clearer borders */
-    color: #333 !important; /* Ensure all text in cells is dark */
+    padding: 6px 2px !important;
+    border: 0.5pt solid #000 !important;
+    color: #000 !important;
+    overflow: hidden;
   }
+
   th:first-child, tr:not(.recreio) td:first-child {
-    background-color: #f0f0f0 !important; /* Slightly shaded first column */
-    color: #333 !important;
-    box-shadow: none !important; /* Remove shadows */
+    background-color: #eee !important;
+    font-weight: bold;
+    width: 100px !important;
+    box-shadow: none !important;
   }
+
   thead th {
-    background-color: #e0e0e0 !important; /* Darker header background */
-    color: #333 !important;
-    border-bottom: 2px solid #999 !important; /* Stronger header border */
+    background-color: #ddd !important;
+    border-bottom: 1.5pt solid #000 !important;
   }
+
   .table-container {
     overflow: visible;
     box-shadow: none;
-    border: 1px solid #000;
+    border: none;
     display: block !important;
+    padding: 0 !important;
   }
-  td[contenteditable="true"] {
-    background-color: transparent !important;
-  }
-  /* Specific overrides for various colored/highlighted elements */
+
+  /* Manter cores de fundo leves para categorias, mas com bordas fortes */
+  .hl { background-color: #f8f9fa !important; }
+  .pd { background-color: #e0f2fe !important; }
+  .el { background-color: #dcfce7 !important; }
+  .mtf { background-color: #ffedd5 !important; }
+
   .recreio {
-    background: #f0f0f0 !important; /* Light gray for recreio */
-    color: #555 !important;
+    background-color: #f3f4f6 !important;
+    color: #000 !important;
+    font-style: italic;
+    border-top: 1pt solid #000 !important;
+    border-bottom: 1pt solid #000 !important;
   }
+
   .day-divider {
-    border-right: 2px solid #999 !important; /* Stronger day divider */
+    border-right: 1.5pt solid #000 !important;
   }
+
   .current-active, .match-highlight, .category-select, .conflict-error {
-    background-color: transparent !important; /* Remove all dynamic highlights */
+    background-color: transparent !important;
     box-shadow: none !important;
     outline: none !important;
-    color: #333 !important;
     animation: none !important;
   }
-  .current-active::before, .current-active::after {
-    display: none !important; /* Remove active indicators */
-  }
+
   td[data-teacher]::after {
-    color: #555 !important; /* Ensure teacher name is visible */
+    color: #444 !important;
+    font-size: 0.75em !important;
+    font-weight: bold !important;
+    display: block;
   }
+
+  /* Estilização da Legenda de Professores no rodapé da impressão */
+  .print-footer-legend {
+    display: block !important;
+    margin-top: 30px;
+    border-top: 1.5pt solid #000;
+    padding-top: 10px;
+    page-break-inside: avoid;
+  }
+  .print-footer-legend h3 {
+    font-size: 1.1rem;
+    margin: 0 0 10px 0;
+  }
+  .print-legend-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* 3 colunas para economizar espaço */
+    gap: 8px;
+    font-size: 8.5pt;
+  }
+  .print-legend-item { display: flex; gap: 5px; border-bottom: 0.1pt solid #eee; }
+  .print-legend-sigla { font-weight: bold; min-width: 45px; }
 }
 
 /* Modal de Gerenciamento de Professores */
@@ -1316,4 +1391,51 @@ th[title] {
 .table-fade-in {
   animation: tableFadeIn 0.4s ease-out forwards;
   will-change: opacity, transform;
+}
+
+/* Estilos para a Tabela de Carga Horária com Barras Visuais */
+.workload-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+.workload-table th, .workload-table td {
+  padding: 12px 8px;
+  border-bottom: 1px solid var(--border-color);
+  text-align: left;
+}
+.workload-progress-bg {
+  width: 100%;
+  height: 8px;
+  background: var(--hl-color);
+  border-radius: 4px;
+  margin-top: 6px;
+  overflow: hidden;
+}
+.workload-progress-fill {
+  height: 100%;
+  background: var(--primary);
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.workload-warning {
+  color: #ef4444;
+  font-weight: 700;
+}
+
+/* Feedback visual para Drag & Drop */
+body.drag-over::after {
+  content: "📂 Solte o arquivo de backup para importar";
+  position: fixed;
+  inset: 0;
+  background: rgba(79, 70, 229, 0.9);
+  backdrop-filter: blur(4px);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 800;
+  z-index: 20000;
+  pointer-events: none;
 }

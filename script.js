@@ -116,6 +116,9 @@ let _clipboardText = null;
 let _gitHubInfoCache = null; // Cache para persistir os dados do GitHub
 let _activeSuggestionIndex = -1; // Rastreia o item focado via teclado no autocomplete
 let _saveIndicatorTimeout = null; // Controla o tempo de exibição do feedback de salvamento
+let _isSelecting = false;
+let _selectionStartCell = null;
+let _selectedCells = new Set();
 
 // --- SCHEMA MIGRATION ---
 function runMigrations() {
@@ -225,7 +228,6 @@ const saveContent = debounce((key, text) => {
     const data = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY) || '{}');
     data[key] = text;
     localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(data));
-    createSnapshot(); // Salva no histórico após cada alteração
     const indicator = _dom.saveIndicator();
     if (indicator) {
       clearTimeout(_saveIndicatorTimeout);
@@ -276,18 +278,22 @@ function checkConflicts(cell) {
   const cellsToProcess = [];
 
   // Primeira passada: Limpa estados e mapeia frequências na linha
-  for (let i = 0; i < row.cells.length; i++) {
+  const rowCells = row.cells;
+  for (let i = 0; i < rowCells.length; i++) {
     const c = row.cells[i];
     if (c.getAttribute('contenteditable') !== 'true') continue;
 
-    c.classList.remove('conflict-error');
-    c.removeAttribute('title');
+    // Só altera o DOM se houver necessidade (evita layout thrashing)
+    if (c.classList.contains('conflict-error')) {
+      c.classList.remove('conflict-error');
+      c.removeAttribute('title');
+    }
 
-    const txt = c.innerText.trim().toUpperCase();
+    const txt = c.textContent.trim().toUpperCase();
     if (!txt || txt === '*' || CONFIG.SPECIALIST_SET.has(txt)) continue;
 
     const base = txt.split('(')[0].trim();
-    const teacher = teacherMap[txt] || teacherMap[base] || null;
+    const teacher = teacherMap[txt] || (txt !== base ? teacherMap[base] : null);
     const key = teacher || txt;
 
     frequencyMap.set(key, (frequencyMap.get(key) || 0) + 1);
@@ -297,10 +303,14 @@ function checkConflicts(cell) {
   // Segunda passada: Aplica erros apenas onde há duplicidade
   for (const item of cellsToProcess) {
     if (frequencyMap.get(item.key) > 1) {
-      item.element.classList.add('conflict-error');
-      item.element.title = item.teacher
-        ? `Conflito: Professor ${item.teacher} em múltiplas salas.`
-        : `Conflito: Turma ${item.text} em múltiplas salas.`;
+      const errorMsg = item.teacher
+          ? `Conflito: Professor ${item.teacher} em múltiplas salas.`
+          : `Conflito: Turma ${item.text} em múltiplas salas.`;
+      
+      if (item.element.title !== errorMsg) {
+        item.element.classList.add('conflict-error');
+        item.element.title = errorMsg;
+      }
     }
   }
 
@@ -311,7 +321,9 @@ function checkConflicts(cell) {
  * Atualiza o contador global de conflitos na interface.
  */
 function updateGlobalConflictCount() {
-  const total = document.querySelectorAll('.conflict-error').length;
+  // getElementsByClassName é muito mais rápido que querySelectorAll para contagem em tempo real
+  const total = document.getElementsByClassName('conflict-error').length;
+  
   let badge = document.getElementById('global-conflict-badge');
   
   if (total > 0) {
@@ -469,6 +481,7 @@ document.addEventListener('focusout', (e) => {
   if (e.target.getAttribute('contenteditable') === 'true' && e.target._oldValue !== undefined) {
     if (e.target._oldValue !== e.target.innerText) {
       pushUndo(e.target, e.target._oldValue);
+      createSnapshot(); // Salva um ponto de restauração apenas quando a edição é concluída
     }
     delete e.target._oldValue;
   }
@@ -488,10 +501,32 @@ document.addEventListener('keydown', (e) => {
     _dom.searchInput()?.focus();
   }
 
+  // Atalho para limpar seleção (Esc)
+  if (e.key === 'Escape') {
+    clearMultiSelection();
+    return;
+  }
+
   const row = cell.parentElement;
   const table = cell.closest('table');
   const colIndex = cell.cellIndex; // Movido para cima para evitar ReferenceError
   if (!row || !table) return;
+
+  // Apagar seleção múltipla com Delete ou Backspace
+  if ((e.key === 'Delete' || e.key === 'Backspace') && _selectedCells.size > 1) {
+    e.preventDefault();
+    _selectedCells.forEach(c => {
+      if (c.innerText.trim() !== '') {
+        pushUndo(c, c.innerText);
+        c.innerText = '';
+        saveContent(getCellKey(c), '');
+        applyDynamicStyles(c);
+        checkConflicts(c);
+      }
+    });
+    showToast(`${_selectedCells.size} células limpas`, "info");
+    return;
+  }
 
   if ((e.ctrlKey || e.metaKey)) {
     if (e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); return; }
@@ -511,17 +546,33 @@ document.addEventListener('keydown', (e) => {
     // Fill Down (Ctrl+D)
     if (e.key === 'd' && isEditable) {
       e.preventDefault();
-      const rowIndex = row.rowIndex;
-      const prevRow = table.rows ? table.rows[rowIndex - 1] : null;
-      const cellAbove = prevRow ? prevRow.cells[colIndex] : null;
+      
+      const cellsToFill = _selectedCells.size > 0 ? Array.from(_selectedCells) : [cell];
+      let affectedCount = 0;
 
-      if (cellAbove && cellAbove.getAttribute('contenteditable') === 'true') {
-        pushUndo(cell, cell.innerText);
-        cell.innerText = cellAbove.innerText;
-        applyDynamicStyles(cell);
-        checkConflicts(cell);
-        saveContent(getCellKey(cell), cell.innerText);
-        showToast("Copiado da célula acima", "success");
+      cellsToFill.forEach(c => {
+        const cRow = c.parentElement;
+        const cTable = c.closest('table');
+        if (!cRow || !cTable) return;
+
+        const prevRow = cTable.rows[cRow.rowIndex - 1];
+        const cellAbove = prevRow ? prevRow.cells[c.cellIndex] : null;
+
+        if (cellAbove && cellAbove.getAttribute('contenteditable') === 'true') {
+          if (c.innerText !== cellAbove.innerText) {
+            pushUndo(c, c.innerText);
+            c.innerText = cellAbove.innerText;
+            applyDynamicStyles(c);
+            checkConflicts(c);
+            saveContent(getCellKey(c), c.innerText);
+            affectedCount++;
+          }
+        }
+      });
+
+      if (affectedCount > 0) {
+        showToast(`Preenchido ${affectedCount} célula(s)`, "success");
+        createSnapshot();
       }
       return;
     }
@@ -804,6 +855,88 @@ function highlightOccurrences(text) {
   });
 }
 
+/**
+ * Inicia o processo de seleção múltipla.
+ */
+function handleMouseDown(e) {
+  if (e.target.getAttribute('contenteditable') !== 'true' || document.body.classList.contains('readonly')) return;
+  
+  _isSelecting = true;
+  _selectionStartCell = e.target;
+  
+  // Se não estiver segurando Ctrl, limpa seleção anterior
+  if (!e.ctrlKey) {
+    clearMultiSelection();
+  }
+  updateSelection(e.target);
+}
+
+/**
+ * Atualiza a área de seleção enquanto o mouse se move.
+ */
+function handleMouseEnter(e) {
+  if (!_isSelecting || !_selectionStartCell) return;
+  updateSelection(e.target);
+}
+
+/**
+ * Calcula e destaca o retângulo de seleção entre a célula inicial e a atual.
+ */
+function updateSelection(currentCell) {
+  if (currentCell.getAttribute('contenteditable') !== 'true') return;
+  
+  const table = _selectionStartCell.closest('table');
+  if (currentCell.closest('table') !== table) return;
+
+  const r1 = _selectionStartCell.parentElement.rowIndex;
+  const c1 = _selectionStartCell.cellIndex;
+  const r2 = currentCell.parentElement.rowIndex;
+  const c2 = currentCell.cellIndex;
+
+  const startRow = Math.min(r1, r2);
+  const endRow = Math.max(r1, r2);
+  const startCol = Math.min(c1, c2);
+  const endCol = Math.max(c1, c2);
+
+  document.querySelectorAll('.cell-selected').forEach(c => c.classList.remove('cell-selected'));
+  _selectedCells.clear();
+
+  for (let r = startRow; r <= endRow; r++) {
+    const row = table.rows[r];
+    if (!row || row.classList.contains('recreio')) continue;
+    for (let c = startCol; c <= endCol; c++) {
+      const cell = row.cells[c];
+      if (cell && cell.getAttribute('contenteditable') === 'true') {
+        cell.classList.add('cell-selected');
+        _selectedCells.add(cell);
+      }
+    }
+  }
+}
+
+function clearMultiSelection() {
+  document.querySelectorAll('.cell-selected').forEach(c => c.classList.remove('cell-selected'));
+  _selectedCells.clear();
+}
+
+/**
+ * Inicializa listeners de Drag and Drop global para importação de arquivos.
+ */
+function initDragAndDrop() {
+  window.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    document.body.classList.add('drag-over');
+  });
+
+  window.addEventListener('dragleave', () => document.body.classList.remove('drag-over'));
+
+  window.addEventListener('drop', (e) => {
+    e.preventDefault();
+    document.body.classList.remove('drag-over');
+    processBackupFile(e.dataTransfer.files[0]);
+  });
+}
+
 // --- FOCUS E STATUS BAR ---
 document.addEventListener('focusin', (e) => {
   const cell = e.target;
@@ -982,7 +1115,7 @@ function toggleLockMode() {
       }
     } else {
       document.body.classList.add('readonly');
-      alert('Senha incorreta!');
+      showToast('Senha incorreta!', 'error');
     }
   }
   updateAriaStatus();
@@ -1052,35 +1185,40 @@ function exportToCsv() {
 /**
  * Importa um arquivo de backup completo e atualiza o sistema.
  */
+/**
+ * Processa um arquivo de backup JSON para importação.
+ * @param {File} file - Arquivo JSON vindo de input ou drag-drop.
+ */
+function processBackupFile(file) {
+  if (!file || file.type !== "application/json" && !file.name.endsWith('.json')) {
+    return showToast("Por favor, selecione um arquivo .json válido.", "error");
+  }
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const backup = JSON.parse(e.target.result);
+      if (!backup.schedule) throw new Error("Estrutura de backup não reconhecida.");
+
+      if (confirm("Deseja restaurar este backup total? Isso sobrescreverá horários, professores e cores.")) {
+        localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(backup.schedule));
+        if (backup.teachers) localStorage.setItem(CONFIG.TEACHER_REGISTRY_KEY, JSON.stringify(backup.teachers));
+        if (backup.colors) localStorage.setItem(CONFIG.COLORS_KEY, JSON.stringify(backup.colors));
+        showToast("Backup restaurado com sucesso!", "success");
+        setTimeout(() => window.location.reload(), 1000);
+      }
+    } catch (err) {
+      showToast(`Erro ao ler backup: ${err.message}`, "error");
+    }
+  };
+  reader.readAsText(file);
+}
+
 function importBackupJSON() {
   const input = document.createElement('input');
   input.type = 'file';
   input.accept = '.json';
-
-  input.onchange = e => {
-    const file = e.target.files[0];
-    const reader = new FileReader();
-
-    reader.onload = readerEvent => {
-      try {
-        const backup = JSON.parse(readerEvent.target.result);
-        
-        if (!backup.schedule) throw new Error("Arquivo de backup inválido.");
-
-        if (confirm("Deseja restaurar este backup total? Isso sobrescreverá horários, professores e cores.")) {
-          localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(backup.schedule));
-          if (backup.teachers) localStorage.setItem(CONFIG.TEACHER_REGISTRY_KEY, JSON.stringify(backup.teachers));
-          if (backup.colors) localStorage.setItem(CONFIG.COLORS_KEY, JSON.stringify(backup.colors));
-          
-          showToast("Backup restaurado com sucesso!", "success");
-          window.location.reload();
-        }
-      } catch (err) {
-        showToast(`Erro na importação: ${err.message}`, "error");
-      }
-    };
-    reader.readAsText(file);
-  };
+  input.onchange = e => processBackupFile(e.target.files[0]);
   input.click();
 }
 
@@ -1480,9 +1618,37 @@ document.addEventListener('DOMContentLoaded', () => {
   initZoom(); 
   initScrollToNow();
   initScrollEffect();
+  initDragAndDrop();
   updateAriaStatus(); 
   updateStatusBar(); // Chama sem célula para exibir apenas a versão/data inicialmente
   fetchGitHubUpdateInfo(); // Busca dados reais do GitHub
+
+  // Atualiza a data no cabeçalho de impressão
+  window.addEventListener('beforeprint', () => {
+    const dateEl = document.getElementById('print-date');
+    if (dateEl) {
+      dateEl.textContent = new Date().toLocaleString('pt-BR');
+    }
+
+    // Preenche a legenda de professores para a impressão
+    const legendEl = document.getElementById('print-footer-legend');
+    if (legendEl) {
+      const map = getTeacherMap();
+      const items = Object.entries(map)
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .map(([sigla, nome]) => `
+          <div class="print-legend-item">
+            <span class="print-legend-sigla">${sigla}:</span>
+            <span class="print-legend-nome">${nome}</span>
+          </div>
+        `).join('');
+      
+      legendEl.innerHTML = `
+        <h3>Legenda de Professores e Turmas</h3>
+        <div class="print-legend-grid">${items}</div>
+      `;
+    }
+  });
 
   if (localStorage.getItem('school_compact_mode') === 'true') {
     document.body.classList.add('compact-mode');
@@ -1511,6 +1677,16 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('click', (e) => {
       if (!e.target.closest('.search-wrapper')) 
         _dom.searchSuggestions().classList.remove('active');
+    });
+  }
+
+  // Listeners para Seleção Múltipla
+  const wrapper = document.getElementById('schedule-wrapper');
+  if (wrapper) {
+    wrapper.addEventListener('mousedown', handleMouseDown);
+    wrapper.addEventListener('mouseover', handleMouseEnter);
+    document.addEventListener('mouseup', () => {
+      _isSelecting = false;
     });
   }
 });
@@ -1698,7 +1874,7 @@ function prepareEditTeacher(sigla, nome) {
 function addTeacherToRegistry() {
   const sigla = document.getElementById('new-sigla').value.trim().toUpperCase();
   const nome = document.getElementById('new-nome').value.trim();
-  if (!sigla || !nome) return alert("Preencha sigla e nome.");
+  if (!sigla || !nome) return showToast("Preencha sigla e nome.", "error");
 
   const map = getTeacherMap();
   map[sigla] = nome;
@@ -1966,7 +2142,10 @@ function calculateWorkload() {
 function showWorkloadModal() {
   const workload = calculateWorkload();
   const teacherMap = getTeacherMap();
-  
+
+  // Define um teto para a barra de progresso (ex: 25 aulas na semana é 100%)
+  const maxBaseline = Math.max(...Object.values(workload), 25);
+
   const overlay = Object.assign(document.createElement('div'), { className: 'modal-overlay' });
   overlay.style.display = 'flex';
 
@@ -1988,13 +2167,21 @@ function showWorkloadModal() {
     <tbody>
       ${Object.entries(workload)
         .sort((a, b) => b[1] - a[1])
-        .map(([key, count]) => `
+        .map(([key, count]) => {
+          const percent = Math.min((count / maxBaseline) * 100, 100);
+          // Define a cor da barra: vermelho se > 25 aulas, caso contrário usa a cor primária
+          const barColor = count > 25 ? '#ef4444' : 'var(--primary)';
+          const warningClass = count > 25 ? 'workload-warning' : '';
+          return `
           <tr>
             <td><strong>${key}</strong></td>
-            <td>${teacherMap[key] || '---'}</td>
-            <td>${count} aulas</td>
+            <td>
+              <div class="${warningClass}">${teacherMap[key] || '---'}</div>
+              <div class="workload-progress-bg"><div class="workload-progress-fill" style="width: ${percent}%; background-color: ${barColor}"></div></div>
+            </td>
+            <td><strong>${count}</strong> <small>aulas</small></td>
           </tr>
-        `).join('')}
+        `}).join('')}
     </tbody>
   `;
 
