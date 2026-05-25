@@ -16,7 +16,7 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="readonly">
-  <div id="toast-container" class="toast-container"></div>
+  <div id="toast-container" class="toast-container" aria-live="polite"></div>
   <div class="progress-container">
     <div id="main-progress-bar" class="progress-bar"></div>
   </div>
@@ -56,7 +56,7 @@
 
     <div class="toolbar">
       <div class="menu-dropdown-wrapper">
-        <button type="button" class="btn btn-primary" id="main-menu-btn" onclick="toggleMainMenu(event)">
+        <button type="button" class="btn btn-primary" id="main-menu-btn" onclick="toggleMainMenu(event)" aria-haspopup="true" aria-expanded="false">
           ☰ Menu
         </button>
         <div id="main-menu-dropdown" class="menu-dropdown">
@@ -64,6 +64,7 @@
           <button type="button" class="btn-menu-item" onclick="openSettingsModal()">🎨 Personalizar Cores</button>
           <button type="button" class="btn-menu-item" onclick="openShortcutsModal()">⌨️ Atalhos de Teclado</button>
           <button type="button" class="btn-menu-item" onclick="showWorkloadModal()">📊 Carga Horária</button>
+          <button type="button" class="btn-menu-item" onclick="window.print()">🖨️ Imprimir Horário</button>
           <button type="button" class="btn-menu-item" onclick="showBackupHistoryModal()">📦 Histórico de Backups</button>
           <button type="button" class="btn-menu-item" onclick="exportBackupJSON()">💾 Exportar Backup Total</button>
           <button type="button" class="btn-menu-item" onclick="importBackupJSON()">📂 Importar Backup Total</button>
@@ -98,6 +99,7 @@
   <h2>Horário da Manhã</h2>
   <div class="table-container">
   <table>
+    <thead>
     <tr>
       <th rowspan="2">Horário</th>
       <th colspan="6" class="day-divider">Segunda</th>
@@ -113,6 +115,8 @@
       <th title="Artes - Silvia">A(S)</th><th title="Ed. Física - Marcela">EF(M)</th><th class="el" title="Elefante Letrado">EL</th><th class="mtf" title="Matific">MTF</th>
       <th title="Artes - Silvia">A(S)</th><th title="Ed. Física - Marcela">EF(M)</th><th>EDM</th><th class="el" title="Elefante Letrado">EL</th><th class="mtf" title="Matific">MTF</th>
     </tr>
+    </thead>
+    <tbody>
     <tr>
       <td>7h05 - 8h</td>
       <td class="hl" contenteditable="true">HL</td><td class="hl" contenteditable="true">HL</td><td contenteditable="true">1A</td><td contenteditable="true">*</td><td contenteditable="true">*</td><td contenteditable="true">*</td>
@@ -171,6 +175,7 @@
       <td contenteditable="true">3B</td><td contenteditable="true">5A</td><td contenteditable="true">2B</td><td contenteditable="true">*</td>
       <td contenteditable="true">*</td><td class="hl" contenteditable="true">HL</td><td contenteditable="true">*</td><td contenteditable="true">1B</td><td contenteditable="true">*</td>
     </tr>
+    </tbody>
   </table>
   </div>
     </div>
@@ -179,6 +184,7 @@
   <h2>Horário da Tarde</h2>
   <div class="table-container">
   <table>
+    <thead>
     <tr>
       <th rowspan="2">Horário</th>
       <th colspan="5" class="day-divider">Segunda</th>
@@ -194,6 +200,8 @@
       <th title="Artes - Silvia">A(S)</th><th title="Artes - Michelle">A(M)</th><th title="Ed. Física - Paulo">EF(P)</th><th class="el" title="Elefante Letrado">EL</th><th class="mtf" title="Matific">MTF</th>
       <th title="Ed. Física - Paulo">EF(P)</th><th>EDM</th><th class="mtf" title="Matific">MTF</th><th class="el" title="Elefante Letrado">EL</th>
     </tr>
+    </thead>
+    <tbody>
     <tr>
       <td>12h35 - 13h30</td>
       <td contenteditable="true">3D</td><td class="hl" contenteditable="true">HL</td><td contenteditable="true">*</td><td contenteditable="true">5C</td><td contenteditable="true">*</td>
@@ -253,6 +261,7 @@
       <td contenteditable="true">4B</td><td contenteditable="true">*</td><td contenteditable="true">1D</td><td contenteditable="true">*</td>
     </tr>
     <tr class="recreio"><td colspan="23">LIMPEZA DAS SALAS DE AULA</td></tr>
+    </tbody>
   </table>
   </div>
     </div>
@@ -260,6 +269,15 @@
 
   <!-- Legenda exclusiva para o final da impressão -->
   <div id="print-footer-legend" class="print-footer-legend"></div>
+
+  <!-- Rodapé fixo para a impressão -->
+  <div class="print-footer">
+    <div class="print-footer-left">
+      <img src="https://raw.githubusercontent.com/educacao-tech/horario/main/eaba.png" alt="Logo" class="print-footer-logo">
+      <span>EMEB Professora Anna Bonagura de Andrade - Ano Letivo 2026</span>
+    </div>
+    <span class="print-page-number"></span>
+  </div>
 
   <div class="status-bar" id="statusBar" aria-live="polite" aria-atomic="true">
     <div class="status-item">Aguardando seleção...</div>

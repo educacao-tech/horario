@@ -56,37 +56,108 @@ const DEFAULT_TEACHER_MAP = {
 };
 
 // --- DOM Cache & Management ---
-const _dom = (() => {
-  const cache = {};
-  let _cells = null;
-  const get = (id) => cache[id] || (cache[id] = document.getElementById(id));
-  
-  return {
-    /**
-     * Retorna um NodeList cacheado das células editáveis.
-     * @returns {NodeList}
-     */
-    cells: () => {
-      if (!_cells) _cells = document.querySelectorAll('[contenteditable="true"]');
-      return _cells;
-    },
-    invalidateCache: () => { _cells = null; },
-    tables: () => document.querySelectorAll('table'),
-    
-    // Elementos estáticos cacheados por ID
-    statusBar: () => get('statusBar'),
-    saveIndicator: () => get('save-indicator'),
-    timeCounter: () => get('time-counter'),
-    progressBar: () => get('main-progress-bar'),
-    clock: () => get('current-date-time'),
-    themeBtn: () => get('theme-toggle'),
-    lockBtn: () => get('lock-btn'),
-    searchInput: () => get('search-input'),
-    dayFilter: () => get('day-filter-select'),
-    searchSuggestions: () => get('search-suggestions'),
-    mainMenu: () => get('main-menu-dropdown')
-  };
-})();
+/**
+ * Gerenciador de elementos do DOM com sistema de cache.
+ */
+class DOMManager {
+  constructor() {
+    this._cache = {};
+    this._cellsCache = null;
+  }
+
+  /**
+   * Recupera um elemento pelo ID e armazena no cache.
+   * @param {string} id - ID do elemento.
+   * @returns {HTMLElement|null}
+   */
+  _get(id) {
+    return this._cache[id] || (this._cache[id] = document.getElementById(id));
+  }
+
+  /**
+   * Retorna a lista de todas as células editáveis (cacheada).
+   */
+  cells() {
+    if (!this._cellsCache) {
+      this._cellsCache = document.querySelectorAll('[contenteditable="true"]');
+    }
+    return this._cellsCache;
+  }
+
+  /**
+   * Invalida o cache das células para forçar uma nova busca no DOM.
+   */
+  invalidateCache() {
+    this._cellsCache = null;
+  }
+
+  // Getters para elementos estruturais
+  tables() { return document.querySelectorAll('table'); }
+  statusBar() { return this._get('statusBar'); }
+  saveIndicator() { return this._get('save-indicator'); }
+  timeCounter() { return this._get('time-counter'); }
+  progressBar() { return this._get('main-progress-bar'); }
+  clock() { return this._get('current-date-time'); }
+  themeBtn() { return this._get('theme-toggle'); }
+  lockBtn() { return this._get('lock-btn'); }
+  searchInput() { return this._get('search-input'); }
+  dayFilter() { return this._get('day-filter-select'); }
+  searchSuggestions() { return this._get('search-suggestions'); }
+  mainMenu() { return this._get('main-menu-dropdown'); }
+}
+
+// Instância global para manter compatibilidade com o código existente
+const _dom = new DOMManager();
+
+/**
+ * Gerenciador de persistência de dados.
+ */
+class StorageManager {
+  /**
+   * Salva um item no localStorage com tratamento de erro.
+   */
+  save(key, data) {
+    try {
+      if (data === undefined) return false;
+      localStorage.setItem(key, JSON.stringify(data));
+      return true;
+    } catch (e) {
+      console.error(`Erro ao salvar ${key}:`, e);
+      showToast("Espaço de armazenamento cheio ou indisponível.", "error");
+      return false;
+    }
+  }
+
+  /**
+   * Recupera um item do localStorage.
+   */
+  load(key, defaultValue = null) {
+    try {
+      const stored = localStorage.getItem(key);
+      return stored ? JSON.parse(stored) : defaultValue;
+    } catch (e) {
+      console.error(`Erro ao carregar ${key}:`, e);
+      return defaultValue;
+    }
+  }
+
+  /**
+   * Remove um item.
+   */
+  remove(key) {
+    localStorage.removeItem(key);
+  }
+}
+
+const _storage = new StorageManager();
+
+/**
+ * Carrega o mapa de professores do localStorage ou retorna o padrão.
+ * @returns {Object} Mapa de siglas para nomes de professores.
+ */
+function getInitialTeacherMap() {
+  return _storage.load(CONFIG.TEACHER_REGISTRY_KEY, DEFAULT_TEACHER_MAP);
+}
 
 /**
  * Exibe uma notificação temporária na tela.
@@ -111,7 +182,7 @@ function showToast(message, type = 'info') {
   }, 3000);
 }
 
-let _teacherMapCache = null;
+let _teacherMapCache = getInitialTeacherMap(); // Inicializa o cache de professores
 let _clipboardText = null;
 let _gitHubInfoCache = null; // Cache para persistir os dados do GitHub
 let _activeSuggestionIndex = -1; // Rastreia o item focado via teclado no autocomplete
@@ -123,25 +194,19 @@ let _selectedCells = new Set();
 // --- SCHEMA MIGRATION ---
 function runMigrations() {
   const storageKeyVersion = 'school_schema_version';
-  const currentVersion = parseInt(localStorage.getItem(storageKeyVersion) || '0');
+  const currentVersion = parseInt(_storage.load(storageKeyVersion, '0'));
   
   if (currentVersion < CONFIG.SCHEMA_VERSION) {
     console.info(`Migrando schema de v${currentVersion} para v${CONFIG.SCHEMA_VERSION}...`);
     
     // Migração da v1 para v2 (Mudança de chave de storage)
-    const oldData = localStorage.getItem('school_schedule_v1');
+    const oldData = _storage.load('school_schedule_v1');
     if (oldData) {
-      try {
-        const data = JSON.parse(oldData);
-        localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(data));
-        localStorage.removeItem('school_schedule_v1');
-      } catch (e) {
-        console.error('Erro ao migrar dados antigos (v1 para v2):', e);
-        showToast('Erro ao migrar dados antigos. Dados podem estar corrompidos.', 'error');
-        localStorage.removeItem('school_schedule_v1'); // Remove corrupted data to prevent future errors
+      if (_storage.save(CONFIG.STORAGE_KEY, oldData)) {
+        _storage.remove('school_schedule_v1');
       }
     }
-    localStorage.setItem(storageKeyVersion, CONFIG.SCHEMA_VERSION.toString());
+    _storage.save(storageKeyVersion, CONFIG.SCHEMA_VERSION.toString());
   }
 }
 
@@ -169,17 +234,10 @@ function initializeData() {
 // --- CORE FUNCTIONS ---
 
 /**
- * Retorna o mapa de professores do localStorage ou o padrão.
+ * Retorna o mapa de professores cacheado.
  * @returns {Object} Mapa de siglas para nomes de professores.
  */
 function getTeacherMap() {
-  if (_teacherMapCache) return _teacherMapCache;
-  try {
-    const stored = localStorage.getItem(CONFIG.TEACHER_REGISTRY_KEY);
-    _teacherMapCache = stored ? JSON.parse(stored) : DEFAULT_TEACHER_MAP;
-  } catch (e) {
-    _teacherMapCache = DEFAULT_TEACHER_MAP;
-  }
   return _teacherMapCache;
 }
 
@@ -224,21 +282,17 @@ function getCellKey(cell) {
  * @param {string} text - Texto a ser salvo.
  */
 const saveContent = debounce((key, text) => {
-  try {
-    const data = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY) || '{}');
-    data[key] = text;
-    localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(data));
-    const indicator = _dom.saveIndicator();
-    if (indicator) {
-      clearTimeout(_saveIndicatorTimeout);
-      indicator.style.opacity = '1';
-      _saveIndicatorTimeout = setTimeout(() => { indicator.style.opacity = '0'; }, 2000);
-    }
-  } catch (e) {
-    showToast('Erro ao salvar: ' + e.message, 'error');
-    console.error('Save error:', e);
+  const data = _storage.load(CONFIG.STORAGE_KEY, {});
+  data[key] = text;
+  _storage.save(CONFIG.STORAGE_KEY, data);
+  
+  const indicator = _dom.saveIndicator();
+  if (indicator) {
+    clearTimeout(_saveIndicatorTimeout);
+    indicator.style.opacity = '1';
+    _saveIndicatorTimeout = setTimeout(() => { indicator.style.opacity = '0'; }, 2000);
   }
-});
+}, 500);
 
 /**
  * Aplica estilos dinâmicos à célula com base em seu conteúdo.
@@ -263,58 +317,75 @@ function applyDynamicStyles(cell) {
   if (teacherName && text !== '*' && text !== '') {
     cell.setAttribute('data-teacher', teacherName.split(' (')[0]);
   }
+
+  // Auxílio visual para células com asterisco via CSS
+  if (text === '*') {
+    cell.setAttribute('data-text', '*');
+  } else {
+    cell.removeAttribute('data-text');
+  }
 }
 
 /**
  * Verifica conflitos de horário em uma linha (turma/professor em múltiplas salas).
+ * Agora com debounce para evitar processamento excessivo durante a digitação.
  * @param {HTMLElement} cell - Célula que foi modificada.
  */
-function checkConflicts(cell) {
+const checkConflicts = debounce((cell) => {
   const row = cell.parentElement;
   if (!row) return;
 
-  const teacherMap = getTeacherMap();
-  const frequencyMap = new Map();
-  const cellsToProcess = [];
-
-  // Primeira passada: Limpa estados e mapeia frequências na linha
-  const rowCells = row.cells;
-  for (let i = 0; i < rowCells.length; i++) {
-    const c = row.cells[i];
-    if (c.getAttribute('contenteditable') !== 'true') continue;
-
-    // Só altera o DOM se houver necessidade (evita layout thrashing)
-    if (c.classList.contains('conflict-error')) {
-      c.classList.remove('conflict-error');
-      c.removeAttribute('title');
+  const rowData = getRowConflictData(row);
+  
+  // Aplicar resultados ao DOM de forma eficiente
+  rowData.cells.forEach(({ element, key, text, teacher }) => {
+    const hasConflict = rowData.frequencies[key] > 1;
+    
+    if (hasConflict) {
+      const errorMsg = teacher
+        ? `Conflito: Professor ${teacher} em múltiplas salas.`
+        : `Conflito: Turma ${text} em múltiplas salas.`;
+      
+      element.classList.add('conflict-error');
+      element.setAttribute('title', errorMsg);
+    } else {
+      element.classList.remove('conflict-error');
+      element.removeAttribute('title');
     }
+  });
+
+  updateGlobalConflictCount();
+}, 300);
+
+/**
+ * Analisa logicamente os conflitos de uma linha.
+ * @param {HTMLTableRowElement} row 
+ */
+function getRowConflictData(row) {
+  const teacherMap = getTeacherMap();
+  const frequencies = {};
+  const cells = [];
+
+  Array.from(row.cells).forEach(c => {
+    if (c.getAttribute('contenteditable') !== 'true') return;
 
     const txt = c.textContent.trim().toUpperCase();
-    if (!txt || txt === '*' || CONFIG.SPECIALIST_SET.has(txt)) continue;
+    if (!txt || txt === '*' || CONFIG.SPECIALIST_SET.has(txt)) {
+      // Limpeza imediata para células que não entram na conta de conflitos
+      c.classList.remove('conflict-error');
+      c.removeAttribute('title');
+      return;
+    }
 
     const base = txt.split('(')[0].trim();
     const teacher = teacherMap[txt] || (txt !== base ? teacherMap[base] : null);
     const key = teacher || txt;
 
-    frequencyMap.set(key, (frequencyMap.get(key) || 0) + 1);
-    cellsToProcess.push({ element: c, key, teacher, text: txt });
-  }
+    frequencies[key] = (frequencies[key] || 0) + 1;
+    cells.push({ element: c, key, teacher, text: txt });
+  });
 
-  // Segunda passada: Aplica erros apenas onde há duplicidade
-  for (const item of cellsToProcess) {
-    if (frequencyMap.get(item.key) > 1) {
-      const errorMsg = item.teacher
-          ? `Conflito: Professor ${item.teacher} em múltiplas salas.`
-          : `Conflito: Turma ${item.text} em múltiplas salas.`;
-      
-      if (item.element.title !== errorMsg) {
-        item.element.classList.add('conflict-error');
-        item.element.title = errorMsg;
-      }
-    }
-  }
-
-  updateGlobalConflictCount();
+  return { frequencies, cells };
 }
 
 /**
@@ -348,7 +419,7 @@ function updateGlobalConflictCount() {
  * Carrega dados salvos do localStorage e aplica às células.
  */
 function loadData() {
-  const data = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY) || '{}');
+  const data = _storage.load(CONFIG.STORAGE_KEY, {});
   const processedRows = new Set();
   
   _dom.invalidateCache();
@@ -441,13 +512,18 @@ function undo() {
 function redo() {
   if (_redoStack.length === 0) return;
   const action = _redoStack.pop();
-  const currentText = action.cell.innerText;
+  const currentText = action.cell.innerText; // Mantido para referência mas não usado
   action.cell.innerText = action.oldText;
-  _undoStack.push({ cell: action.cell, oldText: currentText });
+  _undoStack.push({ cell: action.cell, oldText: currentText }); // Permite desfazer o refazer
   applyDynamicStyles(action.cell);
   checkConflicts(action.cell);
-  saveContent(getCellKey(action.cell), action.oldText);
+  saveContent(getCellKey(action.cell), action.cell.innerText);
   updateStatusBar(action.cell);
+}
+
+function sanitizeCell(cell) {
+  const original = cell.innerText;
+  cell.innerText = original.replace(/\s+/g, ' ').trim().toUpperCase();
 }
 
 // --- EVENT LISTENERS ---
@@ -480,6 +556,7 @@ document.addEventListener('focusin', (e) => {
 document.addEventListener('focusout', (e) => {
   if (e.target.getAttribute('contenteditable') === 'true' && e.target._oldValue !== undefined) {
     if (e.target._oldValue !== e.target.innerText) {
+      sanitizeCell(e.target);
       pushUndo(e.target, e.target._oldValue);
       createSnapshot(); // Salva um ponto de restauração apenas quando a edição é concluída
     }
@@ -658,7 +735,7 @@ function getDayAndColIndices(cell) {
  * @param {number|string} selectedDayIndex - 0 para todos, 1-5 para dias.
  */
 function filterByDay(selectedDayIndex) {
-  localStorage.setItem(CONFIG.FILTER_DAY_KEY, selectedDayIndex);
+  _storage.save(CONFIG.FILTER_DAY_KEY, selectedDayIndex);
   const selectedDay = parseInt(selectedDayIndex);
   const dayNames = ['', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira'];
 
@@ -782,7 +859,11 @@ function updateSearchSuggestions(text) {
 function toggleMainMenu(event) {
   if (event) event.stopPropagation();
   const menu = _dom.mainMenu();
-  if (menu) menu.classList.toggle('active');
+  const btn = document.getElementById('main-menu-btn');
+  if (menu && btn) {
+    const isExpanded = menu.classList.toggle('active');
+    btn.setAttribute('aria-expanded', isExpanded);
+  }
 }
 
 // Fecha o menu ao clicar fora dele
@@ -790,6 +871,7 @@ document.addEventListener('click', (e) => {
   const menu = _dom.mainMenu();
   if (menu && menu.classList.contains('active') && !e.target.closest('.menu-dropdown-wrapper')) {
     menu.classList.remove('active');
+    document.getElementById('main-menu-btn')?.setAttribute('aria-expanded', 'false');
   }
 });
 
@@ -968,7 +1050,53 @@ document.addEventListener('focusin', (e) => {
  * Atualiza a barra de status com informações da célula selecionada.
  * @param {HTMLElement} cell - Célula focada.
  */
-function updateStatusBar(cell = null) { // Torna 'cell' opcional
+function updateStatusBar(cell = null) {
+  const data = getCellStatusData(cell);
+  renderStatusBar(data);
+}
+
+/**
+ * Extrai os dados lógicos da célula para o status bar.
+ */
+function getCellStatusData(cell) {
+  if (!cell || !cell.closest || !cell.parentElement) return null;
+
+  const text = cell.innerText.trim().toUpperCase();
+  const baseCode = text.split('(')[0].trim();
+  const teacherMap = getTeacherMap();
+  const teacherName = teacherMap[text] || teacherMap[baseCode];
+  const colIndex = cell.cellIndex;
+  const table = cell.closest('table');
+  const row = cell.parentElement;
+
+  let specialistName = "Desconhecido";
+  let regenteHTML = "";
+
+  if (table && row && table.rows[1] && colIndex > 0) {
+    const professorHeader = table.rows[1].cells[colIndex - 1];
+    const sigla = professorHeader ? professorHeader.innerText.trim().toUpperCase() : '';
+    specialistName = teacherMap[sigla] || `Especialista: ${sigla}`;
+    
+    if (teacherName && !CONFIG.SPECIALIST_SET.has(text) && !CONFIG.SPECIALIST_SET.has(baseCode)) {
+      regenteHTML = ` | <b>Regente:</b> ${escapeHTML(teacherName)}`;
+    }
+  }
+
+  const weeklyCount = Array.from(_dom.cells()).filter(c => c.innerText.trim().toUpperCase() === text).length;
+
+  return {
+    specialist: specialistName,
+    room: cell.innerText || '(vazia)',
+    regente: regenteHTML,
+    count: text && text !== '*' ? weeklyCount : null,
+    row: row
+  };
+}
+
+/**
+ * Renderiza o conteúdo HTML na barra de status.
+ */
+function renderStatusBar(data) {
   const sb = _dom.statusBar();
   if (!sb) return;
 
@@ -979,38 +1107,13 @@ function updateStatusBar(cell = null) { // Torna 'cell' opcional
   document.querySelectorAll('tr').forEach(r => r.classList.remove('row-highlight'));
   document.querySelectorAll('th').forEach(th => th.classList.remove('header-highlight'));
 
-  // Processa informações específicas da célula apenas se uma célula válida for fornecida
-  if (cell && cell.closest && cell.parentElement) {
-    const text = cell.innerText.trim().toUpperCase();
-    const baseCode = text.split('(')[0].trim();
-    const teacherMap = getTeacherMap();
-    const teacherName = teacherMap[text] || teacherMap[baseCode];
-
-    const colIndex = cell.cellIndex;
-    const table = cell.closest('table');
-    const row = cell.parentElement;
-
-    // Só tenta buscar o cabeçalho do professor se não for a primeira coluna (Horário)
-    if (table && row && table.rows[1] && colIndex > 0) {
-      professorHeader = table.rows[1].cells[colIndex - 1];
-      const sigla = professorHeader ? professorHeader.innerText.trim().toUpperCase() : '';
-      const nomeProf = teacherMap[sigla] || `Especialista: ${sigla}`;
-      const nomeRegente = teacherName && !CONFIG.SPECIALIST_SIGLAS.includes(text) && !CONFIG.SPECIALIST_SIGLAS.includes(baseCode)
-        ? ` | <b>Regente:</b> ${teacherName}`
-        : '';
-
-      statusContent += `
-        <div class="status-item"><b>Especialista:</b> ${nomeProf}</div>
-        <div class="status-item"><b>Sala/Turma:</b> ${cell.innerText || '(vazia)'}${nomeRegente}</div>
-      `;
-      if (professorHeader) professorHeader.classList.add('header-highlight');
+  if (data) {
+    statusContent += `<div class="status-item"><b>Especialista:</b> ${escapeHTML(data.specialist)}</div>`;
+    statusContent += `<div class="status-item"><b>Sala/Turma:</b> ${escapeHTML(data.room)}${data.regente}</div>`;
+    if (data.count !== null) {
+      statusContent += `<div class="status-item"><b>Aulas na Semana:</b> ${data.count}</div>`;
     }
-
-    const count = Array.from(_dom.cells()).filter(c => c.innerText.trim().toUpperCase() === text).length;
-    if (text && text !== '*') {
-      statusContent += `<div class="status-item"><b>Aulas na Semana:</b> ${count}</div>`;
-    }
-    row.classList.add('row-highlight'); // Adiciona destaque à linha da célula focada
+    data.row.classList.add('row-highlight');
   } else {
     statusContent = '<div class="status-item">Aguardando seleção de aula...</div>';
   }
@@ -1028,6 +1131,16 @@ function updateStatusBar(cell = null) { // Torna 'cell' opcional
   `;
 
   sb.innerHTML = statusContent; // Atribui o conteúdo completo de uma vez
+}
+
+/**
+ * Escapa caracteres HTML para evitar XSS.
+ */
+function escapeHTML(str) {
+  if (!str) return "";
+  return str.replace(/[&<>"']/g, function(m) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
+  });
 }
 
 /**
@@ -1238,11 +1351,11 @@ function updateHighlights() {
 
   const day = now.getDay();
 
-  document.querySelectorAll('.current-active').forEach(el => el.classList.remove('current-active'));
+  _dom.tables().forEach(table => table.querySelectorAll('.current-active').forEach(el => el.classList.remove('current-active')));
 
   if (day < 1 || day > 5) return;
 
-  document.querySelectorAll('table').forEach((table) => {
+  _dom.tables().forEach((table) => {
     const currentLayout = table.closest('#section-morning') ? CONFIG.LAYOUTS.morning : CONFIG.LAYOUTS.afternoon;
 
     // Remove destaques de dias anteriores e aplica o atual na tabela
