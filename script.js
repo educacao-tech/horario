@@ -392,27 +392,63 @@ function getRowConflictData(row) {
  * Atualiza o contador global de conflitos na interface.
  */
 function updateGlobalConflictCount() {
-  // getElementsByClassName é muito mais rápido que querySelectorAll para contagem em tempo real
-  const total = document.getElementsByClassName('conflict-error').length;
-  
-  let badge = document.getElementById('global-conflict-badge');
-  
-  if (total > 0) {
-    if (!badge) {
-      const toolbar = document.querySelector('.toolbar');
-      if (toolbar) {
-        badge = document.createElement('div');
-        badge.id = 'global-conflict-badge';
-        badge.className = 'conflict-badge';
-        badge.title = "Clique para ir ao primeiro conflito";
-        badge.onclick = () => document.querySelector('.conflict-error')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        toolbar.prepend(badge);
-      }
-    }
-    if (badge) badge.innerHTML = `⚠️ ${total} Conflito${total > 1 ? 's' : ''}`;
-  } else if (badge) {
-    badge.remove();
+  const conflicts = document.getElementsByClassName('conflict-error');
+  const total = conflicts.length;
+  const container = document.getElementById('global-conflict-container');
+  if (!container) return;
+
+  if (total === 0) {
+    container.innerHTML = '';
+    return;
   }
+
+  container.innerHTML = `
+    <div id="global-conflict-badge" class="conflict-badge" title="Clique para ver detalhes">
+      ⚠️ ${total} Erro${total > 1 ? 's' : ''}
+      <button type="button" onclick="showConflictInspector()" style="background:none; border:none; color:white; cursor:pointer; padding:0 4px; font-weight:bold;">⋮</button>
+    </div>
+  `;
+}
+
+/**
+ * Abre um inspetor detalhado de todos os conflitos atuais.
+ */
+function showConflictInspector() {
+  const conflicts = Array.from(document.getElementsByClassName('conflict-error'));
+  if (conflicts.length === 0) {
+    return showToast("Nenhum conflito detectado!", "success");
+  }
+
+  const overlay = Object.assign(document.createElement('div'), { className: 'modal-overlay' });
+  overlay.style.display = 'flex';
+
+  const modal = Object.assign(document.createElement('div'), { className: 'modal' });
+  modal.innerHTML = `
+    <h2>🔍 Inspetor de Conflitos</h2>
+    <p>Foram encontrados <strong>${conflicts.length}</strong> problemas de agendamento:</p>
+    <div class="teacher-list-container">
+      ${conflicts.map((c, idx) => {
+        const time = c.closest('tr').cells[0].innerText;
+        const period = c.closest('section').id === 'section-morning' ? 'Manhã' : 'Tarde';
+        return `
+          <div class="backup-item" style="cursor:pointer" onclick="document.querySelectorAll('.modal-overlay').forEach(m=>m.remove()); document.getElementsByClassName('conflict-error')[${idx}].scrollIntoView({behavior:'smooth', block:'center'}); document.getElementsByClassName('conflict-error')[${idx}].focus();">
+            <div>
+              <strong>${c.innerText}</strong> às ${time} (${period})
+              <div style="font-size:0.8rem; color:var(--text-muted)">${c.title}</div>
+            </div>
+            <span style="font-size:1.2rem">📍</span>
+          </div>
+        `;
+      }).join('')}
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="this.closest('.modal-overlay').remove()">Fechar</button>
+    </div>
+  `;
+
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+  setupFocusTrap(overlay);
 }
 
 /**

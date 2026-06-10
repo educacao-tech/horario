@@ -62,6 +62,7 @@
         <div id="main-menu-dropdown" class="menu-dropdown">
           <button type="button" class="btn-menu-item" onclick="openTeacherManager()">⚙️ Gerenciar Professores</button>
           <button type="button" class="btn-menu-item" onclick="openSettingsModal()">🎨 Personalizar Cores</button>
+          <button type="button" class="btn-menu-item" onclick="showConflictInspector()">🔍 Inspecionar Conflitos</button>
           <button type="button" class="btn-menu-item" onclick="openShortcutsModal()">⌨️ Atalhos de Teclado</button>
           <button type="button" class="btn-menu-item" onclick="showWorkloadModal()">📊 Carga Horária</button>
           <button type="button" class="btn-menu-item" onclick="window.print()">🖨️ Imprimir Horário</button>
@@ -88,6 +89,7 @@
           <option value="5">Sexta-feira</option>
         </select>
       </div>
+      <div id="global-conflict-container"></div>
       <span id="time-counter" class="time-counter"></span>
       <div id="current-date-time" class="current-date-time"></div>
       <span id="save-indicator">✅ Salvo</span>
