@@ -299,7 +299,7 @@ const saveContent = debounce((key, text) => {
  * @param {HTMLElement} cell - Célula a ser estilizada.
  */
 function applyDynamicStyles(cell) {
-  const text = cell.innerText.trim().toUpperCase();
+  const text = cell.textContent.trim().toUpperCase();
   const baseCode = text.split('(')[0].trim();
   const teacherMap = getTeacherMap();
   const teacherName = teacherMap[text] || teacherMap[baseCode];
@@ -740,7 +740,7 @@ document.addEventListener('keydown', (e) => {
  * @returns {number|null} Minutos desde a meia-noite.
  */
 const timeToMinutes = (str) => {
-  const match = str.toLowerCase().match(/(\d+)h(\d+)?/);
+  const match = str.match(/(\d+)[hH](\d+)?/);
   return match ? parseInt(match[1]) * 60 + parseInt(match[2] || 0) : null;
 };
 
@@ -759,7 +759,7 @@ function getDayAndColIndices(cell) {
     colSum += layout[i];
     if (colIndex <= colSum) { dayIdx = i + 1; break; }
   }
-  const specialist = table.rows[1].cells[colIndex - 1]?.innerText || '';
+  const specialist = table.rows[1].cells[colIndex - 1]?.textContent || '';
   return { dayIdx, specialist, table };
 }
 
@@ -956,21 +956,27 @@ function moveSuggestionFocus(direction) {
 function highlightOccurrences(text) {
   const normalizedSearch = normalizeString(text);
   const teacherMap = getTeacherMap();
+  const cells = _dom.cells();
+  const isSearchEmpty = !normalizedSearch || ['*', ''].includes(normalizedSearch);
 
-  _dom.cells().forEach(c => {
-    const cellText = c.innerText.trim();
-    const cellBaseCode = cellText.split('(')[0].trim();
+  for (let i = 0; i < cells.length; i++) {
+    const c = cells[i];
+    const cellText = c.textContent.trim();
     
-    // Obtém o nome do professor para permitir busca por nome completo
+    if (isSearchEmpty) {
+      c.classList.remove('match-highlight');
+      continue;
+    }
+
+    const cellBaseCode = cellText.split('(')[0].trim();
     const teacherName = teacherMap[cellText] || teacherMap[cellBaseCode] || "";
 
-    // Critério de correspondência: texto da célula OU nome do professor
-    const isMatch = normalizedSearch && 
-                    !['*', ''].includes(normalizedSearch) && 
-                    (normalizeString(cellText).includes(normalizedSearch) || normalizeString(teacherName).includes(normalizedSearch));
+    const isMatch = normalizeString(cellText).includes(normalizedSearch) || 
+                    (teacherName && normalizeString(teacherName).includes(normalizedSearch));
 
-    c.classList.toggle('match-highlight', !!isMatch);
-  });
+    if (isMatch) c.classList.add('match-highlight');
+    else c.classList.remove('match-highlight');
+  }
 }
 
 /**
@@ -1097,7 +1103,7 @@ function updateStatusBar(cell = null) {
 function getCellStatusData(cell) {
   if (!cell || !cell.closest || !cell.parentElement) return null;
 
-  const text = cell.innerText.trim().toUpperCase();
+  const text = cell.textContent.trim().toUpperCase();
   const baseCode = text.split('(')[0].trim();
   const teacherMap = getTeacherMap();
   const teacherName = teacherMap[text] || teacherMap[baseCode];
@@ -1110,7 +1116,7 @@ function getCellStatusData(cell) {
 
   if (table && row && table.rows[1] && colIndex > 0) {
     const professorHeader = table.rows[1].cells[colIndex - 1];
-    const sigla = professorHeader ? professorHeader.innerText.trim().toUpperCase() : '';
+    const sigla = professorHeader ? professorHeader.textContent.trim().toUpperCase() : '';
     specialistName = teacherMap[sigla] || `Especialista: ${sigla}`;
     
     if (teacherName && !CONFIG.SPECIALIST_SET.has(text) && !CONFIG.SPECIALIST_SET.has(baseCode)) {
@@ -1118,7 +1124,7 @@ function getCellStatusData(cell) {
     }
   }
 
-  const weeklyCount = Array.from(_dom.cells()).filter(c => c.innerText.trim().toUpperCase() === text).length;
+  const weeklyCount = Array.from(_dom.cells()).filter(c => c.textContent.trim().toUpperCase() === text).length;
 
   return {
     specialist: specialistName,
@@ -1282,13 +1288,13 @@ function exportToCsv() {
     const specialists = [];
 
     for (let i = 0; i < rows[1].cells.length; i++) {
-      specialists.push(rows[1].cells[i].innerText.trim());
+      specialists.push(rows[1].cells[i].textContent.trim());
     }
 
     for (let r = 2; r < rows.length; r++) {
       const row = rows[r];
       if (row.classList.contains('recreio')) continue;
-      const time = row.cells[0].innerText.trim();
+      const time = row.cells[0].textContent.trim();
       let colOffset = 0;
       layout.forEach((colsInDay, dayIdx) => {
         const dayName = days[dayIdx + 1];
@@ -1296,7 +1302,7 @@ function exportToCsv() {
           const cell = row.cells[colOffset + c + 1];
           if (cell) {
             const specialist = specialists[colOffset + c] || '';
-            const value = cell.innerText.trim().replace(/"/g, '""');
+            const value = cell.textContent.trim().replace(/"/g, '""');
             csv += `"${period}","${dayName}","${time}","${specialist}","${value}"\n`;
           }
         }
@@ -1402,7 +1408,7 @@ function updateHighlights() {
 
     for (let i = 2; i < table.rows.length; i++) {
       const row = table.rows[i];
-      const timeText = row.cells[0].innerText;
+      const timeText = row.cells[0].textContent;
       const parts = timeText.split(' - ');
       let start = null, end = null;
 
@@ -1487,7 +1493,7 @@ function toggleCategory(category) {
     for (let i = 0; i < specialistRow.cells.length; i++) {
       const th = specialistRow.cells[i];
       const isMatch = th.classList.contains(category) ||
-                      th.innerText.trim().toUpperCase() === category.toUpperCase();
+                      th.textContent.trim().toUpperCase() === category.toUpperCase();
 
       if (isMatch) {
         th.classList.toggle('category-select', isActive);
@@ -1501,7 +1507,7 @@ function toggleCategory(category) {
 
   if (category === 'hl') {
     _dom.cells().forEach(cell => {
-      const txt = cell.innerText.trim().toUpperCase();
+      const txt = cell.textContent.trim().toUpperCase();
       if (txt === 'HL' || txt === 'HTPC') {
         cell.classList.toggle('category-select', isActive);
       }
@@ -1560,7 +1566,7 @@ function updateTimeCounter() {
 
     for (let i = 2; i < table.rows.length; i++) {
       const row = table.rows[i];
-      const timeText = row.cells[0].innerText;
+      const timeText = row.cells[0].textContent;
       const parts = timeText.split(' - ');
       let startMinutes = null, endMinutes = null;
 
@@ -2277,7 +2283,7 @@ function showBackupHistoryModal() {
 function calculateWorkload() {
   const counts = {};
   _dom.cells().forEach(cell => {
-    const text = cell.innerText.trim().toUpperCase();
+    const text = cell.textContent.trim().toUpperCase();
     if (text && text !== '*') {
       counts[text] = (counts[text] || 0) + 1;
     }
