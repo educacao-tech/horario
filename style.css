@@ -1633,3 +1633,307 @@ body.drag-over::after {
   z-index: 20000;
   pointer-events: none;
 }
+
+/* ==========================================================================
+   RESPONSIVIDADE E ADAPTAÇÃO PARA DISPOSITIVOS MÓVEIS (MOBILE & TABLET)
+   ========================================================================== */
+
+/* Touch Devices: Ajuste de interatividade para telas de toque */
+@media (hover: none) {
+  td[role="textbox"]:hover:not(:empty):not([data-text="*"]) {
+    transform: none;
+    box-shadow: none;
+  }
+  
+  td[role="textbox"]:active {
+    background-color: var(--hl-color) !important;
+    outline: 2px solid var(--primary);
+  }
+}
+
+/* Telas Médias e Tablets (max-width: 1024px) */
+@media screen and (max-width: 1024px) {
+  .top-area-sticky-wrapper {
+    grid-template-areas:
+      "header legend"
+      "toolbar toolbar";
+    grid-template-columns: 1fr auto;
+    padding: 10px 14px;
+    gap: 8px 12px;
+  }
+
+  .toolbar {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .search-field {
+    width: 160px;
+  }
+}
+
+/* Dispositivos Móveis - Smartphones e Tablets Pequenos (max-width: 768px) */
+@media screen and (max-width: 768px) {
+  /* Layout do Topo Sticky */
+  .top-area-sticky-wrapper {
+    grid-template-areas:
+      "header"
+      "legend"
+      "toolbar";
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 8px 10px;
+  }
+
+  .header-brand {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .header-titles h1 {
+    font-size: 1.1rem;
+  }
+
+  .header-titles p {
+    font-size: 0.78rem;
+  }
+
+  .legend {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 6px;
+    font-size: 0.8rem;
+  }
+
+  .legend-item {
+    padding: 4px 8px;
+    font-size: 0.75rem;
+  }
+
+  /* Toolbar responsiva */
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 0;
+  }
+
+  .menu-dropdown-wrapper {
+    order: 1;
+  }
+
+  .search-wrapper {
+    order: 2;
+    flex: 1 1 180px;
+    width: 100%;
+  }
+
+  .search-field {
+    width: 100%;
+    font-size: 16px; /* Evita zoom automático no iOS ao focar */
+    box-sizing: border-box;
+  }
+
+  .day-filter-wrapper {
+    order: 3;
+    border-left: none;
+    padding-left: 0;
+    flex: 1 1 140px;
+  }
+
+  .day-filter-select {
+    width: 100%;
+    font-size: 16px; /* Evita zoom automático no iOS ao focar */
+    padding: 6px 10px;
+  }
+
+  .time-counter,
+  .current-date-time,
+  #save-indicator {
+    order: 4;
+    font-size: 0.78rem;
+    padding: 4px 8px;
+  }
+
+  #save-indicator {
+    margin-left: 0;
+  }
+
+  /* Menu Dropdown responsivo fixo/flutuante */
+  .menu-dropdown {
+    position: fixed;
+    top: 60px;
+    left: 10px;
+    right: 10px;
+    width: auto;
+    max-height: 75vh;
+    overflow-y: auto;
+    z-index: 12000;
+    box-shadow: var(--shadow-lg);
+    border-radius: 14px;
+  }
+
+  .btn-menu-item {
+    padding: 12px 16px;
+    font-size: 0.95rem;
+  }
+
+  /* Seções e Tabelas no Mobile */
+  div[id^="section-"] {
+    padding: 0 8px;
+    margin-bottom: 24px;
+  }
+
+  div[id^="section-"] h2 {
+    font-size: 1.1rem;
+    margin: 12px 0 6px 0;
+  }
+
+  .table-container {
+    border-radius: 12px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  table {
+    min-width: 750px;
+  }
+
+  /* Ajuste do filtro de dia único em telas pequenas */
+  .table-container.single-day-active table {
+    width: 100% !important;
+    min-width: 100% !important;
+  }
+
+  /* Coluna fixa de Horário ajustada para telas touch */
+  th:first-child,
+  tr:not(.recreio) td:first-child {
+    width: calc(105px * var(--table-zoom)) !important;
+    min-width: calc(105px * var(--table-zoom)) !important;
+    font-size: 0.78rem;
+    padding: 6px 4px;
+    white-space: normal;
+    word-break: break-word;
+  }
+
+  th, td {
+    padding: 6px 3px;
+    font-size: 0.78rem;
+    min-width: 38px;
+  }
+
+  thead th {
+    font-size: 0.75rem;
+    padding: 6px 3px;
+  }
+
+  td[role="textbox"] {
+    min-height: 36px;
+  }
+
+  /* Modais em telas móveis */
+  .modal-overlay {
+    padding: 12px;
+    box-sizing: border-box;
+  }
+
+  .modal {
+    width: 100%;
+    max-width: 100%;
+    max-height: 90vh;
+    padding: 16px;
+    gap: 12px;
+    border-radius: 16px;
+    box-sizing: border-box;
+  }
+
+  .modal-form {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .modal-form input,
+  .modal-form select,
+  .modal-form .btn-primary {
+    font-size: 16px; /* Evita auto-zoom do browser mobile */
+    height: 44px; /* Touch target adequado */
+  }
+
+  .modal-footer {
+    flex-wrap: wrap;
+  }
+
+  .modal-footer .btn {
+    flex: 1 1 auto;
+    justify-content: center;
+    min-height: 44px;
+  }
+
+  /* Toasts no Mobile */
+  .toast-container {
+    top: 10px;
+    width: 90vw;
+    max-width: 380px;
+  }
+
+  .toast {
+    padding: 10px 16px;
+    font-size: 0.85rem;
+  }
+}
+
+/* Telas Muito Pequenas - Smartphones Compactos (max-width: 480px) */
+@media screen and (max-width: 480px) {
+  .top-area-sticky-wrapper {
+    padding: 6px 8px;
+    gap: 6px;
+  }
+
+  .header-logo {
+    width: 34px;
+    height: 34px;
+  }
+
+  .header-titles h1 {
+    font-size: 0.98rem;
+  }
+
+  .header-titles p {
+    display: none; /* Oculta subtítulo para economizar altura preciosa na tela */
+  }
+
+  .legend {
+    font-size: 0.72rem;
+    gap: 4px;
+  }
+
+  .legend-item {
+    padding: 3px 6px;
+    font-size: 0.7rem;
+  }
+
+  .day-filter-select,
+  .search-field {
+    font-size: 14px;
+    padding: 6px 8px;
+  }
+
+  th:first-child,
+  tr:not(.recreio) td:first-child {
+    width: 92px !important;
+    min-width: 92px !important;
+    font-size: 0.72rem;
+  }
+
+  th, td {
+    font-size: 0.72rem;
+    padding: 5px 2px;
+    min-width: 32px;
+  }
+
+  .time-counter,
+  .current-date-time {
+    font-size: 0.72rem;
+    padding: 3px 6px;
+  }
+}

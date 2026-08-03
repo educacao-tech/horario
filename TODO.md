@@ -35,6 +35,6 @@
 
 ## Próximos passos
 - [ ] Testar impressão (`Ctrl+P`) após alterações no CSS.
-- [ ] Validar funcionamento no mobile.
+- [x] Validar funcionamento e implementar responsividade em dispositivos móveis (Mobile & Tablet).
 - [ ] Verificar filtro de dias e zoom.
 
