@@ -13,6 +13,10 @@
     })();
   </script>
   <title>Horário Escolar Editável</title>
+  <!-- Google Fonts: Plus Jakarta Sans & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="readonly">
@@ -272,14 +276,21 @@
   <!-- Legenda exclusiva para o final da impressão -->
   <div id="print-footer-legend" class="print-footer-legend"></div>
 
-  <!-- Rodapé fixo para a impressão -->
-  <div class="print-footer">
-    <div class="print-footer-left">
-      <img src="https://raw.githubusercontent.com/educacao-tech/horario/main/eaba.png" alt="Logo" class="print-footer-logo">
-      <span>EMEB Professora Anna Bonagura de Andrade - Ano Letivo 2026</span>
+  <!-- Rodapé Institucional Principal -->
+  <footer class="main-footer">
+    <div class="footer-container">
+      <div class="footer-brand">
+        <img src="https://raw.githubusercontent.com/educacao-tech/horario/main/eaba.png" alt="Logo" class="footer-logo">
+        <div class="footer-info">
+          <strong>EMEB Professora Anna Bonagura de Andrade</strong>
+          <p>Quadro de Gestão e Horário Escolar • Ano Letivo 2026</p>
+        </div>
+      </div>
+      <div class="footer-meta">
+        <span>Desenvolvido com 📚 Educação Tech</span>
+      </div>
     </div>
-    <span class="print-page-number"></span>
-  </div>
+  </footer>
 
   <div class="status-bar" id="statusBar" aria-live="polite" aria-atomic="true">
     <div class="status-item">Aguardando seleção...</div>

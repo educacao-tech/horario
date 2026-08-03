@@ -4,21 +4,47 @@
   --accent: #0ea5e9;
   --bg-main: #f8fafc;
   --bg-card: #ffffff;
-  --text-main: #1e293b;
-  --text-muted: #374151; /* Darker gray (Gray 700) for better contrast on pastel backgrounds */
+  --text-main: #0f172a;
+  --text-muted: #475569;
   --border-color: #e2e8f0;
-  --hl-color: #e0e5ea; 
-  --pd-color: #90d0f0; 
-  --el-color: #d1fae5; 
-  --mtf-color: #ffedd5;
-  --edit-bg: #fffef2;
-  --bg-header: rgba(248, 250, 252, 0.9);
-  --bg-sticky-col: rgba(241, 245, 249, 0.95);
-  --header-height: 41px;
-  --shadow-sm: 0 2px 4px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 20px -2px rgb(0 0 0 / 0.12);
-  --shadow-lg: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  --hl-color: #e2e8f0; 
+  --pd-color: #bae6fd; 
+  --el-color: #a7f3d0; 
+  --mtf-color: #fed7aa;
+  --edit-bg: #fffdf5;
+  --bg-header: rgba(248, 250, 252, 0.85);
+  --bg-sticky-col: rgba(241, 245, 249, 0.96);
+  --header-height: 42px;
+  --shadow-sm: 0 2px 6px 0 rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 8px 24px -4px rgba(15, 23, 42, 0.08);
+  --shadow-lg: 0 20px 30px -10px rgba(15, 23, 42, 0.12);
+  --shadow-glow: 0 0 20px rgba(79, 70, 229, 0.25);
   --table-zoom: 1;
+  --font-main: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-title: 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif;
+}
+
+/* Scrollbar Personalizada */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-main);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+.dark-theme ::-webkit-scrollbar-thumb {
+  background: #334155;
+}
+.dark-theme ::-webkit-scrollbar-thumb:hover {
+  background: #475569;
 }
 
 /* Controle de Zoom na Toolbar */
@@ -40,18 +66,32 @@
 }
 
 .dark-theme {
-  --bg-main: #020617;
+  --bg-main: #070b14;
   --bg-card: #0f172a;
-  --bg-header: rgba(30, 41, 59, 0.9);
+  --bg-header: rgba(15, 23, 42, 0.88);
   --bg-sticky-col: #1e293b;
-  --text-main: #f1f5f9;
+  --text-main: #f8fafc;
   --text-muted: #94a3b8;
-  --border-color: #475569; 
-  --hl-color: #334155; 
-  --pd-color: #1e40af; 
-  --el-color: #065f46;
-  --mtf-color: #92400e;
-  --edit-bg: #1e293b;
+  --border-color: #334155; 
+  --hl-color: #1e293b; 
+  --pd-color: #0369a1; 
+  --el-color: #047857;
+  --mtf-color: #b45309;
+  --edit-bg: #0f172a;
+}
+
+/* Badge do ano letivo com efeito vibrante */
+.year-badge {
+  background: linear-gradient(135deg, #4f46e5, #0ea5e9);
+  color: #ffffff;
+  padding: 2px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+  display: inline-block;
+  vertical-align: middle;
 }
 
 /* Melhoria na visibilidade da seleção no tema escuro */
@@ -64,21 +104,22 @@
   position: sticky;
   top: 0;
   z-index: 1000;
-  background-color: var(--bg-main);
-  padding: 12px 20px 10px 20px; /* Unificado para evitar erros de cálculo */
+  background-color: var(--bg-header);
+  padding: 12px 20px 10px 20px;
   box-sizing: border-box;
-  width: 100%; /* 100% respeita a largura do body sem contar a scrollbar vertical */
-  left: 0; /* Garante alinhamento total à esquerda */
-  border-bottom: 1px solid var(--border-color); /* Borda sutil para separar do conteúdo */
+  width: 100%;
+  left: 0;
+  border-bottom: 1px solid var(--border-color);
   transition: padding 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease;
   display: grid;
   grid-template-areas: 
     "header legend"
     "toolbar toolbar";
-  grid-template-columns: auto 1fr; /* O cabeçalho ocupa o necessário e a legenda o resto */
+  grid-template-columns: auto 1fr;
   align-items: center;
   gap: 4px 15px;
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 
 /* Estado encolhido do cabeçalho ao rolar */
@@ -99,22 +140,35 @@
 }
 
 .top-area-sticky-wrapper.scrolled .header-titles p {
-  display: none; /* Oculta o subtítulo para ganhar espaço vertical */
+  display: none;
 }
 
 body {
-  margin: 0; /* Remove a margem padrão do navegador que causa o estouro horizontal */
-  overflow-x: hidden; /* Garante que nada escape lateralmente no nível da página */
-  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  margin: 0;
+  overflow-x: hidden;
+  font-family: var(--font-main);
   background-color: var(--bg-main);
+  background-image: 
+    radial-gradient(rgba(79, 70, 229, 0.07) 1px, transparent 1px),
+    radial-gradient(rgba(14, 165, 233, 0.05) 1px, transparent 1px);
+  background-size: 24px 24px, 12px 12px;
+  background-position: 0 0, 6px 6px;
   color: var(--text-main);
-  /* O padding superior e lateral agora é tratado pelo .top-area-sticky-wrapper */
-  /* O padding inferior é mantido para não cobrir a tabela com a barra de status */
   padding-top: 0;
   padding-left: 0;
   padding-right: 0;
   padding-bottom: 60px;
   line-height: 1.6;
+}
+
+.dark-theme body, body.dark-theme {
+  background-image: 
+    radial-gradient(rgba(99, 102, 241, 0.12) 1px, transparent 1px),
+    radial-gradient(rgba(56, 189, 248, 0.08) 1px, transparent 1px);
+}
+
+h1, h2, h3, h4, .header-titles h1 {
+  font-family: var(--font-title);
 }
 
 .main-header {
@@ -182,15 +236,44 @@ body {
 }
 
 .legend {
-  margin-bottom: 12px; /* Mantém o espaçamento interno */
-  margin-bottom: 8px; /* Reduzido de 12px */
   grid-area: legend;
   margin-bottom: 0;
-  font-size: 0.9em;
+  font-size: 0.85rem;
   flex-wrap: wrap;
-  display: flex; /* Adicionado para garantir o layout flex */
-  gap: 12px; /* Adicionado para garantir o layout flex */
+  display: flex;
+  gap: 8px;
   justify-content: flex-end;
+  align-items: center;
+}
+
+.legend-item {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  padding: 4px 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-family: var(--font-main);
+  color: var(--text-main);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.legend-item:hover {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: var(--shadow-md);
+  border-color: var(--primary);
+}
+
+.legend-item .box {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid rgba(0,0,0,0.1);
+  box-shadow: 0 0 6px rgba(0,0,0,0.1);
 }
 
 .table-container {
@@ -234,8 +317,25 @@ div[id^="section-"] {
   margin-bottom: 40px;
   page-break-inside: avoid;
   break-inside: avoid;
-  padding: 0 20px; /* Adiciona padding horizontal para alinhar com o cabeçalho fixo */
-  box-sizing: border-box; /* Garante que o padding seja incluído na largura total */
+  padding: 0 20px;
+  box-sizing: border-box;
+}
+
+div[id^="section-"] h2 {
+  font-family: var(--font-title);
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--text-main);
+  margin: 24px 0 12px 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm);
+  letter-spacing: -0.01em;
 }
 
 table {
@@ -506,9 +606,10 @@ td[role="textbox"]:is([data-text="*"])::before {
 
 td[role="textbox"]:focus {
   background-color: var(--bg-card) !important;
-  outline: 3px solid var(--primary) !important;
-  outline-offset: -3px;
-  box-shadow: var(--shadow-lg) !important;
+  outline: none !important;
+  box-shadow: inset 0 0 0 2px var(--primary), 0 0 16px rgba(79, 70, 229, 0.4) !important;
+  border-radius: 4px;
+  z-index: 10;
 }
 
 /* Divisória entre os Dias */
@@ -522,12 +623,12 @@ table tr td.day-divider {
   border-right: 2px solid rgba(255, 255, 255, 0.2);
 }
 
-/* Identificação de Dias por Cores - Cabeçalhos */
-.day-header-1 { background-color: #0369a1; color: white; } 
-.day-header-2 { background-color: #15803d; color: white; } 
-.day-header-3 { background-color: #581c87; color: white; } 
-.day-header-4 { background-color: #c2410c; color: white; } 
-.day-header-5 { background-color: #be185d; color: white; } 
+/* Identificação de Dias por Cores - Cabeçalhos com Gradientes Vibrantes */
+.day-header-1 { background: linear-gradient(135deg, #0284c7, #0369a1); color: white; text-shadow: 0 1px 2px rgba(0,0,0,0.2); } 
+.day-header-2 { background: linear-gradient(135deg, #16a34a, #15803d); color: white; text-shadow: 0 1px 2px rgba(0,0,0,0.2); } 
+.day-header-3 { background: linear-gradient(135deg, #9333ea, #7e22ce); color: white; text-shadow: 0 1px 2px rgba(0,0,0,0.2); } 
+.day-header-4 { background: linear-gradient(135deg, #ea580c, #c2410c); color: white; text-shadow: 0 1px 2px rgba(0,0,0,0.2); } 
+.day-header-5 { background: linear-gradient(135deg, #db2777, #be185d); color: white; text-shadow: 0 1px 2px rgba(0,0,0,0.2); } 
 
 /* Identificação de Dias por Cores - Colunas (Fundo Sutil) */
 .day-cell-1 { background-color: rgba(3, 105, 161, 0.02); }
@@ -596,17 +697,22 @@ tr:nth-child(even) td.hl {
 }
 
 .recreio {
-  background: linear-gradient(to bottom, var(--bg-header), var(--bg-main));
+  background: linear-gradient(90deg, rgba(79, 70, 229, 0.06), rgba(14, 165, 233, 0.06)) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   color: var(--text-muted);
-  font-weight: bold;
+  font-weight: 700;
   text-align: center;
-  font-size: 0.9em;
-  letter-spacing: 0.05em;
+  font-size: 0.85em;
+  letter-spacing: 0.08em;
+  border-top: 1px dashed var(--border-color) !important;
+  border-bottom: 1px dashed var(--border-color) !important;
 }
 
 .recreio td {
   border-right: none !important;
   width: 100%;
+  padding: 8px 4px !important;
 }
 
 /* Destaque para células de dados e horários atuais */
@@ -936,43 +1042,101 @@ td.current-active:first-child::before {
 
 .btn {
   padding: 8px 14px;
-  padding: 6px 10px;
   cursor: pointer;
-  border: none;
+  border: 1px solid var(--border-color);
   border-radius: 12px;
+  font-family: var(--font-main);
   font-weight: 700;
-  font-size: 0.9rem;
   font-size: 0.85rem;
-  transition: all 0.2s ease;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
   gap: 8px;
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  background: var(--bg-card);
   color: var(--text-main);
   white-space: nowrap;
   flex-shrink: 0;
+  box-shadow: var(--shadow-sm);
 }
 
-.year-badge {
-  background: var(--pd-color);
-  color: var(--primary);
-  padding: 2px 10px;
-  border-radius: 20px;
-  font-size: 0.85rem;
-  font-weight: 700;
-}
 .btn-primary {
-  background: var(--primary);
-  color: white;
+  background: linear-gradient(135deg, #4f46e5, #4338ca);
+  color: #ffffff;
+  border: none;
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35);
 }
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #4338ca, #3730a3);
+  box-shadow: 0 6px 18px rgba(79, 70, 229, 0.45);
+}
+
 .btn-success {
-  background: #28a745;
+  background: linear-gradient(135deg, #10b981, #059669);
   color: white;
+  border: none;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
 }
+
 .btn:hover {
-  transform: translateY(-2px); /* Efeito de elevação mais pronunciado */
-  filter: brightness(1.1);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+/* Rodapé Institucional Principal */
+.main-footer {
+  margin-top: 40px;
+  padding: 24px 20px;
+  background: var(--bg-card);
+  border-top: 1px solid var(--border-color);
+  color: var(--text-main);
   box-shadow: var(--shadow-sm);
+}
+
+.footer-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.footer-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.footer-logo {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+.footer-info strong {
+  display: block;
+  font-family: var(--font-title);
+  font-size: 0.95rem;
+  color: var(--text-main);
+}
+
+.footer-info p {
+  margin: 2px 0 0 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.footer-meta {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 600;
 }
 
 .status-bar {
@@ -1880,6 +2044,45 @@ body.drag-over::after {
     padding: 10px 16px;
     font-size: 0.85rem;
   }
+
+  /* Rodapé e Barra de Status no Mobile */
+  body {
+    padding-bottom: calc(85px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .main-footer {
+    margin-top: 24px;
+    padding: 16px 12px;
+    margin-bottom: calc(65px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .footer-container {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .status-bar {
+    position: fixed;
+    bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    left: 10px;
+    right: 10px;
+    width: auto;
+    max-width: 100%;
+    transform: none;
+    padding: 8px 14px;
+    font-size: 0.78rem;
+    border-radius: 16px;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    box-shadow: var(--shadow-lg);
+  }
+
+  .status-item {
+    border-right: none;
+    padding-right: 0;
+  }
 }
 
 /* Telas Muito Pequenas - Smartphones Compactos (max-width: 480px) */
@@ -1935,5 +2138,19 @@ body.drag-over::after {
   .current-date-time {
     font-size: 0.72rem;
     padding: 3px 6px;
+  }
+
+  .status-bar {
+    padding: 6px 10px;
+    font-size: 0.72rem;
+    border-radius: 12px;
+  }
+
+  .footer-info strong {
+    font-size: 0.88rem;
+  }
+
+  .footer-info p {
+    font-size: 0.75rem;
   }
 }
