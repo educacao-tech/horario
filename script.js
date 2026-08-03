@@ -14,8 +14,9 @@ const CONFIG = {
   HISTORY_KEY: 'school_history_v2',
   COLORS_KEY: 'school_custom_colors_v1',
   LOCK_PASSWORD: 'qwe123', // Senha padrão para desbloquear o modo de edição
-  LAST_UPDATE_DATE: '2024-04-29', // Data da última atualização do código
-  GITHUB_REPO: 'seu-usuario-real/seu-repositorio-horario', 
+  LAST_UPDATE_DATE: '03/08/2026', // Data da última atualização do código
+  LAST_UPDATE_TIME: '11:33', // Hora da última atualização do código
+  GITHUB_REPO: 'educacao-tech/horario', 
   LAYOUTS: {
     morning: [6, 5, 4, 4, 5],
     afternoon: [5, 4, 4, 5, 4]
@@ -1136,6 +1137,15 @@ function getCellStatusData(cell) {
 }
 
 /**
+ * Atualiza a barra de status com base na célula selecionada ou focada.
+ * @param {HTMLElement} [cell] - Célula atual ou undefined/null para estado inicial.
+ */
+function updateStatusBar(cell) {
+  const data = cell ? getCellStatusData(cell) : null;
+  renderStatusBar(data);
+}
+
+/**
  * Renderiza o conteúdo HTML na barra de status.
  */
 function renderStatusBar(data) {
@@ -1143,7 +1153,6 @@ function renderStatusBar(data) {
   if (!sb) return;
 
   let statusContent = '';
-  let professorHeader = null;
 
   // Limpa destaques de linha e cabeçalho, se houver uma célula válida
   document.querySelectorAll('tr').forEach(r => r.classList.remove('row-highlight'));
@@ -1160,20 +1169,19 @@ function renderStatusBar(data) {
     statusContent = '<div class="status-item">Aguardando seleção de aula...</div>';
   }
 
-  // Usa o cache do GitHub se disponível, caso contrário mostra o estado inicial
-  // Se o repositório for o placeholder, mostra a data local imediatamente
-  const gitInfoText = _gitHubInfoCache || 
-    (CONFIG.GITHUB_REPO.includes('seu-usuario-real') 
-      ? `v${CONFIG.SCHEMA_VERSION} | Atualizado em: ${CONFIG.LAST_UPDATE_DATE}` 
-      : `v${CONFIG.SCHEMA_VERSION} | Sincronizando com GitHub...`);
+  // Usa a versão compacta no status bar para nunca estourar a barra flutuante
+  const barText = _gitHubShortCache || `v${CONFIG.SCHEMA_VERSION}`;
+  const barTitle = _gitHubFullTitle || `Versão v${CONFIG.SCHEMA_VERSION} | Atualizado em: ${CONFIG.LAST_UPDATE_DATE}`;
 
-  // Adiciona o contêiner para informações de versão/atualização à direita
   statusContent += `
-    <div class="status-info-right" id="github-update-info">${gitInfoText}</div>
+    <div class="status-info-right" id="github-update-info" title="${escapeHTML(barTitle)}">${barText}</div>
   `;
 
-  sb.innerHTML = statusContent; // Atribui o conteúdo completo de uma vez
+  sb.innerHTML = statusContent;
 }
+
+let _gitHubShortCache = null;
+let _gitHubFullTitle = null;
 
 /**
  * Escapa caracteres HTML para evitar XSS.
@@ -1187,47 +1195,80 @@ function escapeHTML(str) {
 
 /**
  * Busca informações da última atualização diretamente da API do GitHub.
- * Atualiza a data e o hash do commit na barra de status.
+ * Atualiza a barra de status com badge compacto e o rodapé com pílulas informativas.
  */
 async function fetchGitHubUpdateInfo() {
-  if (_gitHubInfoCache) return;
-  
-  // Função auxiliar para atualizar o cache e o elemento na tela
-  const setInfo = (text) => {
-    _gitHubInfoCache = text;
+  const updateDOM = (shortText, fullTitle, footerHTML) => {
+    _gitHubShortCache = shortText;
+    _gitHubFullTitle = fullTitle;
+
     const infoRight = document.getElementById('github-update-info');
-    if (infoRight) infoRight.innerHTML = text;
+    if (infoRight) {
+      infoRight.innerHTML = shortText;
+      infoRight.title = fullTitle;
+    }
+
+    const footerMeta = document.querySelector('.footer-meta');
+    if (footerMeta) {
+      footerMeta.innerHTML = footerHTML;
+    }
   };
 
+  const defaultShort = `v${CONFIG.SCHEMA_VERSION}`;
+  const defaultDateTime = `${CONFIG.LAST_UPDATE_DATE} às ${CONFIG.LAST_UPDATE_TIME}`;
+  const defaultTitle = `Versão v${CONFIG.SCHEMA_VERSION} | Atualizado em: ${defaultDateTime}`;
+  const defaultFooter = `
+    <div class="git-meta-container">
+      <span class="git-badge-item">📦 Versão: <b>v${CONFIG.SCHEMA_VERSION}</b></span>
+      <span class="git-badge-item">📅 Data/Hora Git: <b>${defaultDateTime}</b></span>
+    </div>
+  `;
+
+  // Renderiza imediatamente o valor padrão com data e hora locais
+  updateDOM(defaultShort, defaultTitle, defaultFooter);
+
   if (!CONFIG.GITHUB_REPO || CONFIG.GITHUB_REPO.includes('seu-usuario-real')) {
-    setInfo(`v${CONFIG.SCHEMA_VERSION} | Atualizado em: ${CONFIG.LAST_UPDATE_DATE}`);
     return;
   }
 
   try {
-    // Tenta buscar na branch 'main' (padrão atual do GitHub)
-    let response = await fetch(`https://api.github.com/repos/${CONFIG.GITHUB_REPO}/commits/main`);
-    
-    // Caso não encontre (404), tenta na branch 'master' (repositórios antigos)
-    if (response.status === 404) {
-      response = await fetch(`https://api.github.com/repos/${CONFIG.GITHUB_REPO}/commits/master`);
+    // Consulta a API de commits do repositório
+    let response = await fetch(`https://api.github.com/repos/${CONFIG.GITHUB_REPO}/commits?per_page=1`);
+    if (!response.ok) {
+      response = await fetch(`https://api.github.com/repos/${CONFIG.GITHUB_REPO}/commits/main`);
     }
 
     if (response && response.ok) {
-      const data = await response.json();
-      const date = new Date(data.commit.committer.date).toLocaleString('pt-BR', {
-        day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
-      });
-      const sha = data.sha.substring(0, 7);
-      const message = data.commit.message.split('\n')[0].substring(0, 30);
-      setInfo(`v${CONFIG.SCHEMA_VERSION} (${sha}) | Sincronizado: "${message}..." em ${date}`);
-    } else {
-      throw new Error(`Resposta HTTP: ${response.status}`);
+      const result = await response.json();
+      const commitObj = Array.isArray(result) ? result[0] : result;
+
+      if (commitObj && commitObj.commit) {
+        const rawDate = commitObj.commit.committer?.date || commitObj.commit.author?.date;
+        const commitDate = rawDate ? new Date(rawDate) : new Date();
+        const formattedDate = commitDate.toLocaleDateString('pt-BR');
+        const formattedTime = commitDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        const fullDateTime = `${formattedDate} às ${formattedTime}`;
+
+        const sha = commitObj.sha ? commitObj.sha.substring(0, 7) : 'head';
+        const fullMsg = commitObj.commit.message ? commitObj.commit.message.split('\n')[0] : 'Atualização do repositório';
+        const shortMsg = fullMsg.length > 35 ? fullMsg.substring(0, 32) + '...' : fullMsg;
+
+        const shortText = `v${CONFIG.SCHEMA_VERSION} (${sha})`;
+        const fullTitle = `Git: "${fullMsg}" em ${fullDateTime}`;
+
+        const footerHTML = `
+          <div class="git-meta-container">
+            <span class="git-badge-item">📦 Versão: <b>v${CONFIG.SCHEMA_VERSION} (${sha})</b></span>
+            <span class="git-badge-item" title="${escapeHTML(fullMsg)}">💬 Commit: <i>"${escapeHTML(shortMsg)}"</i></span>
+            <span class="git-badge-item">📅 Data/Hora Git: <b>${fullDateTime}</b></span>
+          </div>
+        `;
+
+        updateDOM(shortText, fullTitle, footerHTML);
+      }
     }
   } catch (err) {
-    console.warn("fetchGitHubUpdateInfo: Falha ao obter dados do GitHub. Usando data local.", err);
-    // Fallback: se o GitHub falhar, usa a data estática do CONFIG
-    setInfo(`v${CONFIG.SCHEMA_VERSION} | Atualizado em: ${CONFIG.LAST_UPDATE_DATE}`);
+    console.warn("fetchGitHubUpdateInfo: Mantendo data/hora locais.", err);
   }
 }
 

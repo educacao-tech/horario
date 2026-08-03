@@ -1139,6 +1139,28 @@ td.current-active:first-child::before {
   font-weight: 600;
 }
 
+/* Pílulas de Metadados do Git no Rodapé */
+.git-meta-container {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.git-badge-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg-main);
+  padding: 4px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  font-size: 0.78rem;
+  color: var(--text-main);
+  box-shadow: var(--shadow-sm);
+  white-space: normal;
+}
+
 .status-bar {
   position: fixed;
   bottom: 20px;
@@ -1160,8 +1182,9 @@ td.current-active:first-child::before {
   box-sizing: border-box;
   box-shadow: var(--shadow-lg);
 }
+
 .status-item {
-  border-right: 1px solid #555;
+  border-right: 1px solid var(--border-color);
   padding-right: 8px;
   white-space: nowrap;
   overflow: hidden;
@@ -1169,14 +1192,17 @@ td.current-active:first-child::before {
 }
 
 .status-info-right {
-  margin-left: auto; /* Empurra para o canto direito */
-  font-size: 0.85em;
-  color: var(--text-muted); /* Usa a cor de texto mutada do tema */
-  opacity: 0.8;
+  margin-left: auto;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--primary);
+  background: var(--bg-main);
+  padding: 3px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 45%; /* Evita que mensagens longas quebrem o layout */
+  flex-shrink: 0;
+  cursor: help;
 }
 
 /* Ajustes para Telas Pequenas (Mobile) */
