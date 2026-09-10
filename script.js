@@ -161,26 +161,230 @@ function getInitialTeacherMap() {
 }
 
 /**
- * Exibe uma notificação temporária na tela.
+ * Exibe uma notificação toast moderna e elegante na tela.
  * @param {string} message - Mensagem a ser exibida.
- * @param {string} type - Tipo da notificação: 'success', 'error', 'info'.
+ * @param {'success'|'error'|'warning'|'info'} type - Tipo da notificação.
+ * @param {number} duration - Duração em milissegundos.
  */
-function showToast(message, type = 'info') {
-  const container = document.getElementById('toast-container');
-  if (!container) return;
+function showToast(message, type = 'info', duration = 3500) {
+  let container = document.getElementById('toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toast-container';
+    container.className = 'toast-container';
+    container.setAttribute('aria-live', 'polite');
+    document.body.appendChild(container);
+  }
 
   const toast = document.createElement('div');
   toast.className = `toast ${type}`;
-  
-  const icons = { success: '✅', error: '❌', info: 'ℹ️' };
-  toast.innerHTML = `<span>${icons[type] || ''}</span> <span>${message}</span>`;
-  
+  toast.setAttribute('role', 'status');
+
+  const icons = {
+    success: '✅',
+    error: '❌',
+    warning: '⚠️',
+    info: 'ℹ️'
+  };
+
+  const content = document.createElement('div');
+  content.className = 'toast-content';
+
+  const iconSpan = document.createElement('span');
+  iconSpan.className = 'toast-icon';
+  iconSpan.textContent = icons[type] || 'ℹ️';
+
+  const msgSpan = document.createElement('span');
+  msgSpan.className = 'toast-message';
+  msgSpan.textContent = message;
+
+  content.append(iconSpan, msgSpan);
+
+  const closeBtn = document.createElement('button');
+  closeBtn.type = 'button';
+  closeBtn.className = 'toast-close-btn';
+  closeBtn.setAttribute('aria-label', 'Fechar notificação');
+  closeBtn.textContent = '✖';
+
+  const progressBar = document.createElement('div');
+  progressBar.className = 'toast-progress';
+  progressBar.style.animationDuration = `${duration}ms`;
+
+  toast.append(content, closeBtn, progressBar);
   container.appendChild(toast);
 
-  setTimeout(() => {
-    toast.style.animation = 'toast-in 0.3s ease-in reverse forwards';
-    setTimeout(() => toast.remove(), 300);
-  }, 3000);
+  let isRemoved = false;
+  const removeToast = () => {
+    if (isRemoved) return;
+    isRemoved = true;
+    toast.style.animation = 'toast-out 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards';
+    setTimeout(() => toast.remove(), 250);
+  };
+
+  closeBtn.onclick = removeToast;
+  const timeoutId = setTimeout(removeToast, duration);
+
+  toast.addEventListener('mouseenter', () => {
+    progressBar.style.animationPlayState = 'paused';
+    clearTimeout(timeoutId);
+  });
+  toast.addEventListener('mouseleave', () => {
+    progressBar.style.animationPlayState = 'running';
+    setTimeout(removeToast, 1200);
+  });
+}
+
+/**
+ * Exibe um diálogo modal de confirmação moderno no lugar do confirm() nativo.
+ * @param {Object} options
+ * @param {string} options.title - Título do modal.
+ * @param {string} options.message - Mensagem explicativa.
+ * @param {string} [options.icon] - Ícone temático.
+ * @param {string} [options.confirmText] - Texto do botão de confirmação.
+ * @param {string} [options.cancelText] - Texto do botão de cancelamento.
+ * @param {'primary'|'danger'|'success'} [options.confirmType] - Estilo do botão.
+ * @param {Function} options.onConfirm - Callback executado ao confirmar.
+ * @param {Function} [options.onCancel] - Callback executado ao cancelar.
+ */
+function showConfirmDialog({
+  title = 'Confirmação',
+  message = 'Deseja continuar com esta ação?',
+  icon = '❓',
+  confirmText = 'Confirmar',
+  cancelText = 'Cancelar',
+  confirmType = 'primary',
+  onConfirm = () => {},
+  onCancel = () => {}
+}) {
+  const overlay = Object.assign(document.createElement('div'), { className: 'dialog-overlay' });
+  
+  const card = Object.assign(document.createElement('div'), { className: 'dialog-card', role: 'dialog' });
+  card.setAttribute('aria-modal', 'true');
+
+  const header = Object.assign(document.createElement('div'), { className: 'dialog-header' });
+  const iconEl = Object.assign(document.createElement('span'), { className: 'dialog-icon', textContent: icon });
+  const titleEl = Object.assign(document.createElement('h3'), { className: 'dialog-title', textContent: title });
+  header.append(iconEl, titleEl);
+
+  const bodyEl = Object.assign(document.createElement('div'), { className: 'dialog-body', textContent: message });
+
+  const actions = Object.assign(document.createElement('div'), { className: 'dialog-actions' });
+  
+  const btnCancel = Object.assign(document.createElement('button'), {
+    type: 'button',
+    className: 'btn',
+    textContent: cancelText,
+    onclick: () => {
+      overlay.remove();
+      if (typeof onCancel === 'function') onCancel();
+    }
+  });
+
+  const btnClass = confirmType === 'danger' ? 'btn-danger' : (confirmType === 'success' ? 'btn-success' : 'btn-primary');
+  const btnConfirm = Object.assign(document.createElement('button'), {
+    type: 'button',
+    className: `btn ${btnClass}`,
+    textContent: confirmText,
+    onclick: () => {
+      overlay.remove();
+      if (typeof onConfirm === 'function') onConfirm();
+    }
+  });
+
+  actions.append(btnCancel, btnConfirm);
+  card.append(header, bodyEl, actions);
+  overlay.appendChild(card);
+  document.body.appendChild(overlay);
+
+  setupFocusTrap(overlay);
+  setTimeout(() => btnConfirm.focus(), 50);
+}
+
+/**
+ * Exibe um diálogo modal de prompt moderno no lugar do prompt() nativo.
+ * @param {Object} options
+ * @param {string} options.title - Título do prompt.
+ * @param {string} options.message - Descrição ou instrução.
+ * @param {string} [options.icon] - Ícone temático.
+ * @param {string} [options.placeholder] - Placeholder do input.
+ * @param {string} [options.defaultValue] - Valor inicial.
+ * @param {'text'|'password'} [options.inputType] - Tipo de campo.
+ * @param {string} [options.confirmText] - Texto do botão de confirmar.
+ * @param {string} [options.cancelText] - Texto do botão de cancelar.
+ * @param {Function} options.onConfirm - Callback recebendo o valor digitado.
+ * @param {Function} [options.onCancel] - Callback executado ao cancelar.
+ */
+function showPromptDialog({
+  title = 'Entrada de Dados',
+  message = 'Digite a informação solicitada:',
+  icon = '🔒',
+  placeholder = '',
+  defaultValue = '',
+  inputType = 'text',
+  confirmText = 'Confirmar',
+  cancelText = 'Cancelar',
+  onConfirm = () => {},
+  onCancel = () => {}
+}) {
+  const overlay = Object.assign(document.createElement('div'), { className: 'dialog-overlay' });
+  
+  const card = Object.assign(document.createElement('div'), { className: 'dialog-card', role: 'dialog' });
+  card.setAttribute('aria-modal', 'true');
+
+  const header = Object.assign(document.createElement('div'), { className: 'dialog-header' });
+  const iconEl = Object.assign(document.createElement('span'), { className: 'dialog-icon', textContent: icon });
+  const titleEl = Object.assign(document.createElement('h3'), { className: 'dialog-title', textContent: title });
+  header.append(iconEl, titleEl);
+
+  const bodyEl = Object.assign(document.createElement('div'), { className: 'dialog-body', textContent: message });
+
+  const inputEl = Object.assign(document.createElement('input'), {
+    type: inputType,
+    className: 'dialog-input',
+    placeholder: placeholder,
+    value: defaultValue
+  });
+
+  const actions = Object.assign(document.createElement('div'), { className: 'dialog-actions' });
+  
+  const btnCancel = Object.assign(document.createElement('button'), {
+    type: 'button',
+    className: 'btn',
+    textContent: cancelText,
+    onclick: () => {
+      overlay.remove();
+      if (typeof onCancel === 'function') onCancel();
+    }
+  });
+
+  const btnConfirm = Object.assign(document.createElement('button'), {
+    type: 'button',
+    className: 'btn btn-primary',
+    textContent: confirmText,
+    onclick: () => {
+      const val = inputEl.value;
+      overlay.remove();
+      if (typeof onConfirm === 'function') onConfirm(val);
+    }
+  });
+
+  inputEl.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      btnConfirm.click();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      btnCancel.click();
+    }
+  });
+
+  actions.append(btnCancel, btnConfirm);
+  card.append(header, bodyEl, inputEl, actions);
+  overlay.appendChild(card);
+  document.body.appendChild(overlay);
+
+  setupFocusTrap(overlay);
+  setTimeout(() => inputEl.focus(), 50);
 }
 
 let _teacherMapCache = getInitialTeacherMap(); // Inicializa o cache de professores
@@ -389,6 +593,34 @@ function getRowConflictData(row) {
   return { frequencies, cells };
 }
 
+let _currentConflictIndex = -1;
+
+/**
+ * Navega para o próximo conflito na tabela, centralizando na tela e aplicando destaque pulsante.
+ */
+function navigateToNextConflict() {
+  const conflicts = Array.from(document.getElementsByClassName('conflict-error'));
+  if (conflicts.length === 0) {
+    return showToast("Nenhum conflito de horário ativo!", "success");
+  }
+
+  _currentConflictIndex = (_currentConflictIndex + 1) % conflicts.length;
+  const targetCell = conflicts[_currentConflictIndex];
+
+  targetCell.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  targetCell.focus();
+
+  // Aplica o efeito pulsante
+  targetCell.classList.add('conflict-highlight-pulse');
+  setTimeout(() => {
+    targetCell.classList.remove('conflict-highlight-pulse');
+  }, 3500);
+
+  const errorMsg = targetCell.getAttribute('title') || 'Choque de horário';
+  const rowTime = targetCell.closest('tr')?.cells[0]?.innerText || '';
+  showToast(`[${_currentConflictIndex + 1}/${conflicts.length}] ${rowTime}: ${errorMsg}`, "warning", 3000);
+}
+
 /**
  * Atualiza o contador global de conflitos na interface.
  */
@@ -399,14 +631,23 @@ function updateGlobalConflictCount() {
   if (!container) return;
 
   if (total === 0) {
-    container.innerHTML = '';
+    _currentConflictIndex = -1;
+    container.innerHTML = `
+      <div id="global-conflict-badge" class="conflict-badge clean" title="Nenhum choque de horário detectado">
+        ✅ Sem Conflitos
+      </div>
+    `;
     return;
   }
 
   container.innerHTML = `
-    <div id="global-conflict-badge" class="conflict-badge" title="Clique para ver detalhes">
-      ⚠️ ${total} Erro${total > 1 ? 's' : ''}
-      <button type="button" onclick="showConflictInspector()" style="background:none; border:none; color:white; cursor:pointer; padding:0 4px; font-weight:bold;">⋮</button>
+    <div class="conflict-badge-wrapper">
+      <button type="button" id="global-conflict-badge" class="conflict-badge" onclick="navigateToNextConflict()" title="Clique para navegar até o próximo conflito">
+        ⚠️ ${total} Conflito${total > 1 ? 's' : ''} ➔
+      </button>
+      <button type="button" class="btn" style="padding: 4px 8px; height: 32px; background: var(--bg-card); font-size: 0.8rem;" onclick="showConflictInspector()" title="Abrir lista de todos os conflitos">
+        🔍 Lista
+      </button>
     </div>
   `;
 }
@@ -417,7 +658,7 @@ function updateGlobalConflictCount() {
 function showConflictInspector() {
   const conflicts = Array.from(document.getElementsByClassName('conflict-error'));
   if (conflicts.length === 0) {
-    return showToast("Nenhum conflito detectado!", "success");
+    return showToast("Nenhum conflito detectado no momento!", "success");
   }
 
   const overlay = Object.assign(document.createElement('div'), { className: 'modal-overlay' });
@@ -426,24 +667,24 @@ function showConflictInspector() {
   const modal = Object.assign(document.createElement('div'), { className: 'modal' });
   modal.innerHTML = `
     <h2>🔍 Inspetor de Conflitos</h2>
-    <p>Foram encontrados <strong>${conflicts.length}</strong> problemas de agendamento:</p>
+    <p>Foram detectados <strong>${conflicts.length}</strong> choques de horário na grade:</p>
     <div class="teacher-list-container">
       ${conflicts.map((c, idx) => {
-        const time = c.closest('tr').cells[0].innerText;
-        const period = c.closest('section').id === 'section-morning' ? 'Manhã' : 'Tarde';
+        const time = c.closest('tr')?.cells[0]?.innerText || 'Horário';
+        const period = c.closest('div[id^="section-"]')?.id === 'section-morning' ? 'Manhã' : 'Tarde';
         return `
-          <div class="backup-item" style="cursor:pointer" onclick="document.querySelectorAll('.modal-overlay').forEach(m=>m.remove()); document.getElementsByClassName('conflict-error')[${idx}].scrollIntoView({behavior:'smooth', block:'center'}); document.getElementsByClassName('conflict-error')[${idx}].focus();">
+          <div class="backup-item" style="cursor:pointer" onclick="document.querySelectorAll('.modal-overlay').forEach(m=>m.remove()); const el = document.getElementsByClassName('conflict-error')[${idx}]; if(el){ el.scrollIntoView({behavior:'smooth', block:'center'}); el.classList.add('conflict-highlight-pulse'); setTimeout(()=>el.classList.remove('conflict-highlight-pulse'), 3500); el.focus(); }">
             <div>
-              <strong>${c.innerText}</strong> às ${time} (${period})
-              <div style="font-size:0.8rem; color:var(--text-muted)">${c.title}</div>
+              <strong>${c.innerText.trim() || 'Célula'}</strong> às ${time} (${period})
+              <div style="font-size:0.8rem; color:var(--text-muted)">${c.title || 'Conflito de agendamento'}</div>
             </div>
-            <span style="font-size:1.2rem">📍</span>
+            <span style="font-size:1.2rem">📍 Ir</span>
           </div>
         `;
       }).join('')}
     </div>
     <div class="modal-footer">
-      <button class="btn btn-primary" onclick="this.closest('.modal-overlay').remove()">Fechar</button>
+      <button type="button" class="btn btn-primary" onclick="this.closest('.modal-overlay').remove()">Fechar</button>
     </div>
   `;
 
@@ -776,6 +1017,15 @@ function filterByDay(selectedDayIndex) {
   const selectedDay = parseInt(selectedDayIndex);
   const dayNames = ['', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira'];
 
+  const daySelect = _dom.dayFilter();
+  if (daySelect && daySelect.value !== selectedDay.toString()) {
+    daySelect.value = selectedDay.toString();
+  }
+
+  if (document.body.classList.contains('view-cards')) {
+    renderCardsView();
+  }
+
   _dom.tables().forEach(table => {
     // Reinicia a animação de fade-in para suavizar a transição de colunas
     table.classList.remove('table-fade-in');
@@ -833,6 +1083,199 @@ function filterByDay(selectedDayIndex) {
     });
   });
   updateHighlights();
+}
+
+/**
+ * Alterna entre a visualização padrão em Tabela e a visualização em Cards Verticais.
+ */
+function toggleViewMode() {
+  const isCards = document.body.classList.toggle('view-cards');
+  localStorage.setItem('school_view_mode', isCards ? 'cards' : 'table');
+
+  const btn = document.getElementById('view-mode-btn');
+  if (btn) {
+    btn.innerHTML = isCards ? '📊 Modo Tabela' : '📱 Modo Cards (Mobile)';
+  }
+
+  if (isCards) {
+    renderCardsView();
+    showToast("Visualização em Cards ativada!", "info");
+  } else {
+    showToast("Visualização em Tabela ativada!", "info");
+  }
+}
+
+/**
+ * Aplica estilos dinâmicos de categoria aos editores dos cards.
+ */
+function applyDynamicStylesToEditor(editor, text) {
+  const upper = text.toUpperCase();
+  editor.classList.remove('hl', 'pd', 'el', 'mtf');
+  if (upper === 'HL' || upper === 'HTPC') editor.classList.add('hl');
+  else if (upper === 'PD') editor.classList.add('pd');
+  else if (upper === 'EL') editor.classList.add('el');
+  else if (upper === 'MTF') editor.classList.add('mtf');
+}
+
+/**
+ * Renderiza a grade em formato de Cards Verticais para dispositivos móveis.
+ */
+function renderCardsView() {
+  const wrapper = document.getElementById('cards-view-wrapper');
+  if (!wrapper) return;
+
+  const currentDay = parseInt(localStorage.getItem(CONFIG.FILTER_DAY_KEY) || '0');
+  const dayNames = ['', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira'];
+
+  // Se estiver em "Todos os dias" no modo cards, exibe o dia de hoje ou Segunda por padrão
+  const activeDay = (currentDay === 0) 
+    ? (new Date().getDay() >= 1 && new Date().getDay() <= 5 ? new Date().getDay() : 1) 
+    : currentDay;
+  const dayName = dayNames[activeDay] || 'Segunda-feira';
+
+  wrapper.innerHTML = '';
+
+  const sections = [
+    { id: 'section-morning', title: '☀️ Horário da Manhã', layout: CONFIG.LAYOUTS.morning },
+    { id: 'section-afternoon', title: '🌤️ Horário da Tarde', layout: CONFIG.LAYOUTS.afternoon }
+  ];
+
+  sections.forEach(sec => {
+    const secEl = document.getElementById(sec.id);
+    if (!secEl) return;
+    const table = secEl.querySelector('table');
+    if (!table) return;
+
+    const group = document.createElement('div');
+    group.className = 'card-section-group';
+
+    const header = document.createElement('div');
+    header.className = 'card-section-header';
+    header.innerHTML = `
+      <h2>${sec.title}</h2>
+      <span class="card-day-title-badge">${dayName}</span>
+    `;
+    group.appendChild(header);
+
+    const layout = sec.layout;
+    let colStart = 1;
+    for (let d = 0; d < activeDay - 1; d++) {
+      colStart += layout[d];
+    }
+    const colsInActiveDay = layout[activeDay - 1];
+
+    for (let r = 2; r < table.rows.length; r++) {
+      const row = table.rows[r];
+      const isRecreio = row.classList.contains('recreio');
+      const isCurrentActive = row.classList.contains('current-active');
+
+      const card = document.createElement('div');
+      card.className = `schedule-card ${isRecreio ? 'card-recreio' : ''} ${isCurrentActive ? 'current-active' : ''}`;
+
+      if (isRecreio) {
+        card.innerHTML = `
+          <div class="card-recreio-text">
+            🥪 ${row.textContent.trim()}
+          </div>
+        `;
+      } else {
+        const timeText = row.cells[0]?.textContent.trim() || '';
+        const timeRow = document.createElement('div');
+        timeRow.className = 'card-time-row';
+        timeRow.innerHTML = `
+          <div class="card-time-badge">⏰ ${timeText}</div>
+          ${isCurrentActive ? '<span class="card-status-pill">🟢 Em andamento</span>' : ''}
+        `;
+        card.appendChild(timeRow);
+
+        const lessonsGrid = document.createElement('div');
+        lessonsGrid.className = 'card-lessons-grid';
+
+        for (let c = 0; c < colsInActiveDay; c++) {
+          const colIndex = colStart + c;
+          const targetCell = row.cells[colIndex];
+          if (!targetCell) continue;
+
+          const specialistTh = table.rows[1]?.cells[colIndex - 1];
+          const specialistSigla = specialistTh?.textContent.trim() || `Espec. ${c + 1}`;
+          const specialistTitle = specialistTh?.getAttribute('title') || specialistSigla;
+
+          const cellValue = targetCell.textContent.trim();
+          const chip = document.createElement('div');
+          chip.className = 'card-lesson-chip';
+
+          const chipInfo = document.createElement('div');
+          chipInfo.className = 'chip-specialist-info';
+          chipInfo.innerHTML = `
+            <span class="chip-sigla">${specialistSigla}</span>
+            <span class="chip-teacher-name" title="${specialistTitle}">${specialistTitle}</span>
+          `;
+
+          const editor = document.createElement('div');
+          editor.className = 'chip-cell-editor';
+          editor.contentEditable = !document.body.classList.contains('readonly');
+          editor.textContent = cellValue;
+          applyDynamicStylesToEditor(editor, cellValue);
+
+          // Sincronização bidirecional
+          editor.addEventListener('input', () => {
+            const newVal = editor.textContent.trim().toUpperCase();
+            targetCell.textContent = newVal;
+            applyDynamicStyles(targetCell);
+            applyDynamicStylesToEditor(editor, newVal);
+            checkConflicts(targetCell);
+            saveContent(getCellKey(targetCell), newVal);
+          });
+
+          chip.append(chipInfo, editor);
+          lessonsGrid.appendChild(chip);
+        }
+        card.appendChild(lessonsGrid);
+      }
+      group.appendChild(card);
+    }
+    wrapper.appendChild(group);
+  });
+}
+
+/**
+ * Adiciona suporte a gestos de Swipe (arrastar para os lados) em dispositivos móveis.
+ */
+function initSwipeGestures() {
+  let touchStartX = 0;
+  let touchStartY = 0;
+
+  document.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 1) {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+    }
+  }, { passive: true });
+
+  document.addEventListener('touchend', (e) => {
+    if (e.changedTouches.length === 1) {
+      const touchEndX = e.changedTouches[0].clientX;
+      const touchEndY = e.changedTouches[0].clientY;
+      const deltaX = touchEndX - touchStartX;
+      const deltaY = touchEndY - touchStartY;
+
+      // Detecta swipe horizontal claro (mínimo 65px de deslocamento e não é scroll vertical)
+      if (Math.abs(deltaX) > 65 && Math.abs(deltaY) < 55) {
+        const currentDay = parseInt(localStorage.getItem(CONFIG.FILTER_DAY_KEY) || '0');
+        if (deltaX < 0) {
+          // Swipe para esquerda -> próximo dia
+          const nextDay = currentDay === 0 ? 1 : (currentDay < 5 ? currentDay + 1 : 1);
+          filterByDay(nextDay);
+          showToast(`Avançou para ${['', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'][nextDay]}`, "info", 1500);
+        } else {
+          // Swipe para direita -> dia anterior
+          const prevDay = currentDay === 0 ? 5 : (currentDay > 1 ? currentDay - 1 : 5);
+          filterByDay(prevDay);
+          showToast(`Voltou para ${['', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'][prevDay]}`, "info", 1500);
+        }
+      }
+    }
+  }, { passive: true });
 }
 
 /**
@@ -1214,17 +1657,17 @@ async function fetchGitHubUpdateInfo() {
     }
   };
 
-  const defaultShort = `v${CONFIG.SCHEMA_VERSION}`;
   const defaultDateTime = `${CONFIG.LAST_UPDATE_DATE} às ${CONFIG.LAST_UPDATE_TIME}`;
-  const defaultTitle = `Versão v${CONFIG.SCHEMA_VERSION} | Atualizado em: ${defaultDateTime}`;
+  const defaultShort = `📅 Git: ${defaultDateTime}`;
+  const defaultTitle = `Última atualização do sistema: ${defaultDateTime}`;
   const defaultFooter = `
     <div class="git-meta-container">
-      <span class="git-badge-item">📦 Versão: <b>v${CONFIG.SCHEMA_VERSION}</b></span>
-      <span class="git-badge-item">📅 Data/Hora Git: <b>${defaultDateTime}</b></span>
+      <span class="git-badge-item">📅 ÚLTIMA ATUALIZAÇÃO GIT: <b>${defaultDateTime}</b></span>
+      <span class="git-badge-item">📦 Commit: <b>v${CONFIG.SCHEMA_VERSION}</b></span>
     </div>
   `;
 
-  // Renderiza imediatamente o valor padrão com data e hora locais
+  // Renderiza imediatamente as informações do último Git
   updateDOM(defaultShort, defaultTitle, defaultFooter);
 
   if (!CONFIG.GITHUB_REPO || CONFIG.GITHUB_REPO.includes('seu-usuario-real')) {
@@ -1232,7 +1675,6 @@ async function fetchGitHubUpdateInfo() {
   }
 
   try {
-    // Consulta a API de commits do repositório
     let response = await fetch(`https://api.github.com/repos/${CONFIG.GITHUB_REPO}/commits?per_page=1`);
     if (!response.ok) {
       response = await fetch(`https://api.github.com/repos/${CONFIG.GITHUB_REPO}/commits/main`);
@@ -1253,14 +1695,14 @@ async function fetchGitHubUpdateInfo() {
         const fullMsg = commitObj.commit.message ? commitObj.commit.message.split('\n')[0] : 'Atualização do repositório';
         const shortMsg = fullMsg.length > 35 ? fullMsg.substring(0, 32) + '...' : fullMsg;
 
-        const shortText = `v${CONFIG.SCHEMA_VERSION} (${sha})`;
-        const fullTitle = `Git: "${fullMsg}" em ${fullDateTime}`;
+        const shortText = `📅 Git: ${fullDateTime}`;
+        const fullTitle = `Commit (${sha}): "${fullMsg}" em ${fullDateTime}`;
 
         const footerHTML = `
           <div class="git-meta-container">
-            <span class="git-badge-item">📦 Versão: <b>v${CONFIG.SCHEMA_VERSION} (${sha})</b></span>
-            <span class="git-badge-item" title="${escapeHTML(fullMsg)}">💬 Commit: <i>"${escapeHTML(shortMsg)}"</i></span>
-            <span class="git-badge-item">📅 Data/Hora Git: <b>${fullDateTime}</b></span>
+            <span class="git-badge-item">📅 ÚLTIMA ATUALIZAÇÃO GIT: <b>${fullDateTime}</b></span>
+            <span class="git-badge-item">📦 Commit: <b>${sha}</b></span>
+            <span class="git-badge-item" title="${escapeHTML(fullMsg)}">💬 <i>"${escapeHTML(shortMsg)}"</i></span>
           </div>
         `;
 
@@ -1295,26 +1737,43 @@ function toggleTheme() {
 
 // --- MODO LEITURA / EDIÇÃO ---
 function toggleLockMode() {
-  const isReadonly = document.body.classList.toggle('readonly');
+  const isReadonly = document.body.classList.contains('readonly');
   const btn = _dom.lockBtn();
-  if (isReadonly) {
+
+  if (!isReadonly) {
+    // Está editável, vai bloquear para leitura
+    document.body.classList.add('readonly');
     if (btn) {
       btn.innerHTML = '🔒 Modo Leitura';
-      btn.style.background = '#64748b';
+      btn.style.background = '';
     }
+    showToast('Modo de leitura ativado. Edição bloqueada.', 'info');
+    updateAriaStatus();
   } else {
-    const password = prompt('Digite a senha para desbloquear:');
-    if (password === CONFIG.LOCK_PASSWORD) {
-      if (btn) {
-        btn.innerHTML = '🔓 Modo Edição';
-        btn.style.background = '#ef4444';
+    // Está bloqueado, pede senha para desbloquear
+    showPromptDialog({
+      title: 'Desbloquear Edição',
+      message: 'Insira a senha de administrador para liberar a edição da grade:',
+      icon: '🔐',
+      placeholder: 'Digite a senha...',
+      inputType: 'password',
+      confirmText: 'Desbloquear',
+      onConfirm: (password) => {
+        if (password === CONFIG.LOCK_PASSWORD) {
+          document.body.classList.remove('readonly');
+          if (btn) {
+            btn.innerHTML = '🔓 Modo Edição';
+            btn.style.background = '#ef4444';
+          }
+          showToast('Modo de edição desbloqueado com sucesso!', 'success');
+          updateAriaStatus();
+        } else {
+          document.body.classList.add('readonly');
+          showToast('Senha incorreta! Acesso negado.', 'error');
+        }
       }
-    } else {
-      document.body.classList.add('readonly');
-      showToast('Senha incorreta!', 'error');
-    }
+    });
   }
-  updateAriaStatus();
 }
 
 // --- EXPORTAÇÃO ---
@@ -1386,7 +1845,7 @@ function exportToCsv() {
  * @param {File} file - Arquivo JSON vindo de input ou drag-drop.
  */
 function processBackupFile(file) {
-  if (!file || file.type !== "application/json" && !file.name.endsWith('.json')) {
+  if (!file || (file.type !== "application/json" && !file.name.endsWith('.json'))) {
     return showToast("Por favor, selecione um arquivo .json válido.", "error");
   }
 
@@ -1396,15 +1855,22 @@ function processBackupFile(file) {
       const backup = JSON.parse(e.target.result);
       if (!backup.schedule) throw new Error("Estrutura de backup não reconhecida.");
 
-      if (confirm("Deseja restaurar este backup total? Isso sobrescreverá horários, professores e cores.")) {
-        localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(backup.schedule));
-        if (backup.teachers) localStorage.setItem(CONFIG.TEACHER_REGISTRY_KEY, JSON.stringify(backup.teachers));
-        if (backup.colors) localStorage.setItem(CONFIG.COLORS_KEY, JSON.stringify(backup.colors));
-        showToast("Backup restaurado com sucesso!", "success");
-        setTimeout(() => window.location.reload(), 1000);
-      }
+      showConfirmDialog({
+        title: 'Restaurar Backup Completo',
+        message: 'Deseja restaurar este arquivo de backup? Todos os horários, professores e configurações de cores atuais serão substituídos pelos dados do arquivo.',
+        icon: '📦',
+        confirmText: 'Restaurar Tudo',
+        confirmType: 'danger',
+        onConfirm: () => {
+          localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(backup.schedule));
+          if (backup.teachers) localStorage.setItem(CONFIG.TEACHER_REGISTRY_KEY, JSON.stringify(backup.teachers));
+          if (backup.colors) localStorage.setItem(CONFIG.COLORS_KEY, JSON.stringify(backup.colors));
+          showToast("Backup restaurado com sucesso! Recarregando...", "success");
+          setTimeout(() => window.location.reload(), 1000);
+        }
+      });
     } catch (err) {
-      showToast(`Erro ao ler backup: ${err.message}`, "error");
+      showToast(`Erro ao processar backup: ${err.message}`, "error");
     }
   };
   reader.readAsText(file);
@@ -1557,17 +2023,21 @@ function toggleCategory(category) {
 }
 
 /**
- * Limpa todos os dados de horários do sistema após confirmação dupla.
+ * Limpa todos os dados de horários do sistema após confirmação dupla segura.
  */
 function clearAllScheduleData() {
-  const confirm1 = confirm("Tem certeza que deseja apagar TODOS os horários salvos?");
-  if (confirm1) {
-    const confirm2 = confirm("ESTA AÇÃO NÃO PODE SER DESFEITA. Confirmar exclusão total?");
-    if (confirm2) {
+  showConfirmDialog({
+    title: 'Apagar Todos os Horários?',
+    message: 'Tem certeza que deseja apagar permanentemente todas as alterações e horários preenchidos na grade? Esta ação não pode ser desfeita.',
+    icon: '⚠️',
+    confirmText: 'Sim, Apagar Tudo',
+    confirmType: 'danger',
+    onConfirm: () => {
       localStorage.removeItem(CONFIG.STORAGE_KEY);
-      window.location.reload();
+      showToast("Todos os horários foram redefinidos!", "success");
+      setTimeout(() => window.location.reload(), 800);
     }
-  }
+  });
 }
 
 /**
@@ -1781,7 +2251,11 @@ function initMobileMenu() {
 function toggleCompactMode() {
   const isCompact = document.body.classList.toggle('compact-mode');
   localStorage.setItem('school_compact_mode', isCompact);
-  showToast(isCompact ? "Modo compacto ativado" : "Modo normal ativado", "info");
+  const btn = document.getElementById('compact-toggle-btn');
+  if (btn) {
+    btn.innerHTML = isCompact ? '↕️ Modo Normal' : '↔️ Modo Compacto';
+  }
+  showToast(isCompact ? "Modo compacto ativado (grade otimizada)" : "Modo normal ativado", "info");
 }
 
 /**
@@ -1801,8 +2275,8 @@ function initScrollEffect() {
 }
 
 // Inicialização e intervalos
-document.addEventListener('DOMContentLoaded', () => {
-  window.scrollTo(0, 0); // Garante que a página inicie no topo ao carregar/recarregar
+function initApp() {
+  window.scrollTo(0, 0);
   initializeData();
   loadCustomColors();
   loadData(); 
@@ -1816,17 +2290,15 @@ document.addEventListener('DOMContentLoaded', () => {
   initScrollEffect();
   initDragAndDrop();
   updateAriaStatus(); 
-  updateStatusBar(); // Chama sem célula para exibir apenas a versão/data inicialmente
-  fetchGitHubUpdateInfo(); // Busca dados reais do GitHub
+  updateStatusBar();
+  fetchGitHubUpdateInfo();
 
-  // Atualiza a data no cabeçalho de impressão
   window.addEventListener('beforeprint', () => {
     const dateEl = document.getElementById('print-date');
     if (dateEl) {
       dateEl.textContent = new Date().toLocaleString('pt-BR');
     }
 
-    // Preenche a legenda de professores para a impressão
     const legendEl = document.getElementById('print-footer-legend');
     if (legendEl) {
       const map = getTeacherMap();
@@ -1846,37 +2318,46 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  if (localStorage.getItem('school_compact_mode') === 'true') {
-    document.body.classList.add('compact-mode');
+  initSwipeGestures();
+
+  const isCardsSaved = localStorage.getItem('school_view_mode') === 'cards';
+  if (isCardsSaved) {
+    document.body.classList.add('view-cards');
+    const viewBtn = document.getElementById('view-mode-btn');
+    if (viewBtn) viewBtn.innerHTML = '📊 Modo Tabela';
+    renderCardsView();
   }
 
-  // Listener para busca com debounce
+  const isCompactSaved = localStorage.getItem('school_compact_mode') === 'true';
+  if (isCompactSaved) {
+    document.body.classList.add('compact-mode');
+    const compactBtn = document.getElementById('compact-toggle-btn');
+    if (compactBtn) compactBtn.innerHTML = '↕️ Modo Normal';
+  }
+
   const searchInput = _dom.searchInput();
   if (searchInput) {
     searchInput.addEventListener('input', (e) => debouncedSearch(e.target.value));
 
-    // Atalho: Enter seleciona a primeira sugestão se o menu estiver aberto
     searchInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         const suggestions = _dom.searchSuggestions();
         if (suggestions && suggestions.classList.contains('active')) {
           const firstItem = suggestions.querySelector('.suggestion-item');
           if (firstItem) {
-            e.preventDefault(); // Evita outros comportamentos do Enter
-            firstItem.click();  // Aciona a função selectSuggestion vinculada ao item
+            e.preventDefault();
+            firstItem.click();
           }
         }
       }
     });
 
-    // Fecha sugestões ao clicar fora
     document.addEventListener('click', (e) => {
       if (!e.target.closest('.search-wrapper')) 
         _dom.searchSuggestions().classList.remove('active');
     });
   }
 
-  // Listeners para Seleção Múltipla
   const wrapper = document.getElementById('schedule-wrapper');
   if (wrapper) {
     wrapper.addEventListener('mousedown', handleMouseDown);
@@ -1885,7 +2366,13 @@ document.addEventListener('DOMContentLoaded', () => {
       _isSelecting = false;
     });
   }
-});
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initApp);
+} else {
+  initApp();
+}
 
 // Error boundary global
 window.addEventListener('error', (e) => {
@@ -2090,17 +2577,33 @@ function addTeacherToRegistry() {
 
 function removeTeacherFromRegistry(sigla) {
   const map = getTeacherMap();
-  delete map[sigla];
-  _teacherMapCache = map; // Atualiza o cache
-  localStorage.setItem(CONFIG.TEACHER_REGISTRY_KEY, JSON.stringify(map));
-  renderTeacherList(map);
-  refreshTableUI(); // Atualiza a tabela imediatamente
+  const nome = map[sigla] || sigla;
+  showConfirmDialog({
+    title: 'Remover Professor?',
+    message: `Deseja remover "${sigla} - ${nome}" do registro de professores?`,
+    icon: '🗑️',
+    confirmText: 'Remover',
+    confirmType: 'danger',
+    onConfirm: () => {
+      delete map[sigla];
+      _teacherMapCache = map; // Atualiza o cache
+      localStorage.setItem(CONFIG.TEACHER_REGISTRY_KEY, JSON.stringify(map));
+      renderTeacherList(map);
+      refreshTableUI(); // Atualiza a tabela imediatamente
+      showToast(`Professor ${sigla} removido do cadastro.`, 'info');
+    }
+  });
 }
 
 function saveTeacherRegistryAndReload() {
-  if (confirm("O sistema será reiniciado para aplicar as mudanças nos nomes dos professores. Continuar?")) {
-    window.location.reload();
-  }
+  showConfirmDialog({
+    title: 'Reiniciar para Aplicar?',
+    message: 'O sistema será reiniciado para consolidar as alterações nos nomes dos professores em todas as tabelas.',
+    icon: '🔄',
+    confirmText: 'Reiniciar Agora',
+    confirmType: 'primary',
+    onConfirm: () => window.location.reload()
+  });
 }
 
 /**
@@ -2142,6 +2645,7 @@ function openShortcutsModal() {
 
   const footer = Object.assign(document.createElement('div'), { className: 'modal-footer' });
   const closeBtn = Object.assign(document.createElement('button'), { 
+    type: 'button',
     className: 'btn btn-primary', 
     textContent: 'Entendido',
     onclick: () => overlay.remove() 
@@ -2154,6 +2658,29 @@ function openShortcutsModal() {
   setupFocusTrap(overlay);
 }
 
+const COLOR_PRESETS = [
+  {
+    name: 'Padrão Moderno',
+    icon: '🎨',
+    colors: { hl: '#e2e8f0', pd: '#bae6fd', el: '#a7f3d0', mtf: '#fed7aa' }
+  },
+  {
+    name: 'Alto Contraste',
+    icon: '👁️',
+    colors: { hl: '#cbd5e1', pd: '#38bdf8', el: '#34d399', mtf: '#fb923c' }
+  },
+  {
+    name: 'Acessível (Daltonismo)',
+    icon: '🔵',
+    colors: { hl: '#e2e8f0', pd: '#60a5fa', el: '#facc15', mtf: '#c084fc' }
+  },
+  {
+    name: 'Pastel Suave',
+    icon: '🌸',
+    colors: { hl: '#f1f5f9', pd: '#e0f2fe', el: '#dcfce7', mtf: '#ffedd5' }
+  }
+];
+
 /**
  * Carrega e aplica as cores personalizadas do localStorage.
  */
@@ -2165,27 +2692,60 @@ function loadCustomColors() {
 }
 
 /**
- * Abre o modal para personalização de cores das categorias.
+ * Abre o modal para personalização de cores das categorias com presets e live preview.
  */
 function openSettingsModal() {
   const categories = [
-    { id: 'hl', label: 'HL (Livre/HTPC)', default: '#f1f5f9' },
+    { id: 'hl', label: 'HL (Livre/HTPC)', default: '#e2e8f0' },
     { id: 'pd', label: 'PD (Plantão)', default: '#bae6fd' },
-    { id: 'el', label: 'EL (Elefante)', default: '#d1fae5' },
-    { id: 'mtf', label: 'MTF (Matific)', default: '#ffedd5' }
+    { id: 'el', label: 'EL (Elefante)', default: '#a7f3d0' },
+    { id: 'mtf', label: 'MTF (Matific)', default: '#fed7aa' }
   ];
 
   const savedColors = JSON.parse(localStorage.getItem(CONFIG.COLORS_KEY) || '{}');
+  const initialColors = {};
+  categories.forEach(cat => {
+    initialColors[cat.id] = savedColors[cat.id] || getComputedStyle(document.documentElement).getPropertyValue(`--${cat.id}-color`).trim() || cat.default;
+  });
+
   const overlay = Object.assign(document.createElement('div'), { className: 'modal-overlay' });
   overlay.style.display = 'flex';
 
   const modal = Object.assign(document.createElement('div'), { className: 'modal' });
-  const title = Object.assign(document.createElement('h2'), { textContent: '🎨 Personalizar Cores' });
+  const title = Object.assign(document.createElement('h2'), { textContent: '🎨 Personalizar Cores & Acessibilidade' });
+
+  // Seção de Presets
+  const presetsWrapper = Object.assign(document.createElement('div'), { className: 'color-presets-wrapper' });
+  const presetsTitle = Object.assign(document.createElement('div'), { className: 'color-presets-title', textContent: '⚡ Presets Rápidos & Acessibilidade' });
+  const presetsGrid = Object.assign(document.createElement('div'), { className: 'color-presets-grid' });
+
+  COLOR_PRESETS.forEach(preset => {
+    const btn = Object.assign(document.createElement('button'), {
+      type: 'button',
+      className: 'color-preset-btn'
+    });
+    btn.innerHTML = `
+      <div class="preset-color-dots">
+        ${Object.values(preset.colors).map(c => `<span class="preset-dot" style="background:${c}"></span>`).join('')}
+      </div>
+      <span>${preset.name}</span>
+    `;
+    btn.onclick = () => {
+      Object.entries(preset.colors).forEach(([catId, color]) => {
+        const input = document.getElementById(`color-${catId}`);
+        if (input) input.value = expandHex(color);
+        document.documentElement.style.setProperty(`--${catId}-color`, color);
+      });
+      showToast(`Preset "${preset.name}" aplicado!`, 'info', 2000);
+    };
+    presetsGrid.appendChild(btn);
+  });
+  presetsWrapper.append(presetsTitle, presetsGrid);
+
   const container = Object.assign(document.createElement('div'), { className: 'teacher-list-container' });
 
   categories.forEach(cat => {
-    const currentVal = savedColors[cat.id] || getComputedStyle(document.documentElement).getPropertyValue(`--${cat.id}-color`).trim() || cat.default;
-    
+    const currentVal = initialColors[cat.id];
     const item = Object.assign(document.createElement('div'), { className: 'color-setting-item' });
     item.innerHTML = `
       <span>${cat.label}</span>
@@ -2193,23 +2753,53 @@ function openSettingsModal() {
         <input type="color" id="color-${cat.id}" value="${currentVal.length === 4 ? expandHex(currentVal) : currentVal}">
       </div>
     `;
+    const input = item.querySelector('input');
+    input.addEventListener('input', (e) => {
+      document.documentElement.style.setProperty(`--${cat.id}-color`, e.target.value);
+    });
     container.appendChild(item);
   });
 
   const footer = Object.assign(document.createElement('div'), { className: 'modal-footer' });
   
   const btnReset = Object.assign(document.createElement('button'), { 
-    className: 'btn', textContent: 'Restaurar Padrões', 
+    type: 'button',
+    className: 'btn',
+    textContent: 'Restaurar Padrões', 
     onclick: () => {
-      if(confirm("Deseja voltar para as cores originais?")) {
-        localStorage.removeItem(CONFIG.COLORS_KEY);
-        window.location.reload();
-      }
+      showConfirmDialog({
+        title: 'Restaurar Cores Padrão?',
+        message: 'Deseja redefinir todas as cores customizadas para os valores padrão do sistema?',
+        icon: '🎨',
+        confirmText: 'Restaurar',
+        confirmType: 'primary',
+        onConfirm: () => {
+          localStorage.removeItem(CONFIG.COLORS_KEY);
+          categories.forEach(cat => {
+            document.documentElement.style.setProperty(`--${cat.id}-color`, cat.default);
+            const input = document.getElementById(`color-${cat.id}`);
+            if (input) input.value = expandHex(cat.default);
+          });
+          showToast("Cores restauradas para os padrões originais!", "success");
+        }
+      });
+    }
+  });
+
+  const btnCancel = Object.assign(document.createElement('button'), {
+    type: 'button',
+    className: 'btn',
+    textContent: 'Cancelar',
+    onclick: () => {
+      loadCustomColors();
+      overlay.remove();
     }
   });
 
   const btnSave = Object.assign(document.createElement('button'), { 
-    className: 'btn btn-success', textContent: 'Salvar Cores',
+    type: 'button',
+    className: 'btn btn-success',
+    textContent: '💾 Salvar Cores',
     onclick: () => {
       const newColors = {};
       categories.forEach(cat => {
@@ -2218,13 +2808,13 @@ function openSettingsModal() {
         document.documentElement.style.setProperty(`--${cat.id}-color`, val);
       });
       localStorage.setItem(CONFIG.COLORS_KEY, JSON.stringify(newColors));
-      showToast("Cores atualizadas!", "success");
+      showToast("Preferências de cores salvas com sucesso!", "success");
       overlay.remove();
     }
   });
 
-  footer.append(btnReset, btnSave);
-  modal.append(title, container, footer);
+  footer.append(btnReset, btnCancel, btnSave);
+  modal.append(title, presetsWrapper, container, footer);
   overlay.appendChild(modal);
   document.body.appendChild(overlay);
   setupFocusTrap(overlay);
@@ -2271,10 +2861,19 @@ function restoreSnapshot(snapshotId) {
   const history = JSON.parse(localStorage.getItem(CONFIG.HISTORY_KEY) || '[]');
   const snapshot = history.find(s => s.id === snapshotId);
 
-  if (snapshot && confirm(`Deseja restaurar o backup de ${snapshot.timestamp}? Isso substituirá o horário atual.`)) {
-    localStorage.setItem(CONFIG.STORAGE_KEY, snapshot.data);
-    showToast("Backup restaurado com sucesso!", "success");
-    setTimeout(() => window.location.reload(), 1000);
+  if (snapshot) {
+    showConfirmDialog({
+      title: 'Restaurar Backup Automático',
+      message: `Deseja restaurar o backup de ${snapshot.timestamp}? Isso substituirá todas as células pelo conteúdo desse snapshot.`,
+      icon: '📦',
+      confirmText: 'Restaurar',
+      confirmType: 'danger',
+      onConfirm: () => {
+        localStorage.setItem(CONFIG.STORAGE_KEY, snapshot.data);
+        showToast("Backup restaurado com sucesso!", "success");
+        setTimeout(() => window.location.reload(), 800);
+      }
+    });
   }
 }
 

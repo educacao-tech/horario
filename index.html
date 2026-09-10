@@ -73,6 +73,8 @@
           <button type="button" class="btn-menu-item" onclick="showBackupHistoryModal()">📦 Histórico de Backups</button>
           <button type="button" class="btn-menu-item" onclick="exportBackupJSON()">💾 Exportar Backup Total</button>
           <button type="button" class="btn-menu-item" onclick="importBackupJSON()">📂 Importar Backup Total</button>
+          <button type="button" id="view-mode-btn" class="btn-menu-item" onclick="toggleViewMode()">📱 Modo Cards (Mobile)</button>
+          <button type="button" id="compact-toggle-btn" class="btn-menu-item" onclick="toggleCompactMode()">↔️ Modo Compacto</button>
           <button type="button" id="theme-toggle" class="btn-menu-item" onclick="toggleTheme()">🌙 Alternar Tema</button>
           <button type="button" id="lock-btn" class="btn-menu-item" onclick="toggleLockMode()">🔒 Modo Leitura</button>
         </div>
@@ -99,6 +101,9 @@
       <span id="save-indicator">✅ Salvo</span>
     </div>
   </div>
+
+  <!-- Visualização alternativa em Cards Verticais para Mobile -->
+  <div id="cards-view-wrapper" class="cards-view-wrapper" style="display: none;"></div>
 
   <div id="schedule-wrapper">
     <div id="section-morning">
@@ -287,7 +292,10 @@
         </div>
       </div>
       <div class="footer-meta">
-        <span>Desenvolvido com 📚 Educação Tech</span>
+        <div class="git-meta-container">
+          <span class="git-badge-item">📅 ÚLTIMA ATUALIZAÇÃO GIT: <b>03/08/2026 às 11:33</b></span>
+          <span class="git-badge-item">📦 Commit: <b>1ce2612</b></span>
+        </div>
       </div>
     </div>
   </footer>

@@ -19,6 +19,20 @@ Baseado no `TODO-PLANEJAMENTO.md`
 - [x] Adicionar `aria-label` aos botões de zoom criados dinamicamente — atributos `title` e `aria-label` presentes.
 - [x] Otimizar invalidação de cache DOM no filtro de dias — `_dom.invalidateCache()` utilizado no `loadData()`.
 
-### 4. Validação Final
-- [x] Verificar consistência dos ficheiros — todas as melhorias aplicadas com sucesso.
+### 4. Interface (UI/UX) & Feedback Visual
+- [x] **Sistema de Toasts Moderno**: Notificações não-bloqueantes com barra de progresso temporal e ícones.
+- [x] **Substituição de Diálogos Nativos**: Implementados `showConfirmDialog` e `showPromptDialog` eliminando `alert()`, `confirm()` e `prompt()`.
+- [x] **Badge Global de Conflitos & Navegação Cíclica**: Badge dinâmico na toolbar com navegação por clique e animação pulsante `.conflict-highlight-pulse`.
+- [x] **Modo Compacto / Modo Expandido**: Alternador no menu dropdown com persistência no `localStorage`.
+- [x] **Cores Customizáveis & Presets de Acessibilidade**: Presets (Padrão, Alto Contraste, Daltonismo, Pastel) com live preview em tempo real.
+
+### 5. Otimização Mobile (Cards & Abas por Dia)
+- [x] **Abas Rápidas Deslizáveis (`Mobile Day Tabs`)**: Barra de abas horizontais com identificação do dia de hoje e troca instantânea de dia.
+- [x] **Modo Cards Verticais (`renderCardsView`)**: Alternativa à tabela densa com cartões por horário, chips de professores e edição integrada.
+- [x] **Alternador de Visualização (`toggleViewMode`)**: Opção no menu para alternar entre "Modo Tabela" e "Modo Cards", persistida no `localStorage`.
+- [x] **Gestos de Swipe (Touch)**: Deslizar para a esquerda ou direita no celular troca de dia da semana automaticamente.
+
+### 6. Validação Final
+- [x] Validação sintática via `node -c script.js` (Exit Code 0).
+- [x] Teste de consistência de estilos e scripts concluído com sucesso.
 

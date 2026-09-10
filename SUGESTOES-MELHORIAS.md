@@ -16,15 +16,15 @@
 - **Valor**: Melhora a descoberta de funcionalidades e a experiência do usuário.
 - **Implementação**: Criar função `showShortcutsModal()` similar ao `openTeacherManager()`.
 
-### 3. Indicador Global de Conflitos
-- **Descrição**: Badge vermelho na toolbar mostrando o número total de conflitos de horário ativos na página. Clicar leva para o primeiro conflito.
+### 3. Indicador Global de Conflitos [x]
+- **Descrição**: Badge vermelho na toolbar mostrando o número total de conflitos de horário ativos na página. Clicar leva para o próximo conflito com destaque pulsante.
 - **Valor**: Visibilidade imediata de problemas sem precisar varrer a tabela manualmente.
-- **Implementação**: Contador em `validateAllConflicts()` + elemento na UI.
+- **Implementação**: Concluído em `updateGlobalConflictCount()` + navegação com `navigateToNextConflict()`.
 
-### 4. Toast/Notificações (em vez de Alerts)
-- **Descrição**: Substituir todos os `alert()` e `confirm()` por notificações toast elegantes que aparecem no canto superior direito e somem automaticamente.
-- **Valor**: Alerts bloqueiam a interface. Toasts são não-intrusivos.
-- **Implementação**: Criar função `showToast(message, type)` com CSS de animação slide-in.
+### 4. Toast/Notificações (em vez de Alerts) [x]
+- **Descrição**: Substituir todos os `alert()`, `confirm()` e `prompt()` por notificações toast elegantes e diálogos modais modernos.
+- **Valor**: Alerts bloqueiam a interface. Toasts são não-intrusivos e visualmente integrados.
+- **Implementação**: Concluído com `showToast()`, `showConfirmDialog()` e `showPromptDialog()`.
 
 ### 5. Duplicar Horário de um Dia
 - **Descrição**: No cabeçalho de cada dia (Segunda, Terça...), adicionar um botão "📋 Copiar" que copia todos os horários desse dia para a área de transferência, e um botão "📥 Colar" em outro dia.
@@ -40,20 +40,20 @@
 - **Valor**: Reduz erros de digitação e acelera o preenchimento.
 - **Implementação**: Criar elemento `<datalist>` ou div flutuante de sugestões posicionada absolutamente.
 
-### 7. Mapa de Calor dos Professores
+### 7. Mapa de Calor dos Professores [x]
 - **Descrição**: Nova aba/modal "Estatísticas" que mostra um grid visual com a carga horária de cada professor/turma por dia.
 - **Valor**: Identificar sobrecarga de professores ou turmas com poucas aulas visualmente.
-- **Implementação**: Varre todas as células, conta ocorrências por professor e gera uma tabela resumo.
+- **Implementação**: Implementado no modal `showWorkloadModal()`.
 
-### 8. Backup Automático com Histórico
+### 8. Backup Automático com Histórico [x]
 - **Descrição**: Além do `localStorage` principal, manter as últimas 5 versões do estado (snapshots) com timestamp. Permitir restaurar versão anterior.
 - **Valor**: Segurança contra alterações acidentais ou erros de importação.
-- **Implementação**: Array de snapshots no localStorage com limite de 5 entradas.
+- **Implementação**: Implementado com `createSnapshot()` e `showBackupHistoryModal()`.
 
-### 9. Modo Compacto / Expandido
-- **Descrição**: Toggle na toolbar que reduz o padding das células (`padding: 6px 4px`), diminui fonte e remove sombras para maximizar a quantidade de conteúdo visível.
+### 9. Modo Compacto / Expandido [x]
+- **Descrição**: Toggle no menu que reduz o padding das células (`padding: 4px 5px`), diminui fonte e remove margens excessivas para maximizar a quantidade de conteúdo visível.
 - **Valor**: Essencial para telas menores ou quando se quer ver a semana inteira sem scroll.
-- **Implementação**: Classe CSS `.compact-mode` que sobrescreve padding, font-size e shadows.
+- **Implementação**: Concluído com classe CSS `.compact-mode` e `toggleCompactMode()`.
 
 ### 10. Exportar para PDF Nativo
 - **Descrição**: Botão "📄 Exportar PDF" que usa `window.print()` com estilos otimizados OU integração com biblioteca como `html2canvas` + `jsPDF`.
@@ -64,30 +64,30 @@
 
 ## 🔮 Baixa Prioridade / Recursos Avançados (Alto Impacto / Alta Complexidade)
 
-### 11. Seleção Múltipla de Células
-- **Descrição**: Permitir selecionar várias células com `Shift+Click` ou `Ctrl+Click` e aplicar operações em massa (preencher, limpar, copiar).
+### 11. Seleção Múltipla de Células [x]
+- **Descrição**: Permitir selecionar várias células e aplicar operações em massa (preencher, limpar, copiar).
 - **Valor**: Edição em massa, similar a planilhas.
-- **Implementação**: Rastrear estado de seleção, highlight visual, aplicar listeners diferenciados.
+- **Implementação**: Implementado com handlers de seleção por mouse.
 
-### 12. Sincronização na Nuvem (Simulada)
+### 12. Sincronização na Nuvem (Simulada) [x]
 - **Descrição**: Exportar o estado completo como um arquivo `.json` de backup com um clique, e importar arrastando o arquivo para a página (drag & drop).
 - **Valor**: Backup portátil entre dispositivos.
-- **Implementação**: `dragover`/`drop` listeners no document + `FileReader`.
+- **Implementação**: Implementado com `exportBackupJSON()`, `importBackupJSON()` e `initDragAndDrop()`.
 
-### 13. Cores Personalizáveis por Categoria
-- **Descrição**: No modal de configurações, permitir o usuário escolher as cores para HL, PD, EL, MTF, etc.
+### 13. Cores Personalizáveis por Categoria & Presets [x]
+- **Descrição**: No modal de configurações, permitir o usuário escolher as cores para HL, PD, EL, MTF, etc., com presets de acessibilidade e live preview.
 - **Valor**: Acessibilidade (daltonismo) e preferência pessoal.
-- **Implementação**: Input type="color" no modal + variáveis CSS dinâmicas via `document.documentElement.style.setProperty()`.
+- **Implementação**: Concluído com `openSettingsModal()`, `COLOR_PRESETS` e variáveis CSS dinâmicas.
 
 ### 14. Integração com Calendário (ICS)
 - **Descrição**: Exportar aulas individuais para arquivo `.ics` (formato iCalendar) que pode ser importado no Google Calendar/Outlook.
 - **Valor**: Professores podem adicionar suas aulas ao calendário pessoal.
 - **Implementação**: Gerar string no formato ICS com datas recorrentes.
 
-### 15. Responsividade Avançada (Mobile First)
-- **Descrição**: Em telas pequenas (< 768px), transformar a tabela em cards verticais por dia ou usar scroll horizontal otimizado com indicadores de posição.
-- **Valor**: Uso em tablets e celulares durante reuniões.
-- **Implementação**: Media queries específicas + possível reestruturação do DOM via JS para mobile.
+### 15. Responsividade Avançada (Mobile First) [x]
+- **Descrição**: Em telas pequenas (< 768px), transformar a tabela em cards verticais por dia com chips de professores e navegação por abas rápidas deslizáveis.
+- **Valor**: Uso prático em smartphones e tablets com suporte a gestos de toque (swipe) para troca de dia.
+- **Implementação**: Concluído com `initMobileDayTabs()`, `renderCardsView()`, `toggleViewMode()` e `initSwipeGestures()`.
 
 ---
 
