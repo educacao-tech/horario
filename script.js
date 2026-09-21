@@ -86,10 +86,11 @@ class DOMManager {
   }
 
   /**
-   * Invalida o cache das células para forçar uma nova busca no DOM.
+   * Invalida o cache das células e dos períodos para forçar uma nova busca no DOM.
    */
   invalidateCache() {
     this._cellsCache = null;
+    _cachedSchedulePeriods = null;
   }
 
   // Getters para elementos estruturais
@@ -822,6 +823,7 @@ document.addEventListener('input', (e) => {
     saveContent(key, e.target.innerText);
     updateGlobalConflictCount();
     updateStatusBar(e.target);
+    showCellAutocomplete(e.target);
   }
 });
 
@@ -839,6 +841,7 @@ document.addEventListener('focusout', (e) => {
       createSnapshot(); // Salva um ponto de restauração apenas quando a edição é concluída
     }
     delete e.target._oldValue;
+    setTimeout(() => hideCellAutocomplete(), 200);
   }
 });
 
@@ -850,6 +853,32 @@ document.addEventListener('keydown', (e) => {
   const isEditable = cell.getAttribute('contenteditable') === 'true';
   if (!isEditable) return;
 
+  // Interceptar teclas se o popup de autocompletar estiver visível
+  if (_cellAutocompleteEl && _cellAutocompleteEl.style.display !== 'none' && _activeAutocompleteCell === cell) {
+    const items = _cellAutocompleteEl.querySelectorAll('.cell-autocomplete-item');
+    if (e.key === 'ArrowDown' && items.length > 0) {
+      e.preventDefault();
+      _selectedAutocompleteIdx = (_selectedAutocompleteIdx + 1) % items.length;
+      items.forEach((it, i) => it.classList.toggle('active', i === _selectedAutocompleteIdx));
+      items[_selectedAutocompleteIdx]?.scrollIntoView({ block: 'nearest' });
+      return;
+    } else if (e.key === 'ArrowUp' && items.length > 0) {
+      e.preventDefault();
+      _selectedAutocompleteIdx = (_selectedAutocompleteIdx - 1 + items.length) % items.length;
+      items.forEach((it, i) => it.classList.toggle('active', i === _selectedAutocompleteIdx));
+      items[_selectedAutocompleteIdx]?.scrollIntoView({ block: 'nearest' });
+      return;
+    } else if ((e.key === 'Enter' || e.key === 'Tab') && _selectedAutocompleteIdx >= 0 && items[_selectedAutocompleteIdx]) {
+      e.preventDefault();
+      const code = items[_selectedAutocompleteIdx].getAttribute('data-code');
+      applyAutocompleteOption(code);
+      return;
+    } else if (e.key === 'Escape') {
+      hideCellAutocomplete();
+      return;
+    }
+  }
+
   // Atalho para focar busca (/)
   if (e.key === '/' && document.activeElement.tagName !== 'INPUT' && !isEditable) {
     e.preventDefault();
@@ -859,6 +888,7 @@ document.addEventListener('keydown', (e) => {
   // Atalho para limpar seleção (Esc)
   if (e.key === 'Escape') {
     clearMultiSelection();
+    hideCellAutocomplete();
     return;
   }
 
@@ -1505,6 +1535,65 @@ function initDragAndDrop() {
   });
 }
 
+// ==========================================================================
+// 🎯 EFEITO DE MIRA / DESTAQUE CRUZADO (CROSSHAIR HIGHLIGHT)
+// ==========================================================================
+
+let _currentCrosshairCell = null;
+
+/**
+ * Aplica o destaque cruzado na linha e coluna da célula informada.
+ * @param {HTMLElement} cell
+ */
+function applyCrosshairHighlight(cell) {
+  if (!cell || _currentCrosshairCell === cell) return;
+  _currentCrosshairCell = cell;
+
+  const table = cell.closest('table');
+  const row = cell.parentElement;
+  const colIndex = cell.cellIndex;
+
+  clearCrosshairHighlight();
+
+  if (!table || !row || colIndex === undefined) return;
+
+  // Destaque da linha inteira
+  row.classList.add('crosshair-row');
+  if (row.cells[0]) row.cells[0].classList.add('crosshair-time-cell');
+
+  // Destaque da coluna inteira
+  if (colIndex > 0) {
+    const { dayIdx } = getDayAndColIndices(cell);
+    if (table.rows[0] && table.rows[0].cells[dayIdx]) {
+      table.rows[0].cells[dayIdx].classList.add('crosshair-day-header');
+    }
+    if (table.rows[1] && table.rows[1].cells[colIndex - 1]) {
+      table.rows[1].cells[colIndex - 1].classList.add('crosshair-col-header');
+    }
+    for (let r = 2; r < table.rows.length; r++) {
+      const rowItem = table.rows[r];
+      if (rowItem.classList.contains('recreio')) continue;
+      const targetCell = rowItem.cells[colIndex];
+      if (targetCell) targetCell.classList.add('crosshair-col');
+    }
+  }
+
+  cell.classList.add('crosshair-target');
+}
+
+/**
+ * Remove todos os destaques de mira cruzada.
+ */
+function clearCrosshairHighlight() {
+  document.querySelectorAll('.crosshair-row').forEach(r => r.classList.remove('crosshair-row'));
+  document.querySelectorAll('.crosshair-col').forEach(c => c.classList.remove('crosshair-col'));
+  document.querySelectorAll('.crosshair-time-cell').forEach(c => c.classList.remove('crosshair-time-cell'));
+  document.querySelectorAll('.crosshair-day-header').forEach(h => h.classList.remove('crosshair-day-header'));
+  document.querySelectorAll('.crosshair-col-header').forEach(h => h.classList.remove('crosshair-col-header'));
+  document.querySelectorAll('.crosshair-target').forEach(c => c.classList.remove('crosshair-target'));
+  _currentCrosshairCell = null;
+}
+
 // --- FOCUS E STATUS BAR ---
 document.addEventListener('focusin', (e) => {
   const cell = e.target;
@@ -1514,21 +1603,7 @@ document.addEventListener('focusin', (e) => {
   if (isEditable || isReadonlyMode) {
     updateStatusBar(cell);
     highlightOccurrences(cell.innerText);
-
-    const colIndex = cell.cellIndex;
-    const table = cell.closest('table');
-
-    document.querySelectorAll('.col-highlight').forEach(el => el.classList.remove('col-highlight'));
-
-    if (colIndex > 0 && table) {
-      const { dayIdx } = getDayAndColIndices(cell);
-      if (table.rows[0].cells[dayIdx]) table.rows[0].cells[dayIdx].classList.add('col-highlight');
-      if (table.rows[1].cells[colIndex - 1]) table.rows[1].cells[colIndex - 1].classList.add('col-highlight');
-      for (let i = 2; i < table.rows.length; i++) {
-        const r = table.rows[i];
-        if (r.cells[colIndex]) r.cells[colIndex].classList.add('col-highlight');
-      }
-    }
+    applyCrosshairHighlight(cell);
   }
 });
 
@@ -1579,14 +1654,7 @@ function getCellStatusData(cell) {
   };
 }
 
-/**
- * Atualiza a barra de status com base na célula selecionada ou focada.
- * @param {HTMLElement} [cell] - Célula atual ou undefined/null para estado inicial.
- */
-function updateStatusBar(cell) {
-  const data = cell ? getCellStatusData(cell) : null;
-  renderStatusBar(data);
-}
+
 
 /**
  * Renderiza o conteúdo HTML na barra de status.
@@ -2052,6 +2120,49 @@ function formatTimeDifference(totalSeconds) {
   return `${minutes.toString().padStart(2, '0')}m ${seconds.toString().padStart(2, '0')}s`;
 }
 
+let _cachedSchedulePeriods = null;
+
+/**
+ * Retorna os períodos de aula/recreio pré-processados em memória, evitando leituras repetidas do DOM.
+ * @returns {Array<{start: number, end: number, type: 'aula'|'recreio'}>}
+ */
+function getSchedulePeriods() {
+  if (_cachedSchedulePeriods) return _cachedSchedulePeriods;
+
+  const periods = [];
+  _dom.tables().forEach((table) => {
+    for (let i = 2; i < table.rows.length; i++) {
+      const row = table.rows[i];
+      const timeCell = row.cells[0];
+      if (!timeCell) continue;
+
+      const timeText = timeCell.textContent.trim();
+      const parts = timeText.split(' - ');
+      let startMinutes = null, endMinutes = null;
+      const isRecreio = row.classList.contains('recreio');
+
+      if (isRecreio && parts.length >= 3) {
+        startMinutes = timeToMinutes(parts[1]);
+        endMinutes = timeToMinutes(parts[2]);
+      } else if (parts.length === 2) {
+        startMinutes = timeToMinutes(parts[0]);
+        endMinutes = timeToMinutes(parts[1]);
+      }
+
+      if (startMinutes !== null && endMinutes !== null) {
+        periods.push({
+          start: startMinutes * 60,
+          end: endMinutes * 60,
+          type: isRecreio ? 'recreio' : 'aula'
+        });
+      }
+    }
+  });
+
+  _cachedSchedulePeriods = periods;
+  return periods;
+}
+
 /**
  * Gerencia o cronômetro da barra de ferramentas, identificando se o usuário está
  * em aula, no recreio ou fora do período letivo.
@@ -2060,8 +2171,8 @@ function updateTimeCounter() {
   const now = new Date();
   const day = now.getDay();
   const currentTotalSeconds = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
-  const timeCounterElement = document.getElementById('time-counter');
-  const progressBar = document.getElementById('main-progress-bar');
+  const timeCounterElement = _dom.timeCounter();
+  const progressBar = _dom.progressBar();
 
   if (day < 1 || day > 5) {
     if (timeCounterElement) timeCounterElement.innerText = "Fim de semana";
@@ -2072,58 +2183,44 @@ function updateTimeCounter() {
   let nextPeriod = null;
   let minSecondsToNext = Infinity;
 
-  document.querySelectorAll('table').forEach((table) => {
-    const currentLayout = table.closest('#section-morning') ? CONFIG.LAYOUTS.morning : CONFIG.LAYOUTS.afternoon;
-
-    for (let i = 2; i < table.rows.length; i++) {
-      const row = table.rows[i];
-      const timeText = row.cells[0].textContent;
-      const parts = timeText.split(' - ');
-      let startMinutes = null, endMinutes = null;
-
-      if (row.classList.contains('recreio') && parts.length >= 3) {
-        startMinutes = timeToMinutes(parts[1]);
-        endMinutes = timeToMinutes(parts[2]);
-      } else if (parts.length === 2) {
-        startMinutes = timeToMinutes(parts[0]);
-        endMinutes = timeToMinutes(parts[1]);
-      }
-
-      if (startMinutes !== null && endMinutes !== null) {
-        const startTotalSeconds = startMinutes * 60;
-        const endTotalSeconds = endMinutes * 60;
-
-        if (currentTotalSeconds >= startTotalSeconds && currentTotalSeconds < endTotalSeconds) {
-          activePeriod = { start: startTotalSeconds, end: endTotalSeconds, type: row.classList.contains('recreio') ? 'recreio' : 'aula' };
-        } else if (startTotalSeconds > currentTotalSeconds && (startTotalSeconds - currentTotalSeconds) < minSecondsToNext) {
-          minSecondsToNext = startTotalSeconds - currentTotalSeconds;
-          nextPeriod = { start: startTotalSeconds, end: endTotalSeconds, type: row.classList.contains('recreio') ? 'recreio' : 'aula' };
-        }
-      }
+  const periods = getSchedulePeriods();
+  for (let i = 0; i < periods.length; i++) {
+    const period = periods[i];
+    if (currentTotalSeconds >= period.start && currentTotalSeconds < period.end) {
+      activePeriod = period;
+      break;
+    } else if (period.start > currentTotalSeconds && (period.start - currentTotalSeconds) < minSecondsToNext) {
+      minSecondsToNext = period.start - currentTotalSeconds;
+      nextPeriod = period;
     }
-  });
+  }
 
   let message = "";
   if (activePeriod) {
     const remainingSeconds = activePeriod.end - currentTotalSeconds;
     const elapsed = currentTotalSeconds - activePeriod.start;
     const duration = activePeriod.end - activePeriod.start;
-    const percentage = (elapsed / duration) * 100;
+    const percentage = duration > 0 ? (elapsed / duration) * 100 : 0;
 
     if (progressBar) progressBar.style.width = `${percentage}%`;
 
-    message = `Termina em ${formatTimeDifference(remainingSeconds)}`;
-    if (activePeriod.type === 'recreio') { message = `Recreio termina em ${formatTimeDifference(remainingSeconds)}`; }
+    message = activePeriod.type === 'recreio'
+      ? `Recreio termina em ${formatTimeDifference(remainingSeconds)}`
+      : `Termina em ${formatTimeDifference(remainingSeconds)}`;
   } else if (nextPeriod) {
     if (progressBar) progressBar.style.width = '0%';
     const timeUntilNext = nextPeriod.start - currentTotalSeconds;
-    message = `Próxima aula em ${formatTimeDifference(timeUntilNext)}`;
-    if (nextPeriod.type === 'recreio') { message = `Próximo recreio em ${formatTimeDifference(timeUntilNext)}`; }
+    message = nextPeriod.type === 'recreio'
+      ? `Próximo recreio em ${formatTimeDifference(timeUntilNext)}`
+      : `Próxima aula em ${formatTimeDifference(timeUntilNext)}`;
   } else {
+    if (progressBar) progressBar.style.width = '0%';
     message = "Fora do horário de aula";
   }
 
-  if (timeCounterElement) timeCounterElement.innerText = message;
+  if (timeCounterElement && timeCounterElement.innerText !== message) {
+    timeCounterElement.innerText = message;
+  }
 }
 
 /**
@@ -2361,7 +2458,17 @@ function initApp() {
   const wrapper = document.getElementById('schedule-wrapper');
   if (wrapper) {
     wrapper.addEventListener('mousedown', handleMouseDown);
-    wrapper.addEventListener('mouseover', handleMouseEnter);
+    wrapper.addEventListener('mouseover', (e) => {
+      handleMouseEnter(e);
+      const cell = e.target.closest('td');
+      if (cell && cell.parentElement && !cell.parentElement.classList.contains('recreio')) {
+        applyCrosshairHighlight(cell);
+        updateStatusBar(cell);
+      }
+    });
+    wrapper.addEventListener('mouseleave', () => {
+      clearCrosshairHighlight();
+    });
     document.addEventListener('mouseup', () => {
       _isSelecting = false;
     });
@@ -2990,4 +3097,625 @@ function showWorkloadModal() {
   overlay.appendChild(modal);
   document.body.appendChild(overlay);
   setupFocusTrap(overlay);
+}
+
+// ==========================================================================
+// ⌨️ MODAL DE ATALHOS DE TECLADO
+// ==========================================================================
+
+/**
+ * Abre o modal informativo com todos os atalhos de teclado suportados.
+ */
+function openShortcutsModal() {
+  const overlay = Object.assign(document.createElement('div'), {
+    className: 'modal-overlay',
+    id: 'shortcuts-modal'
+  });
+  overlay.style.display = 'flex';
+
+  const modal = Object.assign(document.createElement('div'), { className: 'modal' });
+  modal.style.maxWidth = '680px';
+
+  const title = Object.assign(document.createElement('h2'), {
+    innerHTML: '⌨️ Atalhos de Teclado e Produtividade'
+  });
+
+  const content = document.createElement('div');
+  content.className = 'shortcuts-grid';
+
+  const categories = [
+    {
+      title: '⚡ Edição Rápida',
+      items: [
+        { label: 'Desfazer alteração', keys: ['Ctrl', 'Z'] },
+        { label: 'Refazer alteração', keys: ['Ctrl', 'Y'] },
+        { label: 'Preencher para baixo (Fill Down)', keys: ['Ctrl', 'D'] },
+        { label: 'Limpar célula ou seleção', keys: ['Delete'] },
+        { label: 'Autocompletar inteligente', keys: ['Digitar'] }
+      ]
+    },
+    {
+      title: '📋 Área de Transferência',
+      items: [
+        { label: 'Copiar célula selecionada', keys: ['Ctrl', 'C'] },
+        { label: 'Colar na célula atual', keys: ['Ctrl', 'V'] },
+        { label: 'Colar texto puro (sanitizado)', keys: ['Automático'] }
+      ]
+    },
+    {
+      title: '🧭 Navegação na Grade',
+      items: [
+        { label: 'Mover para célula abaixo', keys: ['Enter', 'ou', '↓'] },
+        { label: 'Mover para célula acima', keys: ['↑'] },
+        { label: 'Mover para direita / esquerda', keys: ['→', '←'] },
+        { label: 'Seleção em bloco', keys: ['Arrastar Mouse'] }
+      ]
+    },
+    {
+      title: '🔍 Atalhos Globais',
+      items: [
+        { label: 'Focar campo de pesquisa', keys: ['/'] },
+        { label: 'Desmarcar seleção / Fechar', keys: ['Esc'] },
+        { label: 'Navegar sugestões de busca', keys: ['Enter'] }
+      ]
+    }
+  ];
+
+  content.innerHTML = categories.map(cat => `
+    <div class="shortcut-category-card">
+      <h3 class="shortcut-category-title">${cat.title}</h3>
+      <div class="shortcut-list">
+        ${cat.items.map(item => `
+          <div class="shortcut-row">
+            <span class="shortcut-label">${item.label}</span>
+            <div class="shortcut-keys">
+              ${item.keys.map(k => k === 'ou' ? `<span style="font-size:0.75rem; color:var(--text-muted);">${k}</span>` : `<kbd class="kbd-key">${k}</kbd>`).join('')}
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
+
+  const footer = Object.assign(document.createElement('div'), { className: 'modal-footer' });
+  footer.append(Object.assign(document.createElement('button'), {
+    className: 'btn btn-primary',
+    textContent: 'Entendido',
+    onclick: () => overlay.remove()
+  }));
+
+  modal.append(title, content, footer);
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+  setupFocusTrap(overlay);
+}
+
+// ==========================================================================
+// ⚡ SISTEMA DE AUTOCOMPLETAR DE CÉLULAS
+// ==========================================================================
+
+let _cellAutocompleteEl = null;
+let _activeAutocompleteCell = null;
+let _selectedAutocompleteIdx = -1;
+
+/**
+ * Retorna lista de sugestões para uma célula baseado no texto digitado.
+ * @param {string} filterText
+ * @returns {Array<{code: string, name: string}>}
+ */
+function getAutocompleteOptions(filterText = '') {
+  const teacherMap = getTeacherMap();
+  const options = [];
+  const addedCodes = new Set();
+  const query = filterText.trim().toUpperCase();
+
+  // Categorias e siglas especiais do sistema
+  const specialCategories = [
+    { code: 'HL', name: 'Horário Livre' },
+    { code: 'PD', name: 'Plantão de Dúvidas' },
+    { code: 'EL', name: 'Elefante Letrado' },
+    { code: 'MTF', name: 'Matific' },
+    { code: 'HTPC', name: 'HTPC Coletivo' },
+    { code: 'TEATRO', name: 'Teatro / Expressão' },
+    { code: '*', name: 'Célula Vazia / Janela' }
+  ];
+
+  specialCategories.forEach(item => {
+    if (!query || item.code.includes(query) || item.name.toUpperCase().includes(query)) {
+      options.push(item);
+      addedCodes.add(item.code);
+    }
+  });
+
+  // Professores e turmas mapeados
+  Object.entries(teacherMap).forEach(([code, name]) => {
+    if (!addedCodes.has(code)) {
+      if (!query || code.toUpperCase().includes(query) || name.toUpperCase().includes(query)) {
+        options.push({ code, name });
+        addedCodes.add(code);
+      }
+    }
+  });
+
+  return options.slice(0, 8); // Limite de 8 sugestões
+}
+
+/**
+ * Exibe o dropdown flutuante de autocompletar logo abaixo da célula ativa.
+ * @param {HTMLElement} cell
+ */
+function showCellAutocomplete(cell) {
+  if (document.body.classList.contains('readonly')) return;
+  _activeAutocompleteCell = cell;
+  const currentVal = cell.innerText.trim();
+  const options = getAutocompleteOptions(currentVal);
+
+  if (options.length === 0) {
+    hideCellAutocomplete();
+    return;
+  }
+
+  if (!_cellAutocompleteEl) {
+    _cellAutocompleteEl = document.createElement('div');
+    _cellAutocompleteEl.className = 'cell-autocomplete-popup';
+    document.body.appendChild(_cellAutocompleteEl);
+  }
+
+  const rect = cell.getBoundingClientRect();
+  const scrollY = window.scrollY || window.pageYOffset;
+  const scrollX = window.scrollX || window.pageXOffset;
+
+  let top = rect.bottom + scrollY + 4;
+  let left = rect.left + scrollX;
+
+  if (left + 230 > window.innerWidth) {
+    left = window.innerWidth - 240;
+  }
+  if (rect.bottom + 230 > window.innerHeight && rect.top > 230) {
+    top = rect.top + scrollY - 225;
+  }
+
+  _cellAutocompleteEl.style.top = `${top}px`;
+  _cellAutocompleteEl.style.left = `${Math.max(8, left)}px`;
+  _cellAutocompleteEl.style.display = 'flex';
+
+  _selectedAutocompleteIdx = 0;
+  renderAutocompleteItems(options);
+}
+
+/**
+ * Renderiza os itens dentro do popup de autocompletar.
+ * @param {Array<{code: string, name: string}>} options
+ */
+function renderAutocompleteItems(options) {
+  if (!_cellAutocompleteEl) return;
+  _cellAutocompleteEl.innerHTML = options.map((opt, idx) => {
+    const badgeClass = opt.code.toLowerCase().replace(/[^a-z]/g, '');
+    const isSelected = idx === _selectedAutocompleteIdx ? 'active' : '';
+    return `
+      <div class="cell-autocomplete-item ${isSelected}" data-code="${opt.code}" data-idx="${idx}">
+        <span class="cell-autocomplete-badge ${badgeClass}">${opt.code}</span>
+        <span class="cell-autocomplete-name">${opt.name}</span>
+      </div>
+    `;
+  }).join('') + '<div class="cell-autocomplete-hint">Pressione Enter ou clique para aplicar</div>';
+
+  _cellAutocompleteEl.querySelectorAll('.cell-autocomplete-item').forEach(item => {
+    item.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      applyAutocompleteOption(item.getAttribute('data-code'));
+    });
+  });
+}
+
+/**
+ * Aplica o código selecionado na célula ativa.
+ * @param {string} code
+ */
+function applyAutocompleteOption(code) {
+  if (!_activeAutocompleteCell) return;
+  const cell = _activeAutocompleteCell;
+  pushUndo(cell, cell.innerText);
+  cell.innerText = code;
+  applyDynamicStyles(cell);
+  checkConflicts(cell);
+  saveContent(getCellKey(cell), code);
+  updateGlobalConflictCount();
+  updateStatusBar(cell);
+  createSnapshot();
+  hideCellAutocomplete();
+}
+
+/**
+ * Oculta o popup de autocompletar.
+ */
+function hideCellAutocomplete() {
+  if (_cellAutocompleteEl) {
+    _cellAutocompleteEl.style.display = 'none';
+  }
+  _activeAutocompleteCell = null;
+  _selectedAutocompleteIdx = -1;
+}
+
+// Fechar autocomplete ao clicar fora
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.cell-autocomplete-popup') && e.target.getAttribute('contenteditable') !== 'true') {
+    hideCellAutocomplete();
+  }
+});
+
+// ==========================================================================
+// 📋 DUPLICAR HORÁRIO DE UM DIA (COPIAR & COLAR DIA)
+// ==========================================================================
+
+/**
+ * Abre o modal para duplicar toda a grade horária de um dia para outro.
+ */
+function openDuplicateDayModal() {
+  const overlay = Object.assign(document.createElement('div'), {
+    className: 'modal-overlay',
+    id: 'duplicate-day-modal'
+  });
+  overlay.style.display = 'flex';
+
+  const modal = Object.assign(document.createElement('div'), { className: 'modal' });
+  modal.style.maxWidth = '500px';
+
+  const title = Object.assign(document.createElement('h2'), { textContent: '📋 Duplicar Horário de um Dia' });
+
+  const content = document.createElement('div');
+  content.innerHTML = `
+    <div class="form-group">
+      <label class="form-label">1. Dia de Origem (Copiar de):</label>
+      <select id="dup-source-day" class="form-select">
+        <option value="1">Segunda-feira</option>
+        <option value="2">Terça-feira</option>
+        <option value="3">Quarta-feira</option>
+        <option value="4">Quinta-feira</option>
+        <option value="5">Sexta-feira</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">2. Dia de Destino (Colar em):</label>
+      <select id="dup-target-day" class="form-select">
+        <option value="1">Segunda-feira</option>
+        <option value="2" selected>Terça-feira</option>
+        <option value="3">Quarta-feira</option>
+        <option value="4">Quinta-feira</option>
+        <option value="5">Sexta-feira</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">3. Período:</label>
+      <select id="dup-period" class="form-select">
+        <option value="all">Manhã e Tarde (Completo)</option>
+        <option value="morning">Apenas Manhã</option>
+        <option value="afternoon">Apenas Tarde</option>
+      </select>
+    </div>
+
+    <div class="form-info-box">
+      ⚠️ <b>Atenção:</b> Os horários existentes no dia de destino selecionado serão substituídos pelas aulas do dia de origem. Um ponto de restauração (backup) será criado automaticamente antes da alteração.
+    </div>
+  `;
+
+  const footer = Object.assign(document.createElement('div'), { className: 'modal-footer', style: 'gap: 10px;' });
+  
+  const cancelBtn = Object.assign(document.createElement('button'), {
+    className: 'btn',
+    textContent: 'Cancelar',
+    onclick: () => overlay.remove()
+  });
+
+  const confirmBtn = Object.assign(document.createElement('button'), {
+    className: 'btn btn-primary',
+    textContent: '📋 Duplicar Agora',
+    onclick: () => {
+      const srcDay = parseInt(document.getElementById('dup-source-day').value);
+      const tgtDay = parseInt(document.getElementById('dup-target-day').value);
+      const period = document.getElementById('dup-period').value;
+
+      if (srcDay === tgtDay) {
+        showToast("Selecione dias diferentes para origem e destino.", "error");
+        return;
+      }
+
+      executeDayDuplication(srcDay, tgtDay, period);
+      overlay.remove();
+    }
+  });
+
+  footer.append(cancelBtn, confirmBtn);
+  modal.append(title, content, footer);
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+  setupFocusTrap(overlay);
+}
+
+/**
+ * Executa a cópia das células de um dia para outro.
+ * @param {number} sourceDay - 1 a 5
+ * @param {number} targetDay - 1 a 5
+ * @param {string} periodChoice - 'all' | 'morning' | 'afternoon'
+ */
+function executeDayDuplication(sourceDay, targetDay, periodChoice) {
+  const dayNames = ['', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira'];
+  let totalCopied = 0;
+
+  const tables = [];
+  if (periodChoice === 'all' || periodChoice === 'morning') {
+    const morning = document.querySelector('#section-morning table');
+    if (morning) tables.push({ table: morning, layout: CONFIG.LAYOUTS.morning });
+  }
+  if (periodChoice === 'all' || periodChoice === 'afternoon') {
+    const afternoon = document.querySelector('#section-afternoon table');
+    if (afternoon) tables.push({ table: afternoon, layout: CONFIG.LAYOUTS.afternoon });
+  }
+
+  createSnapshot(); // Backup preventivo
+
+  tables.forEach(({ table, layout }) => {
+    let srcOffset = 0;
+    for (let i = 0; i < sourceDay - 1; i++) srcOffset += layout[i];
+    const srcColCount = layout[sourceDay - 1];
+
+    let tgtOffset = 0;
+    for (let i = 0; i < targetDay - 1; i++) tgtOffset += layout[i];
+    const tgtColCount = layout[targetDay - 1];
+
+    const colsToCopy = Math.min(srcColCount, tgtColCount);
+    const rows = table.rows;
+
+    for (let r = 2; r < rows.length; r++) {
+      const row = rows[r];
+      if (row.classList.contains('recreio')) continue;
+
+      for (let c = 0; c < colsToCopy; c++) {
+        const srcCell = row.cells[srcOffset + c + 1];
+        const tgtCell = row.cells[tgtOffset + c + 1];
+
+        if (srcCell && tgtCell && tgtCell.getAttribute('contenteditable') === 'true') {
+          const val = srcCell.innerText.trim();
+          pushUndo(tgtCell, tgtCell.innerText);
+          tgtCell.innerText = val;
+          applyDynamicStyles(tgtCell);
+          checkConflicts(tgtCell);
+          saveContent(getCellKey(tgtCell), val);
+          totalCopied++;
+        }
+      }
+    }
+  });
+
+  updateGlobalConflictCount();
+  createSnapshot();
+  showToast(`Sucesso! ${totalCopied} horários copiados de ${dayNames[sourceDay]} para ${dayNames[targetDay]}.`, "success");
+}
+
+// ==========================================================================
+// 📅 EXPORTAÇÃO PARA CALENDÁRIO (.ICS / ICALENDAR)
+// ==========================================================================
+
+/**
+ * Abre o modal de exportação para calendário compatível com Google Calendar, Outlook e Apple Calendar.
+ */
+function openExportICSModal() {
+  const teacherMap = getTeacherMap();
+  const overlay = Object.assign(document.createElement('div'), {
+    className: 'modal-overlay',
+    id: 'export-ics-modal'
+  });
+  overlay.style.display = 'flex';
+
+  const modal = Object.assign(document.createElement('div'), { className: 'modal' });
+  modal.style.maxWidth = '550px';
+
+  const title = Object.assign(document.createElement('h2'), { textContent: '📅 Exportar para Calendário (.ics)' });
+
+  const currentYear = 2026;
+  const content = document.createElement('div');
+  content.innerHTML = `
+    <div class="form-group">
+      <label class="form-label">Filtrar Aulas para Exportação:</label>
+      <select id="ics-filter-type" class="form-select" onchange="document.getElementById('ics-teacher-group').style.display = this.value === 'specific' ? 'block' : 'none'">
+        <option value="all">Todas as Aulas e Professores</option>
+        <option value="specific">Professor / Turma Específico</option>
+      </select>
+    </div>
+
+    <div class="form-group" id="ics-teacher-group" style="display: none;">
+      <label class="form-label">Selecione o Professor / Sigla:</label>
+      <select id="ics-teacher-select" class="form-select">
+        ${Object.entries(teacherMap).sort((a, b) => a[0].localeCompare(b[0])).map(([sigla, nome]) => `
+          <option value="${sigla}">${sigla} - ${nome}</option>
+        `).join('')}
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Data de Início do Período Letivo:</label>
+      <input type="date" id="ics-start-date" class="form-input" value="${currentYear}-02-02">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Data de Término do Período Letivo:</label>
+      <input type="date" id="ics-end-date" class="form-input" value="${currentYear}-12-18">
+    </div>
+
+    <div class="form-info-box">
+      ℹ️ O arquivo <b>.ics</b> gerado cria eventos semanais recorrentes em seu calendário para cada aula, com horários de início e término exatos da escola.
+    </div>
+  `;
+
+  const footer = Object.assign(document.createElement('div'), { className: 'modal-footer', style: 'gap: 10px;' });
+  
+  const cancelBtn = Object.assign(document.createElement('button'), {
+    className: 'btn',
+    textContent: 'Cancelar',
+    onclick: () => overlay.remove()
+  });
+
+  const exportBtn = Object.assign(document.createElement('button'), {
+    className: 'btn btn-primary',
+    textContent: '📥 Baixar Arquivo .ics',
+    onclick: () => {
+      const filterType = document.getElementById('ics-filter-type').value;
+      const targetTeacher = filterType === 'specific' ? document.getElementById('ics-teacher-select').value : null;
+      const startDate = document.getElementById('ics-start-date').value;
+      const endDate = document.getElementById('ics-end-date').value;
+
+      if (!startDate || !endDate) {
+        showToast("Informe as datas de início e término.", "error");
+        return;
+      }
+
+      generateAndDownloadICS(targetTeacher, startDate, endDate);
+      overlay.remove();
+    }
+  });
+
+  footer.append(cancelBtn, exportBtn);
+  modal.append(title, content, footer);
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+  setupFocusTrap(overlay);
+}
+
+/**
+ * Gera o arquivo iCalendar (.ics) e inicia o download no navegador.
+ * @param {string|null} targetTeacher
+ * @param {string} startDateStr
+ * @param {string} endDateStr
+ */
+function generateAndDownloadICS(targetTeacher, startDateStr, endDateStr) {
+  const teacherMap = getTeacherMap();
+  const dayRRuleMap = ['', 'MO', 'TU', 'WE', 'TH', 'FR'];
+  
+  const events = [];
+  const tables = [
+    { el: document.querySelector('#section-morning table'), layout: CONFIG.LAYOUTS.morning, periodName: 'Manhã' },
+    { el: document.querySelector('#section-afternoon table'), layout: CONFIG.LAYOUTS.afternoon, periodName: 'Tarde' }
+  ];
+
+  tables.forEach(({ el: table, layout, periodName }) => {
+    if (!table) return;
+    const rows = table.rows;
+
+    for (let r = 2; r < rows.length; r++) {
+      const row = rows[r];
+      if (row.classList.contains('recreio')) continue;
+
+      const timeText = row.cells[0]?.textContent.trim();
+      if (!timeText) continue;
+
+      const parts = timeText.split(' - ');
+      if (parts.length < 2) continue;
+
+      const startMin = timeToMinutes(parts[0]);
+      const endMin = timeToMinutes(parts[1]);
+      if (startMin === null || endMin === null) continue;
+
+      let colOffset = 0;
+      layout.forEach((colsInDay, dayIdx) => {
+        const dayNum = dayIdx + 1; // 1 = Seg, 5 = Sex
+        for (let c = 0; c < colsInDay; c++) {
+          const specHeader = table.rows[1].cells[colOffset + c]?.textContent.trim();
+          const cell = row.cells[colOffset + c + 1];
+          if (!cell) continue;
+
+          const cellText = cell.textContent.trim();
+          if (!cellText || cellText === '*' || cellText === 'HL') continue;
+
+          if (targetTeacher) {
+            const matchesCode = cellText.toUpperCase() === targetTeacher.toUpperCase() || 
+                                specHeader.toUpperCase() === targetTeacher.toUpperCase();
+            if (!matchesCode) continue;
+          }
+
+          const teacherDesc = teacherMap[cellText] || teacherMap[specHeader] || '';
+          events.push({
+            dayNum,
+            dayRRule: dayRRuleMap[dayNum],
+            startMin,
+            endMin,
+            subject: cellText,
+            specialist: specHeader,
+            description: teacherDesc,
+            periodName
+          });
+        }
+        colOffset += colsInDay;
+      });
+    }
+  });
+
+  if (events.length === 0) {
+    showToast("Nenhuma aula encontrada para os filtros selecionados.", "warning");
+    return;
+  }
+
+  const formatICSDate = (dateObj, minutes) => {
+    const y = dateObj.getFullYear();
+    const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const d = String(dateObj.getDate()).padStart(2, '0');
+    const hh = String(Math.floor(minutes / 60)).padStart(2, '0');
+    const mm = String(minutes % 60).padStart(2, '0');
+    return `${y}${m}${d}T${hh}${mm}00`;
+  };
+
+  const cleanEnd = endDateStr.replace(/-/g, '') + 'T235959Z';
+  const baseDate = new Date(startDateStr + 'T12:00:00');
+
+  let icsContent = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//EMEB Anna Bonagura//Horario Escolar//PT-BR',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    'X-WR-CALNAME:Horário Escolar 2026',
+    'X-WR-TIMEZONE:America/Sao_Paulo'
+  ];
+
+  events.forEach((ev, idx) => {
+    const eventDate = new Date(baseDate);
+    const currentDay = eventDate.getDay();
+    const diff = (ev.dayNum - currentDay + 7) % 7;
+    eventDate.setDate(eventDate.getDate() + diff);
+
+    const dtStart = formatICSDate(eventDate, ev.startMin);
+    const dtEnd = formatICSDate(eventDate, ev.endMin);
+    const uid = `horario-2026-${idx}-${ev.dayNum}-${ev.startMin}@bonagura`;
+
+    icsContent.push('BEGIN:VEVENT');
+    icsContent.push(`UID:${uid}`);
+    icsContent.push(`DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}Z`);
+    icsContent.push(`DTSTART:${dtStart}`);
+    icsContent.push(`DTEND:${dtEnd}`);
+    icsContent.push(`RRULE:FREQ=WEEKLY;UNTIL=${cleanEnd};BYDAY=${ev.dayRRule}`);
+    icsContent.push(`SUMMARY:Aula ${ev.subject} (${ev.specialist})`);
+    icsContent.push(`DESCRIPTION:Turma/Disciplina: ${ev.subject}\\nEspecialista: ${ev.specialist}\\nDetalhes: ${ev.description}\\nPeríodo: ${ev.periodName}`);
+    icsContent.push('LOCATION:EMEB Prof. Anna Bonagura de Andrade');
+    icsContent.push('STATUS:CONFIRMED');
+    icsContent.push('END:VEVENT');
+  });
+
+  icsContent.push('END:VCALENDAR');
+
+  const blob = new Blob([icsContent.join('\r\n')], { type: 'text/calendar;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  const filename = targetTeacher 
+    ? `horario-${targetTeacher.replace(/[^a-zA-Z0-9]/g, '_')}-2026.ics` 
+    : 'horario-escolar-2026.ics';
+  
+  link.setAttribute('href', url);
+  link.setAttribute('download', filename);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+
+  showToast(`Arquivo ${filename} gerado com ${events.length} aulas!`, "success");
 }

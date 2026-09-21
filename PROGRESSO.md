@@ -36,3 +36,9 @@ Baseado no `TODO-PLANEJAMENTO.md`
 - [x] Validação sintática via `node -c script.js` (Exit Code 0).
 - [x] Teste de consistência de estilos e scripts concluído com sucesso.
 
+### 7. Novas Melhorias de Produtividade & Integração
+- [x] **Modal de Atalhos de Teclado (`openShortcutsModal`)**: Modal categorizado com tags `<kbd>` e focus trap cobrindo edição, área de transferência, navegação e comandos globais.
+- [x] **Autocompletar Inteligente de Células (`showCellAutocomplete`)**: Dropdown flutuante posicionado na célula ativa com suporte a navegação por setas (`↑`/`↓`), `Enter`, `Tab` e filtro em tempo real.
+- [x] **Duplicação de Horários de um Dia (`openDuplicateDayModal`)**: Ferramenta de replicação de grade entre dias da semana com backup preventivo e confirmação segura.
+- [x] **Exportação de Calendário iCalendar (`.ics`) (`openExportICSModal`)**: Geração de arquivos `.ics` compatíveis com Google Calendar, Outlook e Apple Calendar por professor/turma ou geral.
+

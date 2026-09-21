@@ -28,7 +28,7 @@
   <!-- Cabeçalho exclusivo para impressão -->
   <div class="print-header">
     <div class="print-header-content">
-      <img src="https://raw.githubusercontent.com/educacao-tech/horario/main/eaba.png" alt="Logo" class="print-logo">
+      <img src="eaba.png" alt="Logo EMEB Anna Bonagura" width="40" height="40" class="print-logo">
       <div class="print-titles">
         <h2>Quadro de Horário Escolar - 2026</h2>
         <p>EMEB Professora Anna Bonagura de Andrade</p>
@@ -37,19 +37,19 @@
     <div class="print-meta">Documento gerado em: <span id="print-date"></span></div>
   </div>
 
-  <header class="main-header">
-    <div class="header-brand">
-      <div class="header-logo">📚</div>
-      <div class="header-titles">
-        <h1>
-          Horário Escolar <span class="year-badge">2026</span>
-        </h1>
-        <p>EMEB Professora Anna Bonagura de Andrade</p>
-      </div>
-    </div>
-  </header>
-
   <div class="top-area-sticky-wrapper">
+    <header class="main-header">
+      <div class="header-brand">
+        <div class="header-logo">📚</div>
+        <div class="header-titles">
+          <h1>
+            Horário Escolar <span class="year-badge">2026</span>
+          </h1>
+          <p>EMEB Professora Anna Bonagura de Andrade</p>
+        </div>
+      </div>
+    </header>
+
     <div class="legend">
       <span class="legend-title" style="font-size: 0.8rem; align-self: center;">Legendas:</span>
       <button type="button" class="legend-item" onclick="toggleCategory('hl')"><div class="box hl"></div> <span><b>HL</b> Livre</span></button>
@@ -68,6 +68,8 @@
           <button type="button" class="btn-menu-item" onclick="openSettingsModal()">🎨 Personalizar Cores</button>
           <button type="button" class="btn-menu-item" onclick="showConflictInspector()">🔍 Inspecionar Conflitos</button>
           <button type="button" class="btn-menu-item" onclick="openShortcutsModal()">⌨️ Atalhos de Teclado</button>
+          <button type="button" class="btn-menu-item" onclick="openDuplicateDayModal()">📋 Duplicar Dia</button>
+          <button type="button" class="btn-menu-item" onclick="openExportICSModal()">📅 Exportar Calendário (.ics)</button>
           <button type="button" class="btn-menu-item" onclick="showWorkloadModal()">📊 Carga Horária</button>
           <button type="button" class="btn-menu-item" onclick="window.print()">🖨️ Imprimir Horário</button>
           <button type="button" class="btn-menu-item" onclick="showBackupHistoryModal()">📦 Histórico de Backups</button>
@@ -107,7 +109,7 @@
 
   <div id="schedule-wrapper">
     <div id="section-morning">
-  <h2>Horário da Manhã</h2>
+  <h2>☀️ Horário da Manhã <span class="period-badge morning">Matutino</span></h2>
   <div class="table-container">
   <table>
     <thead>
@@ -192,7 +194,7 @@
     </div>
 
     <div id="section-afternoon">
-  <h2>Horário da Tarde</h2>
+  <h2>🌅 Horário da Tarde <span class="period-badge afternoon">Vespertino</span></h2>
   <div class="table-container">
   <table>
     <thead>
@@ -285,7 +287,7 @@
   <footer class="main-footer">
     <div class="footer-container">
       <div class="footer-brand">
-        <img src="https://raw.githubusercontent.com/educacao-tech/horario/main/eaba.png" alt="Logo" class="footer-logo">
+        <img src="eaba.png" alt="Logo EMEB Anna Bonagura" width="40" height="40" class="footer-logo" loading="lazy">
         <div class="footer-info">
           <strong>EMEB Professora Anna Bonagura de Andrade</strong>
           <p>Quadro de Gestão e Horário Escolar • Ano Letivo 2026</p>

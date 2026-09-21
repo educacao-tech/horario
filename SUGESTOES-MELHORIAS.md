@@ -6,15 +6,15 @@
 
 ## 🚀 Alta Prioridade (Alto Impacto / Baixa Complexidade)
 
-### 1. Preenchimento Inteligente (Fill Down)
+### 1. Preenchimento Inteligente (Fill Down) [x]
 - **Descrição**: Permitir `Ctrl+D` para copiar o conteúdo da célula atual para a célula abaixo (similar ao Excel/Google Sheets).
 - **Valor**: Agiliza massivamente o preenchimento de horários repetidos.
-- **Implementação**: Adicionar listener de `keydown` para `Ctrl+D`.
+- **Implementação**: Concluído com listener de `keydown` (`Ctrl+D`) e suporte a seleção única e múltipla.
 
-### 2. Modal de Atalhos de Teclado
+### 2. Modal de Atalhos de Teclado [x]
 - **Descrição**: Botão "⌨️ Atalhos" na toolbar que abre um modal listando todos os atalhos disponíveis (Ctrl+Z, Ctrl+Y, Ctrl+C/V, Arrow keys, etc).
 - **Valor**: Melhora a descoberta de funcionalidades e a experiência do usuário.
-- **Implementação**: Criar função `showShortcutsModal()` similar ao `openTeacherManager()`.
+- **Implementação**: Concluído na função `openShortcutsModal()`.
 
 ### 3. Indicador Global de Conflitos [x]
 - **Descrição**: Badge vermelho na toolbar mostrando o número total de conflitos de horário ativos na página. Clicar leva para o próximo conflito com destaque pulsante.
@@ -26,19 +26,19 @@
 - **Valor**: Alerts bloqueiam a interface. Toasts são não-intrusivos e visualmente integrados.
 - **Implementação**: Concluído com `showToast()`, `showConfirmDialog()` e `showPromptDialog()`.
 
-### 5. Duplicar Horário de um Dia
+### 5. Duplicar Horário de um Dia [x]
 - **Descrição**: No cabeçalho de cada dia (Segunda, Terça...), adicionar um botão "📋 Copiar" que copia todos os horários desse dia para a área de transferência, e um botão "📥 Colar" em outro dia.
 - **Valor**: Útil quando dois dias têm horários similares. Evita preenchimento manual repetitivo.
-- **Implementação**: Serializar/colunar dados de um dia específico usando o layout do CONFIG.
+- **Implementação**: Concluído com `openDuplicateDayModal()` e `executeDayDuplication()`.
 
 ---
 
 ## ⚡ Média Prioridade (Alto Impacto / Média Complexidade)
 
-### 6. Células com Autocompletar (Dropdown)
+### 6. Células com Autocompletar (Dropdown) [x]
 - **Descrição**: Ao digitar em uma célula, mostrar um dropdown com sugestões baseadas nos valores já existentes na tabela (turmas, siglas, etc).
 - **Valor**: Reduz erros de digitação e acelera o preenchimento.
-- **Implementação**: Criar elemento `<datalist>` ou div flutuante de sugestões posicionada absolutamente.
+- **Implementação**: Concluído com popup flutuante inteligente, navegação por setas (`showCellAutocomplete`, `renderAutocompleteItems`).
 
 ### 7. Mapa de Calor dos Professores [x]
 - **Descrição**: Nova aba/modal "Estatísticas" que mostra um grid visual com a carga horária de cada professor/turma por dia.
@@ -79,10 +79,10 @@
 - **Valor**: Acessibilidade (daltonismo) e preferência pessoal.
 - **Implementação**: Concluído com `openSettingsModal()`, `COLOR_PRESETS` e variáveis CSS dinâmicas.
 
-### 14. Integração com Calendário (ICS)
+### 14. Integração com Calendário (ICS) [x]
 - **Descrição**: Exportar aulas individuais para arquivo `.ics` (formato iCalendar) que pode ser importado no Google Calendar/Outlook.
 - **Valor**: Professores podem adicionar suas aulas ao calendário pessoal.
-- **Implementação**: Gerar string no formato ICS com datas recorrentes.
+- **Implementação**: Concluído com `openExportICSModal()` e `generateAndDownloadICS()`.
 
 ### 15. Responsividade Avançada (Mobile First) [x]
 - **Descrição**: Em telas pequenas (< 768px), transformar a tabela em cards verticais por dia com chips de professores e navegação por abas rápidas deslizáveis.
