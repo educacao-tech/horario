@@ -89,6 +89,16 @@
 - **Valor**: Uso prático em smartphones e tablets com suporte a gestos de toque (swipe) para troca de dia.
 - **Implementação**: Concluído com `initMobileDayTabs()`, `renderCardsView()`, `toggleViewMode()` e `initSwipeGestures()`.
 
+### 16. Sistema de Alertas em Tempo Real, Áudio & Notificações de Aula [x]
+- **Descrição**:
+  - Fundo vermelho nos últimos 2 minutos de aula (`.ending-soon`).
+  - Efeito de piscar contínuo nos últimos 30 segundos (`.ending-critical`).
+  - **Sinal Escolar / Chime (Web Audio API)**: Emite bipe suave aos 30s e sinal melódico de 4 notas (Dó-Mi-Sol-Dó) ao término do período, com botão `🔔/🔕` na toolbar e no menu.
+  - **Notificações na Área de Trabalho (Web Notifications API)**: Notifica na área de trabalho quando faltarem 2 minutos e ao término da aula.
+  - **Destaque Dinâmico com Glow na Linha Atual**: Moldura e brilho animado pulsante (`current-row-glow`) na linha da aula do momento.
+- **Valor**: Automação completa para gestão de tempo em sala de aula sem depender de arquivos externos.
+- **Implementação**: Concluído em `script.js`, `style.css` e `index.html`.
+
 ---
 
 ## 📋 Resumo de Categorias

@@ -13,6 +13,8 @@ const CONFIG = {
   ZOOM_LEVEL_KEY: 'school_zoom_level_v1',
   HISTORY_KEY: 'school_history_v2',
   COLORS_KEY: 'school_custom_colors_v1',
+  SOUND_ALERTS_KEY: 'school_sound_alerts_v1',
+  DESKTOP_NOTIFY_KEY: 'school_desktop_notify_v1',
   LOCK_PASSWORD: 'qwe123', // Senha padrão para desbloquear o modo de edição
   LAST_UPDATE_DATE: '03/08/2026', // Data da última atualização do código
   LAST_UPDATE_TIME: '11:33', // Hora da última atualização do código
@@ -2164,6 +2166,221 @@ function getSchedulePeriods() {
 }
 
 /**
+ * Formata segundos no formato HH:MM para exibição amigável.
+ * @param {number} totalSeconds 
+ * @returns {string}
+ */
+function formatSecondsToTime(totalSeconds) {
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  return `${h}h${m.toString().padStart(2, '0')}`;
+}
+
+// --- SISTEMA DE SINAL ESCOLAR & NOTIFICAÇÕES (WEB AUDIO API & NOTIFICATION API) ---
+
+let _audioCtx = null;
+let _lastPeriodWarningNotified = null;
+let _lastPeriod30sAlert = null;
+let _lastPeriodEndAlert = null;
+
+/**
+ * Obtém ou inicializa o contexto de áudio Web Audio API de forma segura.
+ * @returns {AudioContext|null}
+ */
+function getAudioContext() {
+  if (!_audioCtx) {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (AudioContextClass) {
+      _audioCtx = new AudioContextClass();
+    }
+  }
+  if (_audioCtx && _audioCtx.state === 'suspended') {
+    _audioCtx.resume();
+  }
+  return _audioCtx;
+}
+
+/**
+ * Verifica se os alertas sonoros estão ativos.
+ * @returns {boolean}
+ */
+function isSoundAlertsEnabled() {
+  return localStorage.getItem(CONFIG.SOUND_ALERTS_KEY) !== 'false'; // Padrão: ativado
+}
+
+/**
+ * Alterna a ativação dos alertas sonoros do sinal escolar.
+ */
+function toggleSoundAlerts() {
+  const isEnabled = isSoundAlertsEnabled();
+  const newState = !isEnabled;
+  localStorage.setItem(CONFIG.SOUND_ALERTS_KEY, newState ? 'true' : 'false');
+  updateSoundButtonUI();
+
+  if (newState) {
+    playSchoolChime('warning30');
+    showToast("🔔 Alertas sonoros (sinal escolar) ativados!", "success");
+  } else {
+    showToast("🔕 Alertas sonoros desativados.", "info");
+  }
+}
+
+/**
+ * Atualiza o estado visual do botão de áudio na toolbar e no menu.
+ */
+function updateSoundButtonUI() {
+  const isEnabled = isSoundAlertsEnabled();
+  const toolbarBtn = document.getElementById('sound-toggle-btn');
+  if (toolbarBtn) {
+    toolbarBtn.innerHTML = isEnabled ? '🔔' : '🔕';
+    toolbarBtn.title = isEnabled ? 'Alertas Sonoros: Ativado (Clique para desativar)' : 'Alertas Sonoros: Desativado (Clique para ativar)';
+    toolbarBtn.classList.toggle('muted', !isEnabled);
+  }
+
+  const menuBtn = document.getElementById('sound-menu-item');
+  if (menuBtn) {
+    menuBtn.innerHTML = isEnabled ? '🔔 Alertas Sonoros: Ligado' : '🔕 Alertas Sonoros: Desligado';
+  }
+}
+
+/**
+ * Sintetiza e toca o sinal escolar ou o aviso de 30 segundos usando Web Audio API.
+ * @param {'warning30'|'periodEnd'} type - Tipo de sinal a emitir.
+ */
+function playSchoolChime(type = 'periodEnd') {
+  if (!isSoundAlertsEnabled()) return;
+  const ctx = getAudioContext();
+  if (!ctx) return;
+
+  const now = ctx.currentTime;
+
+  if (type === 'warning30') {
+    // 2 bips elegantes e suaves (A5 - 880Hz) indicando os últimos 30 segundos
+    [0, 0.22].forEach((delay) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(880, now + delay);
+      
+      gain.gain.setValueAtTime(0, now + delay);
+      gain.gain.linearRampToValueAtTime(0.12, now + delay + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + delay + 0.18);
+      
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now + delay);
+      osc.stop(now + delay + 0.2);
+    });
+  } else if (type === 'periodEnd') {
+    // Sinal escolar clássico e harmônico de 4 notas (Dó - Mi - Sol - Dó maior: C5, E5, G5, C6)
+    const notes = [
+      { freq: 523.25, time: 0.0, dur: 0.35 }, // C5
+      { freq: 659.25, time: 0.32, dur: 0.35 }, // E5
+      { freq: 783.99, time: 0.64, dur: 0.35 }, // G5
+      { freq: 1046.50, time: 0.96, dur: 0.75 } // C6
+    ];
+
+    notes.forEach(note => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle'; // Timbre suave de sino/xilofone
+      osc.frequency.setValueAtTime(note.freq, now + note.time);
+
+      gain.gain.setValueAtTime(0, now + note.time);
+      gain.gain.linearRampToValueAtTime(0.18, now + note.time + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + note.time + note.dur);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now + note.time);
+      osc.stop(now + note.time + note.dur + 0.05);
+    });
+  }
+}
+
+/**
+ * Verifica se as notificações na área de trabalho estão ativadas pelo usuário.
+ * @returns {boolean}
+ */
+function isDesktopNotifyEnabled() {
+  return localStorage.getItem(CONFIG.DESKTOP_NOTIFY_KEY) === 'true';
+}
+
+/**
+ * Envia uma notificação do navegador se tiver permissão concedida.
+ * @param {string} title 
+ * @param {string} body 
+ */
+function sendDesktopNotification(title, body) {
+  if (!isDesktopNotifyEnabled()) return;
+  if (!("Notification" in window) || Notification.permission !== "granted") return;
+
+  try {
+    const notification = new Notification(title, {
+      body: body,
+      icon: 'eaba.png',
+      badge: 'eaba.png'
+    });
+    // Fecha automaticamente após 7 segundos
+    setTimeout(() => notification.close(), 7000);
+  } catch (err) {
+    console.warn("Falha ao emitir notificação de desktop:", err);
+  }
+}
+
+/**
+ * Alterna a ativação de notificações no desktop e solicita permissão ao navegador se necessário.
+ */
+function toggleDesktopNotifications() {
+  if (!("Notification" in window)) {
+    showToast("Seu navegador não suporta notificações de área de trabalho.", "warning");
+    return;
+  }
+
+  if (Notification.permission === "denied") {
+    showToast("As notificações estão bloqueadas nas configurações do seu navegador.", "warning");
+    return;
+  }
+
+  if (Notification.permission === "granted") {
+    const currentState = isDesktopNotifyEnabled();
+    const newState = !currentState;
+    localStorage.setItem(CONFIG.DESKTOP_NOTIFY_KEY, newState ? 'true' : 'false');
+    updateDesktopNotifyButtonUI();
+    if (newState) {
+      showToast("📢 Notificações na área de trabalho ativadas!", "success");
+      sendDesktopNotification("Horário Escolar", "Notificações ativadas! Você receberá avisos 2 minutos antes do fim de cada aula.");
+    } else {
+      showToast("🔕 Notificações na área de trabalho desativadas.", "info");
+    }
+    return;
+  }
+
+  Notification.requestPermission().then((permission) => {
+    if (permission === "granted") {
+      localStorage.setItem(CONFIG.DESKTOP_NOTIFY_KEY, "true");
+      updateDesktopNotifyButtonUI();
+      showToast("📢 Notificações no desktop ativadas com sucesso!", "success");
+      sendDesktopNotification("Horário Escolar", "Notificações ativadas! Você receberá avisos 2 minutos antes do término da aula.");
+    } else {
+      localStorage.setItem(CONFIG.DESKTOP_NOTIFY_KEY, "false");
+      updateDesktopNotifyButtonUI();
+      showToast("Permissão de notificações não concedida.", "warning");
+    }
+  });
+}
+
+/**
+ * Atualiza o texto do botão de notificações no menu.
+ */
+function updateDesktopNotifyButtonUI() {
+  const btn = document.getElementById('desktop-notify-btn');
+  if (!btn) return;
+  const isEnabled = isDesktopNotifyEnabled() && ("Notification" in window) && Notification.permission === "granted";
+  btn.innerHTML = isEnabled ? '📢 Notificações no Desktop: Ligado' : '🔕 Notificações no Desktop: Desligado';
+}
+
+/**
  * Gerencia o cronômetro da barra de ferramentas, identificando se o usuário está
  * em aula, no recreio ou fora do período letivo.
  */
@@ -2175,7 +2392,13 @@ function updateTimeCounter() {
   const progressBar = _dom.progressBar();
 
   if (day < 1 || day > 5) {
-    if (timeCounterElement) timeCounterElement.innerText = "Fim de semana";
+    if (timeCounterElement) {
+      timeCounterElement.innerText = "Fim de semana";
+      timeCounterElement.classList.remove('ending-soon', 'ending-critical');
+    }
+    _lastPeriodWarningNotified = null;
+    _lastPeriod30sAlert = null;
+    _lastPeriodEndAlert = null;
     return;
   }
 
@@ -2196,6 +2419,9 @@ function updateTimeCounter() {
   }
 
   let message = "";
+  let isEndingSoon = false;
+  let isEndingCritical = false;
+
   if (activePeriod) {
     const remainingSeconds = activePeriod.end - currentTotalSeconds;
     const elapsed = currentTotalSeconds - activePeriod.start;
@@ -2207,6 +2433,46 @@ function updateTimeCounter() {
     message = activePeriod.type === 'recreio'
       ? `Recreio termina em ${formatTimeDifference(remainingSeconds)}`
       : `Termina em ${formatTimeDifference(remainingSeconds)}`;
+
+    const periodKey = `${activePeriod.start}-${activePeriod.end}-${day}`;
+
+    // Alerta de 2 minutos (120s): Fundo vermelho e Notificação no Desktop
+    if (remainingSeconds <= 120 && remainingSeconds > 0) {
+      isEndingSoon = true;
+      if (_lastPeriodWarningNotified !== periodKey) {
+        _lastPeriodWarningNotified = periodKey;
+        const endTimeStr = formatSecondsToTime(activePeriod.end);
+        sendDesktopNotification(
+          activePeriod.type === 'recreio' ? "⏰ Fim do Recreio em 2 Minutos!" : "⏰ Fim da Aula em 2 Minutos!",
+          activePeriod.type === 'recreio'
+            ? `O recreio termina às ${endTimeStr}. Prepare-se para o retorno às salas.`
+            : `A aula atual está terminando em 2 minutos (término às ${endTimeStr}).`
+        );
+      }
+    }
+
+    // Alerta de 30 segundos: Texto piscando e Bipe de aviso suave
+    if (remainingSeconds <= 30 && remainingSeconds > 0) {
+      isEndingCritical = true;
+      if (_lastPeriod30sAlert !== periodKey) {
+        _lastPeriod30sAlert = periodKey;
+        playSchoolChime('warning30');
+      }
+    }
+
+    // Fim da aula / término do período (1 segundo ou 0)
+    if (remainingSeconds <= 1 && remainingSeconds >= 0) {
+      if (_lastPeriodEndAlert !== periodKey) {
+        _lastPeriodEndAlert = periodKey;
+        playSchoolChime('periodEnd');
+        sendDesktopNotification(
+          activePeriod.type === 'recreio' ? "🔔 Recreio Encerrado!" : "🔔 Sinal Escolar - Fim de Aula!",
+          activePeriod.type === 'recreio'
+            ? "O recreio terminou. Início do próximo horário."
+            : "O horário da aula terminou. Mudança de período escolar!"
+        );
+      }
+    }
   } else if (nextPeriod) {
     if (progressBar) progressBar.style.width = '0%';
     const timeUntilNext = nextPeriod.start - currentTotalSeconds;
@@ -2218,20 +2484,27 @@ function updateTimeCounter() {
     message = "Fora do horário de aula";
   }
 
-  if (timeCounterElement && timeCounterElement.innerText !== message) {
-    timeCounterElement.innerText = message;
+  if (timeCounterElement) {
+    if (timeCounterElement.innerText !== message) {
+      timeCounterElement.innerText = message;
+    }
+    timeCounterElement.classList.toggle('ending-soon', isEndingSoon);
+    timeCounterElement.classList.toggle('ending-critical', isEndingCritical);
   }
 }
 
 /**
- * Atualiza o relógio digital na interface com segundos e data.
+ * Atualiza o relógio digital na interface com formato compacto e data no tooltip.
  */
 function updateClock() {
   const clockElement = document.getElementById('current-date-time');
   if (!clockElement) return;
   const now = new Date();
-  clockElement.textContent = now.toLocaleString('pt-BR', {
-    weekday: 'short', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit'
+  clockElement.textContent = now.toLocaleTimeString('pt-BR', {
+    hour: '2-digit', minute: '2-digit', second: '2-digit'
+  });
+  clockElement.title = now.toLocaleDateString('pt-BR', {
+    weekday: 'long', day: '2-digit', month: 'long', year: 'numeric'
   }).replace(/^\w/, (c) => c.toUpperCase());
 }
 
@@ -2259,15 +2532,18 @@ function initZoom() {
   const zoomWrapper = document.createElement('div');
   zoomWrapper.className = 'zoom-controls';
   zoomWrapper.innerHTML = `
-    <span class="legend-title" style="font-size: 0.7rem; font-weight: 800; margin: 0">ZOOM</span>
-    <div style="display: flex; gap: 4px; align-items: center;">
-      <button class="btn" type="button" onclick="adjustZoom(-0.1)" title="Diminuir" aria-label="Diminuir nível de zoom">-</button>
-      <span id="zoom-display" style="min-width: 45px; text-align: center; font-weight: bold; font-size: 0.85rem">${Math.round(parseFloat(savedZoom) * 100)}%</span>
-      <button class="btn" type="button" onclick="adjustZoom(0.1)" title="Aumentar" aria-label="Aumentar nível de zoom">+</button>
+    <div style="display: flex; gap: 2px; align-items: center;">
+      <button class="btn" type="button" onclick="adjustZoom(-0.1)" title="Diminuir Zoom" aria-label="Diminuir nível de zoom">-</button>
+      <span id="zoom-display" style="min-width: 36px; text-align: center; font-weight: bold; font-size: 0.78rem">${Math.round(parseFloat(savedZoom) * 100)}%</span>
+      <button class="btn" type="button" onclick="adjustZoom(0.1)" title="Aumentar Zoom" aria-label="Aumentar nível de zoom">+</button>
     </div>
   `;
   const toolbar = document.querySelector('.toolbar');
-  if (toolbar) toolbar.appendChild(zoomWrapper);
+  if (toolbar) {
+    const menuWrapper = toolbar.querySelector('.menu-dropdown-wrapper');
+    if (menuWrapper) toolbar.insertBefore(zoomWrapper, menuWrapper);
+    else toolbar.appendChild(zoomWrapper);
+  }
 }
 
 function adjustZoom(delta) {
@@ -2293,9 +2569,12 @@ function initScrollToNow() {
 
   const btn = document.createElement('button');
   btn.type = 'button';
-  btn.className = 'btn';
+  btn.className = 'btn btn-icon-toolbar';
   btn.style.backgroundColor = 'var(--accent)';
   btn.style.color = 'white';
+  btn.style.fontWeight = '700';
+  btn.style.fontSize = '0.78rem';
+  btn.style.padding = '4px 8px';
   btn.innerHTML = '📍 Agora';
   btn.title = 'Rolar até a aula atual';
 
@@ -2308,9 +2587,10 @@ function initScrollToNow() {
     }
   };
 
-  // Insere antes do zoom para manter a organização
   const zoom = toolbar.querySelector('.zoom-controls');
+  const menuWrapper = toolbar.querySelector('.menu-dropdown-wrapper');
   if (zoom) toolbar.insertBefore(btn, zoom);
+  else if (menuWrapper) toolbar.insertBefore(btn, menuWrapper);
   else toolbar.appendChild(btn);
 }
 
@@ -2386,6 +2666,8 @@ function initApp() {
   initScrollToNow();
   initScrollEffect();
   initDragAndDrop();
+  updateSoundButtonUI();
+  updateDesktopNotifyButtonUI();
   updateAriaStatus(); 
   updateStatusBar();
   fetchGitHubUpdateInfo();

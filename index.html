@@ -38,27 +38,46 @@
   </div>
 
   <div class="top-area-sticky-wrapper">
-    <header class="main-header">
-      <div class="header-brand">
-        <div class="header-logo">📚</div>
-        <div class="header-titles">
-          <h1>
-            Horário Escolar <span class="year-badge">2026</span>
-          </h1>
-          <p>EMEB Professora Anna Bonagura de Andrade</p>
-        </div>
+    <div class="header-brand" title="EMEB Professora Anna Bonagura de Andrade • Ano Letivo 2026">
+      <div class="header-logo">📚</div>
+      <div class="header-titles">
+        <h1>
+          Horário <span class="year-badge">2026</span>
+        </h1>
       </div>
-    </header>
+    </div>
 
-    <div class="legend">
-      <span class="legend-title" style="font-size: 0.8rem; align-self: center;">Legendas:</span>
-      <button type="button" class="legend-item" onclick="toggleCategory('hl')"><div class="box hl"></div> <span><b>HL</b> Livre</span></button>
-      <button type="button" class="legend-item" onclick="toggleCategory('pd')"><div class="box pd"></div> <span><b>PD</b> Plantão</span></button>
-      <button type="button" class="legend-item" onclick="toggleCategory('el')"><div class="box el"></div> <span><b>EL</b> Elefante</span></button>
-      <button type="button" class="legend-item" onclick="toggleCategory('mtf')"><div class="box mtf"></div> <span><b>MTF</b> Matific</span></button>
+    <div class="search-wrapper">
+      <input type="text" id="search-input" class="search-field" placeholder="🔍 Buscar..." autocomplete="off">
+      <button type="button" class="clear-search-btn" onclick="clearSearch()" aria-label="Limpar pesquisa">✖</button>
+      <div id="search-suggestions" class="search-suggestions"></div>
+    </div>
+
+    <div class="day-filter-wrapper">
+      <select id="day-filter-select" class="day-filter-select" title="Filtrar por dia da semana">
+        <option value="0">📅 Todos os Dias</option>
+        <option value="1">Segunda-feira</option>
+        <option value="2">Terça-feira</option>
+        <option value="3">Quarta-feira</option>
+        <option value="4">Quinta-feira</option>
+        <option value="5">Sexta-feira</option>
+      </select>
+    </div>
+
+    <div class="legend-compact">
+      <button type="button" class="legend-item" onclick="toggleCategory('hl')" title="Horário Livre (HL)"><div class="box hl"></div> <span>HL</span></button>
+      <button type="button" class="legend-item" onclick="toggleCategory('pd')" title="Plantão de Dúvidas (PD)"><div class="box pd"></div> <span>PD</span></button>
+      <button type="button" class="legend-item" onclick="toggleCategory('el')" title="Elefante Letrado (EL)"><div class="box el"></div> <span>EL</span></button>
+      <button type="button" class="legend-item" onclick="toggleCategory('mtf')" title="Matific (MTF)"><div class="box mtf"></div> <span>MTF</span></button>
     </div>
 
     <div class="toolbar">
+      <div id="global-conflict-container"></div>
+      <button type="button" class="btn btn-icon-toolbar" id="sound-toggle-btn" onclick="toggleSoundAlerts()" title="Alertas Sonoros: Ativado" aria-label="Alternar alertas sonoros">🔔</button>
+      <span id="time-counter" class="time-counter"></span>
+      <div id="current-date-time" class="current-date-time" title="Horário Atual"></div>
+      <span id="save-indicator">✅ Salvo</span>
+
       <div class="menu-dropdown-wrapper">
         <button type="button" class="btn btn-primary" id="main-menu-btn" onclick="toggleMainMenu(event)" aria-haspopup="true" aria-expanded="false">
           ☰ Menu
@@ -75,32 +94,14 @@
           <button type="button" class="btn-menu-item" onclick="showBackupHistoryModal()">📦 Histórico de Backups</button>
           <button type="button" class="btn-menu-item" onclick="exportBackupJSON()">💾 Exportar Backup Total</button>
           <button type="button" class="btn-menu-item" onclick="importBackupJSON()">📂 Importar Backup Total</button>
+          <button type="button" id="sound-menu-item" class="btn-menu-item" onclick="toggleSoundAlerts()">🔔 Alertas Sonoros: Ligado</button>
+          <button type="button" id="desktop-notify-btn" class="btn-menu-item" onclick="toggleDesktopNotifications()">📢 Notificações na Área de Trabalho</button>
           <button type="button" id="view-mode-btn" class="btn-menu-item" onclick="toggleViewMode()">📱 Modo Cards (Mobile)</button>
           <button type="button" id="compact-toggle-btn" class="btn-menu-item" onclick="toggleCompactMode()">↔️ Modo Compacto</button>
           <button type="button" id="theme-toggle" class="btn-menu-item" onclick="toggleTheme()">🌙 Alternar Tema</button>
           <button type="button" id="lock-btn" class="btn-menu-item" onclick="toggleLockMode()">🔒 Modo Leitura</button>
         </div>
       </div>
-
-      <div class="search-wrapper">
-        <input type="text" id="search-input" class="search-field" placeholder="🔍 Pesquisar professor ou turma..." autocomplete="off">
-        <button type="button" class="clear-search-btn" onclick="clearSearch()" aria-label="Limpar pesquisa">✖</button>
-        <div id="search-suggestions" class="search-suggestions"></div>
-      </div>
-      <div class="day-filter-wrapper">
-        <select id="day-filter-select" class="day-filter-select">
-          <option value="0">📅 Todos os Dias</option>
-          <option value="1">Segunda-feira</option>
-          <option value="2">Terça-feira</option>
-          <option value="3">Quarta-feira</option>
-          <option value="4">Quinta-feira</option>
-          <option value="5">Sexta-feira</option>
-        </select>
-      </div>
-      <div id="global-conflict-container"></div>
-      <span id="time-counter" class="time-counter"></span>
-      <div id="current-date-time" class="current-date-time"></div>
-      <span id="save-indicator">✅ Salvo</span>
     </div>
   </div>
 
