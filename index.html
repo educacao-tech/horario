@@ -47,40 +47,58 @@
       </div>
     </div>
 
-    <div class="search-wrapper">
-      <input type="text" id="search-input" class="search-field" placeholder="🔍 Buscar..." autocomplete="off">
-      <button type="button" class="clear-search-btn" onclick="clearSearch()" aria-label="Limpar pesquisa">✖</button>
-      <div id="search-suggestions" class="search-suggestions"></div>
+    <!-- Grupo Segmentado 1: Busca & Filtro de Dias -->
+    <div class="segmented-control search-filter-segmented" role="search" aria-label="Pesquisa e filtros">
+      <div class="search-wrapper">
+        <input type="text" id="search-input" class="search-field" placeholder="🔍 Buscar turma, prof..." autocomplete="off">
+        <button type="button" class="clear-search-btn" onclick="clearSearch()" aria-label="Limpar pesquisa">✖</button>
+        <div id="search-suggestions" class="search-suggestions"></div>
+      </div>
+      <div class="day-filter-wrapper">
+        <select id="day-filter-select" class="day-filter-select" title="Filtrar por dia da semana" aria-label="Filtrar por dia da semana">
+          <option value="0">📅 Todos os Dias</option>
+          <option value="1">Segunda-feira</option>
+          <option value="2">Terça-feira</option>
+          <option value="3">Quarta-feira</option>
+          <option value="4">Quinta-feira</option>
+          <option value="5">Sexta-feira</option>
+        </select>
+      </div>
     </div>
 
-    <div class="day-filter-wrapper">
-      <select id="day-filter-select" class="day-filter-select" title="Filtrar por dia da semana">
-        <option value="0">📅 Todos os Dias</option>
-        <option value="1">Segunda-feira</option>
-        <option value="2">Terça-feira</option>
-        <option value="3">Quarta-feira</option>
-        <option value="4">Quinta-feira</option>
-        <option value="5">Sexta-feira</option>
-      </select>
+    <!-- Grupo Segmentado 2: Legenda Rápida de Categorias -->
+    <div class="segmented-control legend-segmented" role="group" aria-label="Filtrar por categoria">
+      <button type="button" class="segmented-btn legend-item" onclick="toggleCategory('hl')" title="Horário Livre (HL)"><div class="box hl"></div> <span>HL</span></button>
+      <button type="button" class="segmented-btn legend-item" onclick="toggleCategory('pd')" title="Plantão de Dúvidas (PD)"><div class="box pd"></div> <span>PD</span></button>
+      <button type="button" class="segmented-btn legend-item" onclick="toggleCategory('el')" title="Elefante Letrado (EL)"><div class="box el"></div> <span>EL</span></button>
+      <button type="button" class="segmented-btn legend-item" onclick="toggleCategory('mtf')" title="Matific (MTF)"><div class="box mtf"></div> <span>MTF</span></button>
     </div>
 
-    <div class="legend-compact">
-      <button type="button" class="legend-item" onclick="toggleCategory('hl')" title="Horário Livre (HL)"><div class="box hl"></div> <span>HL</span></button>
-      <button type="button" class="legend-item" onclick="toggleCategory('pd')" title="Plantão de Dúvidas (PD)"><div class="box pd"></div> <span>PD</span></button>
-      <button type="button" class="legend-item" onclick="toggleCategory('el')" title="Elefante Letrado (EL)"><div class="box el"></div> <span>EL</span></button>
-      <button type="button" class="legend-item" onclick="toggleCategory('mtf')" title="Matific (MTF)"><div class="box mtf"></div> <span>MTF</span></button>
+    <!-- Grupo Segmentado 3: Zoom da Grade -->
+    <div class="segmented-control zoom-segmented" role="group" aria-label="Controle de zoom">
+      <button type="button" class="segmented-btn zoom-btn" onclick="adjustZoom(-0.1)" title="Diminuir Zoom" aria-label="Diminuir nível de zoom">➖</button>
+      <button type="button" class="segmented-btn zoom-display-btn" onclick="applyZoom(1)" title="Redefinir Zoom para 100%"><span id="zoom-display">100%</span></button>
+      <button type="button" class="segmented-btn zoom-btn" onclick="adjustZoom(0.1)" title="Aumentar Zoom" aria-label="Aumentar nível de zoom">➕</button>
     </div>
 
+    <!-- Grupo Segmentado 4: Status, Alertas e Ações Rápidas -->
     <div class="toolbar">
       <div id="global-conflict-container"></div>
-      <button type="button" class="btn btn-icon-toolbar" id="sound-toggle-btn" onclick="toggleSoundAlerts()" title="Alertas Sonoros: Ativado" aria-label="Alternar alertas sonoros">🔔</button>
+      <div class="segmented-control actions-segmented">
+        <button type="button" class="segmented-btn btn-now" id="scroll-to-now-btn" onclick="scrollToCurrentPeriod()" title="Rolar até a aula atual">📍 Agora</button>
+        <button type="button" class="segmented-btn btn-sound" id="sound-toggle-btn" onclick="toggleSoundAlerts()" title="Alertas Sonoros: Ativado" aria-label="Alternar alertas sonoros">🔔</button>
+        <button type="button" class="segmented-btn btn-theme-toggle" id="quick-theme-btn" onclick="toggleTheme()" title="Alternar Tema (Claro / Escuro)" aria-label="Alternar tema">
+          <span class="theme-icon-animated" id="theme-icon-indicator">🌙</span>
+        </button>
+      </div>
       <span id="time-counter" class="time-counter"></span>
       <div id="current-date-time" class="current-date-time" title="Horário Atual"></div>
       <span id="save-indicator">✅ Salvo</span>
 
+      <!-- Grupo Segmentado 5: Menu Dropdown Principal -->
       <div class="menu-dropdown-wrapper">
-        <button type="button" class="btn btn-primary" id="main-menu-btn" onclick="toggleMainMenu(event)" aria-haspopup="true" aria-expanded="false">
-          ☰ Menu
+        <button type="button" class="btn btn-primary btn-menu-trigger" id="main-menu-btn" onclick="toggleMainMenu(event)" aria-haspopup="true" aria-expanded="false">
+          <span class="menu-hamburger-icon">☰</span> <span>Menu</span>
         </button>
         <div id="main-menu-dropdown" class="menu-dropdown">
           <button type="button" class="btn-menu-item" onclick="openTeacherManager()">⚙️ Gerenciar Professores</button>
@@ -109,9 +127,29 @@
   <div id="cards-view-wrapper" class="cards-view-wrapper" style="display: none;"></div>
 
   <div id="schedule-wrapper">
-    <div id="section-morning">
-  <h2>☀️ Horário da Manhã <span class="period-badge morning">Matutino</span></h2>
-  <div class="table-container">
+    <div id="section-morning" class="period-section">
+      <div class="period-hero-banner morning-banner" onclick="toggleSectionCollapse('morning')" role="button" tabindex="0" aria-expanded="true" aria-controls="morning-table-container">
+        <div class="hero-left">
+          <div class="hero-icon-wrapper morning-icon">☀️</div>
+          <div class="hero-text-group">
+            <div class="hero-title-row">
+              <h2>Horário da Manhã</h2>
+              <span class="period-badge morning">Matutino • 7h05 às 12h00</span>
+            </div>
+            <div class="hero-stats">
+              <span class="hero-stat-pill">👥 <b>13 Turmas</b> (1º ao 5º Ano)</span>
+              <span class="hero-stat-pill">🎨 <b>6 Especialistas</b></span>
+              <span class="hero-stat-pill">⏱️ <b>5 Horários / Dia</b></span>
+            </div>
+          </div>
+        </div>
+        <div class="hero-right">
+          <button type="button" class="btn-toggle-accordion" aria-label="Recolher ou expandir período da manhã">
+            <span class="accordion-chevron">▲</span>
+          </button>
+        </div>
+      </div>
+      <div id="morning-table-container" class="table-container accordion-content">
   <table>
     <thead>
     <tr>
@@ -194,9 +232,29 @@
   </div>
     </div>
 
-    <div id="section-afternoon">
-  <h2>🌅 Horário da Tarde <span class="period-badge afternoon">Vespertino</span></h2>
-  <div class="table-container">
+    <div id="section-afternoon" class="period-section">
+      <div class="period-hero-banner afternoon-banner" onclick="toggleSectionCollapse('afternoon')" role="button" tabindex="0" aria-expanded="true" aria-controls="afternoon-table-container">
+        <div class="hero-left">
+          <div class="hero-icon-wrapper afternoon-icon">🌅</div>
+          <div class="hero-text-group">
+            <div class="hero-title-row">
+              <h2>Horário da Tarde</h2>
+              <span class="period-badge afternoon">Vespertino • 12h35 às 17h30</span>
+            </div>
+            <div class="hero-stats">
+              <span class="hero-stat-pill">👥 <b>11 Turmas</b> (1º ao 5º Ano)</span>
+              <span class="hero-stat-pill">🎨 <b>5 Especialistas</b></span>
+              <span class="hero-stat-pill">⏱️ <b>5 Horários / Dia</b></span>
+            </div>
+          </div>
+        </div>
+        <div class="hero-right">
+          <button type="button" class="btn-toggle-accordion" aria-label="Recolher ou expandir período da tarde">
+            <span class="accordion-chevron">▲</span>
+          </button>
+        </div>
+      </div>
+      <div id="afternoon-table-container" class="table-container accordion-content">
   <table>
     <thead>
     <tr>
@@ -288,10 +346,13 @@
   <footer class="main-footer">
     <div class="footer-container">
       <div class="footer-brand">
-        <img src="eaba.png" alt="Logo EMEB Anna Bonagura" width="40" height="40" class="footer-logo" loading="lazy">
+        <img src="eaba.png" alt="Logo EMEB Anna Bonagura" width="48" height="48" class="footer-logo" loading="lazy">
         <div class="footer-info">
-          <strong>EMEB Professora Anna Bonagura de Andrade</strong>
-          <p>Quadro de Gestão e Horário Escolar • Ano Letivo 2026</p>
+          <div class="footer-title-row">
+            <strong>EMEB Professora Anna Bonagura de Andrade</strong>
+            <span class="year-badge">2026</span>
+          </div>
+          <p>Quadro de Gestão e Horário Escolar Integrado • Batatais - SP</p>
         </div>
       </div>
       <div class="footer-meta">

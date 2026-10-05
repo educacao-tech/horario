@@ -1786,23 +1786,36 @@ async function fetchGitHubUpdateInfo() {
 
 // --- TEMA ---
 function applyTheme() {
-  const btn = _dom.themeBtn();
-  // A classe .dark-theme já é aplicada no <head> do HTML.
-  // Aqui apenas sincronizamos o texto do botão.
   const isDark = document.documentElement.classList.contains('dark-theme');
+  updateThemeUI(isDark);
+}
+
+function updateThemeUI(isDark) {
+  const btn = _dom.themeBtn();
   if (btn) btn.innerHTML = isDark ? '☀️ Tema Claro' : '🌙 Tema Escuro';
+
+  const quickIcon = document.getElementById('theme-icon-indicator');
+  if (quickIcon) {
+    quickIcon.textContent = isDark ? '☀️' : '🌙';
+  }
+
+  const quickBtn = document.getElementById('quick-theme-btn');
+  if (quickBtn) {
+    quickBtn.title = isDark ? 'Alternar para Tema Claro (☀️)' : 'Alternar para Tema Escuro (🌙)';
+  }
 }
 
 function toggleTheme() {
+  document.documentElement.classList.add('theme-switching');
   const isDark = document.documentElement.classList.toggle('dark-theme');
-  const btn = _dom.themeBtn();
-  if (isDark) {
-    localStorage.setItem(CONFIG.THEME_KEY, 'dark');
-    if (btn) btn.innerHTML = '☀️ Tema Claro';
-  } else {
-    localStorage.setItem(CONFIG.THEME_KEY, 'light');
-    if (btn) btn.innerHTML = '🌙 Tema Escuro';
-  }
+  localStorage.setItem(CONFIG.THEME_KEY, isDark ? 'dark' : 'light');
+  
+  updateThemeUI(isDark);
+  showToast(isDark ? "Tema Escuro ativado 🌙" : "Tema Claro ativado ☀️", "info", 2000);
+
+  setTimeout(() => {
+    document.documentElement.classList.remove('theme-switching');
+  }, 500);
 }
 
 // --- MODO LEITURA / EDIÇÃO ---
@@ -2428,6 +2441,7 @@ function updateTimeCounter() {
     const duration = activePeriod.end - activePeriod.start;
     const percentage = duration > 0 ? (elapsed / duration) * 100 : 0;
 
+    document.documentElement.style.setProperty('--period-progress', `${percentage.toFixed(2)}%`);
     if (progressBar) progressBar.style.width = `${percentage}%`;
 
     message = activePeriod.type === 'recreio'
@@ -2474,12 +2488,14 @@ function updateTimeCounter() {
       }
     }
   } else if (nextPeriod) {
+    document.documentElement.style.setProperty('--period-progress', '0%');
     if (progressBar) progressBar.style.width = '0%';
     const timeUntilNext = nextPeriod.start - currentTotalSeconds;
     message = nextPeriod.type === 'recreio'
       ? `Próximo recreio em ${formatTimeDifference(timeUntilNext)}`
       : `Próxima aula em ${formatTimeDifference(timeUntilNext)}`;
   } else {
+    document.documentElement.style.setProperty('--period-progress', '0%');
     if (progressBar) progressBar.style.width = '0%';
     message = "Fora do horário de aula";
   }
@@ -2509,41 +2525,77 @@ function updateClock() {
 }
 
 /**
- * Reorganiza as seções da página colocando o horário da tarde primeiro se já
- * passar do meio-dia, otimizando o scroll para o usuário.
+ * Alterna entre recolher e expandir uma seção de período (Manhã ou Tarde).
+ * @param {'morning'|'afternoon'} period
+ * @param {boolean} [silent=false]
  */
-function reorderSectionsByTime() {
-  const now = new Date();
-  const hour = now.getHours();
-  const wrapper = document.getElementById('schedule-wrapper');
-  const morning = document.getElementById('section-morning');
-  const afternoon = document.getElementById('section-afternoon');
+function toggleSectionCollapse(period, silent = false) {
+  const section = document.getElementById(`section-${period}`);
+  if (!section) return;
 
-  if (hour >= 12 && wrapper && morning && afternoon) {
-    wrapper.insertBefore(afternoon, morning);
+  const isCollapsed = section.classList.toggle('collapsed');
+  const banner = section.querySelector('.period-hero-banner');
+  if (banner) {
+    banner.setAttribute('aria-expanded', String(!isCollapsed));
+  }
+
+  localStorage.setItem(`school_section_${period}_collapsed`, String(isCollapsed));
+  if (!silent) {
+    showToast(isCollapsed ? `Período da ${period === 'morning' ? 'Manhã' : 'Tarde'} recolhido` : `Período da ${period === 'morning' ? 'Manhã' : 'Tarde'} expandido`, "info", 1800);
   }
 }
 
-// --- SISTEMA DE ZOOM ---
+/**
+ * Inicializa a visualização focada exclusivamente no dia atual e no período em andamento.
+ */
+function initAutoPeriodAndDay() {
+  const now = new Date();
+  const day = now.getDay(); // 0 = Domingo, 1 = Segunda, ..., 5 = Sexta, 6 = Sábado
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+  // 1. Filtro do dia atual: se for dia letivo (1 a 5), seleciona hoje. Caso seja fim de semana (0 ou 6), abre na Segunda-feira (1).
+  const targetDay = (day >= 1 && day <= 5) ? day : 1;
+  const daySelect = _dom.dayFilter();
+  if (daySelect) {
+    daySelect.value = targetDay.toString();
+    if (!daySelect._hasChangeListener) {
+      daySelect.addEventListener('change', (e) => {
+        filterByDay(parseInt(e.target.value));
+      });
+      daySelect._hasChangeListener = true;
+    }
+  }
+  filterByDay(targetDay);
+
+  // 2. Período atual exclusivo:
+  // Manhã: 7h05 às 12h00 (ponto de virada para a tarde: 12h30)
+  // Antes de 12h30: Manhã visível / Tarde recolhida
+  // A partir de 12h30: Tarde visível / Manhã recolhida
+  const isAfternoon = currentMinutes >= (12 * 60 + 30);
+  const morningSection = document.getElementById('section-morning');
+  const afternoonSection = document.getElementById('section-afternoon');
+
+  if (morningSection && afternoonSection) {
+    if (isAfternoon) {
+      morningSection.classList.add('collapsed');
+      morningSection.querySelector('.period-hero-banner')?.setAttribute('aria-expanded', 'false');
+
+      afternoonSection.classList.remove('collapsed');
+      afternoonSection.querySelector('.period-hero-banner')?.setAttribute('aria-expanded', 'true');
+    } else {
+      morningSection.classList.remove('collapsed');
+      morningSection.querySelector('.period-hero-banner')?.setAttribute('aria-expanded', 'true');
+
+      afternoonSection.classList.add('collapsed');
+      afternoonSection.querySelector('.period-hero-banner')?.setAttribute('aria-expanded', 'false');
+    }
+  }
+}
+
+// --- SISTEMA DE ZOOM & NAVEGAÇÃO SEGMENTADA ---
 function initZoom() {
   const savedZoom = localStorage.getItem(CONFIG.ZOOM_LEVEL_KEY) || "1";
   applyZoom(parseFloat(savedZoom));
-
-  const zoomWrapper = document.createElement('div');
-  zoomWrapper.className = 'zoom-controls';
-  zoomWrapper.innerHTML = `
-    <div style="display: flex; gap: 2px; align-items: center;">
-      <button class="btn" type="button" onclick="adjustZoom(-0.1)" title="Diminuir Zoom" aria-label="Diminuir nível de zoom">-</button>
-      <span id="zoom-display" style="min-width: 36px; text-align: center; font-weight: bold; font-size: 0.78rem">${Math.round(parseFloat(savedZoom) * 100)}%</span>
-      <button class="btn" type="button" onclick="adjustZoom(0.1)" title="Aumentar Zoom" aria-label="Aumentar nível de zoom">+</button>
-    </div>
-  `;
-  const toolbar = document.querySelector('.toolbar');
-  if (toolbar) {
-    const menuWrapper = toolbar.querySelector('.menu-dropdown-wrapper');
-    if (menuWrapper) toolbar.insertBefore(zoomWrapper, menuWrapper);
-    else toolbar.appendChild(zoomWrapper);
-  }
 }
 
 function adjustZoom(delta) {
@@ -2561,37 +2613,33 @@ function applyZoom(level) {
 }
 
 /**
- * Inicializa o botão de atalho para rolar até a aula atual.
+ * Rola a visualização até a aula em andamento no momento.
+ */
+function scrollToCurrentPeriod() {
+  const current = document.querySelector('tr.current-active');
+  if (current) {
+    const parentSection = current.closest('.period-section');
+    if (parentSection && parentSection.classList.contains('collapsed')) {
+      const periodId = parentSection.id.replace('section-', '');
+      toggleSectionCollapse(periodId, true);
+    }
+    setTimeout(() => {
+      current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      showToast("Navegado para a aula atual", "success", 2000);
+    }, 100);
+  } else {
+    showToast("Não há aula ocorrendo no momento", "info");
+  }
+}
+
+/**
+ * Inicializa o atalho de rolagem rápida até o horário atual.
  */
 function initScrollToNow() {
-  const toolbar = document.querySelector('.toolbar');
-  if (!toolbar) return;
-
-  const btn = document.createElement('button');
-  btn.type = 'button';
-  btn.className = 'btn btn-icon-toolbar';
-  btn.style.backgroundColor = 'var(--accent)';
-  btn.style.color = 'white';
-  btn.style.fontWeight = '700';
-  btn.style.fontSize = '0.78rem';
-  btn.style.padding = '4px 8px';
-  btn.innerHTML = '📍 Agora';
-  btn.title = 'Rolar até a aula atual';
-
-  btn.onclick = () => {
-    const current = document.querySelector('tr.current-active');
-    if (current) {
-      current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    } else {
-      showToast("Não há aula ocorrendo no momento", "info");
-    }
-  };
-
-  const zoom = toolbar.querySelector('.zoom-controls');
-  const menuWrapper = toolbar.querySelector('.menu-dropdown-wrapper');
-  if (zoom) toolbar.insertBefore(btn, zoom);
-  else if (menuWrapper) toolbar.insertBefore(btn, menuWrapper);
-  else toolbar.appendChild(btn);
+  const btn = document.getElementById('scroll-to-now-btn');
+  if (btn && !btn.onclick) {
+    btn.onclick = scrollToCurrentPeriod;
+  }
 }
 
 /**
@@ -2658,7 +2706,7 @@ function initApp() {
   loadCustomColors();
   loadData(); 
   applyTheme(); 
-  reorderSectionsByTime(); 
+  initAutoPeriodAndDay(); 
   updateHighlights(); 
   updateTimeCounter(); 
   updateClock(); 
@@ -2774,28 +2822,6 @@ setInterval(() => {
   updateTimeCounter();
   updateClock();
 }, 1000); // Atualiza o contador de tempo e o relógio a cada 1 segundo
-
-window.addEventListener('load', () => {
-  const dayFilterSelect = _dom.dayFilter();
-
-  // Obtém o dia da semana atual (1 para Segunda, 5 para Sexta). 0 e 6 são Domingo/Sábado.
-  const today = new Date().getDay();
-  
-  // Define o dia inicial: Se for dia de semana (1-5), seleciona hoje. 
-  // Caso contrário (fim de semana), usa o filtro salvo anteriormente ou "0" (Todos).
-  const initialDay = (today >= 1 && today <= 5) 
-    ? today.toString() 
-    : (localStorage.getItem(CONFIG.FILTER_DAY_KEY) || "0");
-
-  if (dayFilterSelect) {
-    dayFilterSelect.value = initialDay;
-    dayFilterSelect.addEventListener('change', (e) => {
-      filterByDay(parseInt(e.target.value));
-    });
-  }
-
-  filterByDay(parseInt(initialDay));
-});
 
 // --- SISTEMA DE GERENCIAMENTO DE PROFESSORES ---
 

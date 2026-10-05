@@ -36,9 +36,11 @@ Baseado no `TODO-PLANEJAMENTO.md`
 - [x] Validação sintática via `node -c script.js` (Exit Code 0).
 - [x] Teste de consistência de estilos e scripts concluído com sucesso.
 
-### 7. Novas Melhorias de Produtividade & Integração
-- [x] **Modal de Atalhos de Teclado (`openShortcutsModal`)**: Modal categorizado com tags `<kbd>` e focus trap cobrindo edição, área de transferência, navegação e comandos globais.
-- [x] **Autocompletar Inteligente de Células (`showCellAutocomplete`)**: Dropdown flutuante posicionado na célula ativa com suporte a navegação por setas (`↑`/`↓`), `Enter`, `Tab` e filtro em tempo real.
-- [x] **Duplicação de Horários de um Dia (`openDuplicateDayModal`)**: Ferramenta de replicação de grade entre dias da semana com backup preventivo e confirmação segura.
-- [x] **Exportação de Calendário iCalendar (`.ics`) (`openExportICSModal`)**: Geração de arquivos `.ics` compatíveis com Google Calendar, Outlook e Apple Calendar por professor/turma ou geral.
+### 8. Melhorias Visuais e de Inicialização Inteligente
+- [x] **Toolbar com Controles Segmentados & Glassmorphism**: Pílulas compactas com feedback tátil de clique.
+- [x] **Indicador "AO VIVO" & Barra de Progresso Real-Time**: Badge pulsante e barra de progresso no topo da aula atual sincronizada com o horário escolar.
+- [x] **Transição Fluida Dark/Light**: Transição suave de superfícies e botão com ícone giratório $360^\circ$ Sol/Lua.
+- [x] **Banners Hero Cards com Estatísticas e Accordion**: Banners modernos com Sunrise Glow (Manhã) e Sunset Glow (Tarde), contadores de turmas/especialistas e botão recolher/expandir.
+- [x] **Abertura Inteligente (Foco no Dia e Período Atual)**: Ao carregar a página, seleciona automaticamente o dia da semana atual e expande exclusivamente o período correspondente (Manhã antes das 12h30, Tarde a partir das 12h30), mantendo o outro período recolhido.
+
 
