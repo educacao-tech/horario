@@ -512,14 +512,49 @@ function applyDynamicStyles(cell) {
   const teacherMap = getTeacherMap();
   const teacherName = teacherMap[text] || teacherMap[baseCode];
 
-  cell.classList.remove('hl', 'pd', 'el', 'mtf');
+  // Remover classes anteriores de estilo
+  cell.classList.remove(
+    'hl', 'pd', 'el', 'mtf',
+    'grade-1', 'grade-2', 'grade-3', 'grade-4', 'grade-5',
+    'special-pi', 'special-teatro',
+    'cell-empty', 'cell-filled', 'cell-badge-active'
+  );
   cell.removeAttribute('data-teacher');
+  cell.removeAttribute('data-grade');
   cell.removeAttribute('title');
 
-  if (text === 'HL' || text === 'HTPC') cell.classList.add('hl');
-  else if (text === 'PD') cell.classList.add('pd');
-  else if (text === 'EL') cell.classList.add('el');
-  else if (text === 'MTF') cell.classList.add('mtf');
+  if (text === 'HL' || text === 'HTPC') {
+    cell.classList.add('hl', 'cell-filled', 'cell-badge-active');
+  } else if (text === 'PD') {
+    cell.classList.add('pd', 'cell-filled', 'cell-badge-active');
+  } else if (text === 'EL') {
+    cell.classList.add('el', 'cell-filled', 'cell-badge-active');
+  } else if (text === 'MTF') {
+    cell.classList.add('mtf', 'cell-filled', 'cell-badge-active');
+  } else if (/^1[A-Z]/.test(baseCode)) {
+    cell.classList.add('grade-1', 'cell-filled', 'cell-badge-active');
+    cell.setAttribute('data-grade', '1');
+  } else if (/^2[A-Z]/.test(baseCode)) {
+    cell.classList.add('grade-2', 'cell-filled', 'cell-badge-active');
+    cell.setAttribute('data-grade', '2');
+  } else if (/^3[A-Z]/.test(baseCode)) {
+    cell.classList.add('grade-3', 'cell-filled', 'cell-badge-active');
+    cell.setAttribute('data-grade', '3');
+  } else if (/^4[A-Z]/.test(baseCode)) {
+    cell.classList.add('grade-4', 'cell-filled', 'cell-badge-active');
+    cell.setAttribute('data-grade', '4');
+  } else if (/^5[A-Z]/.test(baseCode)) {
+    cell.classList.add('grade-5', 'cell-filled', 'cell-badge-active');
+    cell.setAttribute('data-grade', '5');
+  } else if (/^PI($|I)/.test(baseCode)) {
+    cell.classList.add('special-pi', 'cell-filled', 'cell-badge-active');
+  } else if (baseCode === 'TEATRO') {
+    cell.classList.add('special-teatro', 'cell-filled', 'cell-badge-active');
+  } else if (text === '*' || text === '') {
+    cell.classList.add('cell-empty');
+  } else {
+    cell.classList.add('cell-filled');
+  }
 
   if (teacherName) cell.title = teacherName;
   if (teacherName && text !== '*' && text !== '') {
@@ -708,9 +743,9 @@ function loadData() {
     const key = getCellKey(cell);
     if (data[key] !== undefined) {
       cell.innerText = data[key];
-      applyDynamicStyles(cell);
       processedRows.add(cell.parentElement);
     }
+    applyDynamicStyles(cell);
   });
 
   // Valida cada linha afetada apenas uma vez
@@ -1141,12 +1176,27 @@ function toggleViewMode() {
  * Aplica estilos dinâmicos de categoria aos editores dos cards.
  */
 function applyDynamicStylesToEditor(editor, text) {
-  const upper = text.toUpperCase();
-  editor.classList.remove('hl', 'pd', 'el', 'mtf');
-  if (upper === 'HL' || upper === 'HTPC') editor.classList.add('hl');
-  else if (upper === 'PD') editor.classList.add('pd');
-  else if (upper === 'EL') editor.classList.add('el');
-  else if (upper === 'MTF') editor.classList.add('mtf');
+  const upper = text.toUpperCase().trim();
+  const baseCode = upper.split('(')[0].trim();
+  editor.classList.remove(
+    'hl', 'pd', 'el', 'mtf',
+    'grade-1', 'grade-2', 'grade-3', 'grade-4', 'grade-5',
+    'special-pi', 'special-teatro',
+    'cell-empty', 'cell-filled', 'cell-badge-active'
+  );
+  if (upper === 'HL' || upper === 'HTPC') editor.classList.add('hl', 'cell-filled', 'cell-badge-active');
+  else if (upper === 'PD') editor.classList.add('pd', 'cell-filled', 'cell-badge-active');
+  else if (upper === 'EL') editor.classList.add('el', 'cell-filled', 'cell-badge-active');
+  else if (upper === 'MTF') editor.classList.add('mtf', 'cell-filled', 'cell-badge-active');
+  else if (/^1[A-Z]/.test(baseCode)) editor.classList.add('grade-1', 'cell-filled', 'cell-badge-active');
+  else if (/^2[A-Z]/.test(baseCode)) editor.classList.add('grade-2', 'cell-filled', 'cell-badge-active');
+  else if (/^3[A-Z]/.test(baseCode)) editor.classList.add('grade-3', 'cell-filled', 'cell-badge-active');
+  else if (/^4[A-Z]/.test(baseCode)) editor.classList.add('grade-4', 'cell-filled', 'cell-badge-active');
+  else if (/^5[A-Z]/.test(baseCode)) editor.classList.add('grade-5', 'cell-filled', 'cell-badge-active');
+  else if (/^PI($|I)/.test(baseCode)) editor.classList.add('special-pi', 'cell-filled', 'cell-badge-active');
+  else if (baseCode === 'TEATRO') editor.classList.add('special-teatro', 'cell-filled', 'cell-badge-active');
+  else if (upper === '*' || upper === '') editor.classList.add('cell-empty');
+  else editor.classList.add('cell-filled');
 }
 
 /**

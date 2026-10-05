@@ -676,24 +676,178 @@ tr.row-highlight {
 
 td[contenteditable="true"], td[role="textbox"] {
   background-color: var(--edit-bg);
-  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), 
-              box-shadow 0.2s ease, 
-              background-color 0.2s ease;
+  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), 
+              box-shadow 0.22s ease, 
+              background-color 0.2s ease,
+              border-color 0.2s ease;
   position: relative;
+  border-radius: 8px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }
 
-/* Efeito tridimensional e zoom sutil no hover */
-td[role="textbox"]:hover:not(:empty):not([data-text="*"]) {
-  z-index: 100;
-  transform: translateY(-6px) scale(1.1);
-  box-shadow: var(--shadow-lg);
-  background-color: var(--bg-card) !important;
-  border-radius: 6px;
-  border-color: var(--primary);
+/* Efeito Hover Lift Elegante para Células Preenchidas */
+td[role="textbox"]:hover:not(:empty):not([data-text="*"]),
+td[contenteditable="true"]:hover:not(:empty):not([data-text="*"]) {
+  z-index: 80;
+  transform: translateY(-4px) scale(1.06);
+  box-shadow: 0 8px 24px -2px rgba(15, 23, 42, 0.16), 0 3px 8px -2px rgba(15, 23, 42, 0.08);
   cursor: pointer;
 }
 
-/* Animação para o efeito de brilho pulsante */
+.dark-theme td[role="textbox"]:hover:not(:empty):not([data-text="*"]),
+.dark-theme td[contenteditable="true"]:hover:not(:empty):not([data-text="*"]) {
+  box-shadow: 0 8px 26px -2px rgba(0, 0, 0, 0.65), 0 0 16px rgba(99, 102, 241, 0.25);
+}
+
+/* ==========================================================================
+   🎓 Badges & Chips Cromáticos por Ano Escolar (1º ao 5º Ano + Especiais)
+   ========================================================================== */
+
+/* 1ºs Anos: 1A, 1B, 1C, 1D (Azul Celeste Acadêmico) */
+.grade-1,
+.chip-cell-editor.grade-1 {
+  background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%) !important;
+  color: #0369a1 !important;
+  border: 1px solid #7dd3fc !important;
+}
+.dark-theme .grade-1,
+.dark-theme .chip-cell-editor.grade-1 {
+  background: linear-gradient(135deg, rgba(3, 105, 161, 0.38) 0%, rgba(14, 165, 233, 0.22) 100%) !important;
+  color: #7dd3fc !important;
+  border: 1px solid rgba(56, 189, 248, 0.4) !important;
+}
+
+/* 2ºs Anos: 2A, 2B, 2C (Verde Esmeralda / Menta) */
+.grade-2,
+.chip-cell-editor.grade-2 {
+  background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%) !important;
+  color: #15803d !important;
+  border: 1px solid #86efac !important;
+}
+.dark-theme .grade-2,
+.dark-theme .chip-cell-editor.grade-2 {
+  background: linear-gradient(135deg, rgba(21, 128, 61, 0.38) 0%, rgba(34, 197, 94, 0.22) 100%) !important;
+  color: #86efac !important;
+  border: 1px solid rgba(74, 222, 128, 0.4) !important;
+}
+
+/* 3ºs Anos: 3A, 3B, 3C, 3D (Roxo / Violeta Real) */
+.grade-3,
+.chip-cell-editor.grade-3 {
+  background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%) !important;
+  color: #7e22ce !important;
+  border: 1px solid #d8b4fe !important;
+}
+.dark-theme .grade-3,
+.dark-theme .chip-cell-editor.grade-3 {
+  background: linear-gradient(135deg, rgba(126, 34, 206, 0.38) 0%, rgba(168, 85, 247, 0.22) 100%) !important;
+  color: #d8b4fe !important;
+  border: 1px solid rgba(192, 132, 252, 0.4) !important;
+}
+
+/* 4ºs Anos: 4A, 4B (Âmbar / Dourado Solar) */
+.grade-4,
+.chip-cell-editor.grade-4 {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%) !important;
+  color: #b45309 !important;
+  border: 1px solid #fcd34d !important;
+}
+.dark-theme .grade-4,
+.dark-theme .chip-cell-editor.grade-4 {
+  background: linear-gradient(135deg, rgba(180, 83, 9, 0.38) 0%, rgba(245, 158, 11, 0.22) 100%) !important;
+  color: #fde68a !important;
+  border: 1px solid rgba(251, 191, 36, 0.4) !important;
+}
+
+/* 5ºs Anos: 5A, 5B, 5C (Coral / Rosa Carmesim) */
+.grade-5,
+.chip-cell-editor.grade-5 {
+  background: linear-gradient(135deg, #ffe4e6 0%, #fecdd3 100%) !important;
+  color: #be123c !important;
+  border: 1px solid #fda4af !important;
+}
+.dark-theme .grade-5,
+.dark-theme .chip-cell-editor.grade-5 {
+  background: linear-gradient(135deg, rgba(190, 18, 60, 0.38) 0%, rgba(244, 63, 94, 0.22) 100%) !important;
+  color: #fda4af !important;
+  border: 1px solid rgba(251, 113, 133, 0.4) !important;
+}
+
+/* Projetos I e II: PI, PII (Índigo Profundo) */
+.special-pi,
+.chip-cell-editor.special-pi {
+  background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%) !important;
+  color: #4338ca !important;
+  border: 1px solid #a5b4fc !important;
+}
+.dark-theme .special-pi,
+.dark-theme .chip-cell-editor.special-pi {
+  background: linear-gradient(135deg, rgba(67, 56, 202, 0.38) 0%, rgba(99, 102, 241, 0.22) 100%) !important;
+  color: #c7d2fe !important;
+  border: 1px solid rgba(129, 140, 248, 0.4) !important;
+}
+
+/* Teatro (Fúcsia Vibrante) */
+.special-teatro,
+.chip-cell-editor.special-teatro {
+  background: linear-gradient(135deg, #fae8ff 0%, #f5d0fe 100%) !important;
+  color: #a21caf !important;
+  border: 1px solid #f0abfc !important;
+}
+.dark-theme .special-teatro,
+.dark-theme .chip-cell-editor.special-teatro {
+  background: linear-gradient(135deg, rgba(162, 28, 175, 0.38) 0%, rgba(217, 70, 239, 0.22) 100%) !important;
+  color: #f5d0fe !important;
+  border: 1px solid rgba(232, 121, 249, 0.4) !important;
+}
+
+/* Categorias Padrão: HL, PD, EL, MTF */
+.hl, .chip-cell-editor.hl { 
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%) !important; 
+  color: #475569 !important; 
+  border: 1px solid #cbd5e1 !important; 
+}
+.dark-theme .hl, .dark-theme .chip-cell-editor.hl { 
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.85) 0%, rgba(51, 65, 85, 0.6) 100%) !important; 
+  color: #cbd5e1 !important; 
+  border: 1px solid #475569 !important; 
+}
+
+.pd, .chip-cell-editor.pd { 
+  background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%) !important; 
+  color: #0284c7 !important; 
+  border: 1px solid #38bdf8 !important; 
+}
+.dark-theme .pd, .dark-theme .chip-cell-editor.pd { 
+  background: linear-gradient(135deg, rgba(12, 74, 110, 0.85) 0%, rgba(2, 132, 199, 0.4) 100%) !important; 
+  color: #7dd3fc !important; 
+  border: 1px solid #0284c7 !important; 
+}
+
+.el, .chip-cell-editor.el { 
+  background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%) !important; 
+  color: #16a34a !important; 
+  border: 1px solid #4ade80 !important; 
+}
+.dark-theme .el, .dark-theme .chip-cell-editor.el { 
+  background: linear-gradient(135deg, rgba(6, 78, 59, 0.85) 0%, rgba(16, 185, 129, 0.4) 100%) !important; 
+  color: #86efac !important; 
+  border: 1px solid #10b981 !important; 
+}
+
+.mtf, .chip-cell-editor.mtf { 
+  background: linear-gradient(135deg, #ffedd5 0%, #fed7aa 100%) !important; 
+  color: #ea580c !important; 
+  border: 1px solid #fb923c !important; 
+}
+.dark-theme .mtf, .dark-theme .chip-cell-editor.mtf { 
+  background: linear-gradient(135deg, rgba(124, 45, 18, 0.85) 0%, rgba(234, 88, 12, 0.4) 100%) !important; 
+  color: #fed7aa !important; 
+  border: 1px solid #f97316 !important; 
+}
+
+/* Animação de pulso sutil ao passar o cursor */
 @keyframes glow-pulse {
   0% { box-shadow: 0 0 8px var(--glow-color), var(--shadow-lg); }
   50% { box-shadow: 0 0 20px var(--glow-color), var(--shadow-lg); }
@@ -701,26 +855,10 @@ td[role="textbox"]:hover:not(:empty):not([data-text="*"]) {
 }
 
 /* Glow colorido baseado na categoria durante o hover */
-td.hl:hover { 
-  --glow-color: var(--hl-color);
-  animation: glow-pulse 1.5s infinite ease-in-out;
-  border-color: var(--hl-color) !important; 
-}
-td.pd:hover { 
-  --glow-color: var(--pd-color);
-  animation: glow-pulse 1.5s infinite ease-in-out;
-  border-color: var(--pd-color) !important; 
-}
-td.el:hover { 
-  --glow-color: var(--el-color);
-  animation: glow-pulse 1.5s infinite ease-in-out;
-  border-color: var(--el-color) !important; 
-}
-td.mtf:hover { 
-  --glow-color: var(--mtf-color);
-  animation: glow-pulse 1.5s infinite ease-in-out;
-  border-color: var(--mtf-color) !important; 
-}
+td.hl:hover { --glow-color: rgba(100, 116, 139, 0.35); }
+td.pd:hover { --glow-color: rgba(2, 132, 199, 0.35); }
+td.el:hover { --glow-color: rgba(22, 163, 74, 0.35); }
+td.mtf:hover { --glow-color: rgba(234, 88, 12, 0.35); }
 
 /* Etiqueta flutuante (label) da categoria no hover */
 td.hl:hover::before,
