@@ -20,7 +20,7 @@
   --edit-bg: #ffffff;
   --bg-header: rgba(248, 250, 252, 0.82);
   --bg-footer: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-  --bg-sticky-col: rgba(248, 250, 252, 0.96);
+  --bg-sticky-col: #f8fafc;
   --header-height: 42px;
   --shadow-sm: 0 1px 3px 0 rgba(15, 23, 42, 0.06), 0 1px 2px -1px rgba(15, 23, 42, 0.04);
   --shadow-md: 0 4px 16px -2px rgba(15, 23, 42, 0.08), 0 2px 6px -2px rgba(15, 23, 42, 0.04);
@@ -583,12 +583,13 @@ th:last-of-type, td:last-of-type { border-right: none; }
 tr:last-child th, tr:last-child td { border-bottom: none; }
 
 /* Fixar a primeira coluna (Horário) */
-th:first-child, tr:not(.recreio) td:first-child {
+thead tr:first-child th:first-child, 
+tr:not(.recreio) td:first-child {
   position: sticky;
   left: 0;
   z-index: 20;
   background-color: var(--bg-sticky-col);
-  border-right: 2px solid var(--border-color);
+  border-right: 2px solid #cbd5e1;
   border-bottom: 1px solid var(--border-color);
   font-weight: 700;
   color: var(--text-main);
@@ -600,8 +601,17 @@ th:first-child, tr:not(.recreio) td:first-child {
   box-shadow: 4px 0 10px -4px rgba(15, 23, 42, 0.08);
 }
 
+/* Cabeçalho da coluna Horário no Tema Claro */
+thead tr:first-child th:first-child {
+  background-color: #f1f5f9 !important;
+  border-right: 2px solid #cbd5e1 !important;
+  border-bottom: 2px solid #cbd5e1 !important;
+  color: var(--text-main) !important;
+  z-index: 50 !important;
+}
+
 /* Regras Específicas de Visibilidade da Primeira Coluna no Modo Escuro */
-.dark-theme th:first-child, 
+.dark-theme thead tr:first-child th:first-child, 
 .dark-theme tr:not(.recreio) td:first-child {
   background-color: #172033;
   border-right: 2px solid #475569;
@@ -1129,22 +1139,41 @@ tr:nth-child(even) td.hl {
 }
 
 .recreio {
-  background: linear-gradient(90deg, rgba(79, 70, 229, 0.06), rgba(14, 165, 233, 0.06)) !important;
+  background: repeating-linear-gradient(
+    -45deg,
+    rgba(79, 70, 229, 0.035),
+    rgba(79, 70, 229, 0.035) 12px,
+    rgba(14, 165, 233, 0.065) 12px,
+    rgba(14, 165, 233, 0.065) 24px
+  ) !important;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  color: var(--text-muted);
-  font-weight: 700;
+  color: var(--text-main);
+  font-weight: 800;
   text-align: center;
-  font-size: 0.85em;
-  letter-spacing: 0.08em;
-  border-top: 1px dashed var(--border-color) !important;
-  border-bottom: 1px dashed var(--border-color) !important;
+  font-size: 0.84em;
+  letter-spacing: 0.06em;
+  border-top: 1.5px dashed rgba(79, 70, 229, 0.25) !important;
+  border-bottom: 1.5px dashed rgba(79, 70, 229, 0.25) !important;
+}
+
+.dark-theme .recreio {
+  background: repeating-linear-gradient(
+    -45deg,
+    rgba(99, 102, 241, 0.08),
+    rgba(99, 102, 241, 0.08) 12px,
+    rgba(56, 189, 248, 0.05) 12px,
+    rgba(56, 189, 248, 0.05) 24px
+  ) !important;
+  border-top-color: rgba(99, 102, 241, 0.35) !important;
+  border-bottom-color: rgba(99, 102, 241, 0.35) !important;
+  color: #e2e8f0;
 }
 
 .recreio td {
   border-right: none !important;
   width: 100%;
-  padding: 8px 4px !important;
+  padding: 10px 4px !important;
 }
 
 /* Destaque para células de dados e horários atuais */
@@ -1194,18 +1223,26 @@ table tr.current-active {
   }
 }
 
+@keyframes laserShimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
 /* Células de dados ativas da aula no dia de hoje */
 table tr td.current-active:not(:first-child) {
-  background-color: rgba(16, 185, 129, 0.07) !important;
-  box-shadow: inset 0 0 0 2px rgba(16, 185, 129, 0.55), 0 2px 10px rgba(16, 185, 129, 0.12) !important;
+  background: linear-gradient(90deg, rgba(16, 185, 129, 0.06) 0%, rgba(16, 185, 129, 0.18) 50%, rgba(16, 185, 129, 0.06) 100%) !important;
+  background-size: 200% 100% !important;
+  animation: laserShimmer 3.5s infinite linear !important;
+  box-shadow: inset 0 0 0 2px rgba(16, 185, 129, 0.65), 0 0 16px rgba(16, 185, 129, 0.2) !important;
   position: relative;
   font-weight: 700;
   color: var(--text-main);
 }
 
 .dark-theme table tr td.current-active:not(:first-child) {
-  background-color: rgba(16, 185, 129, 0.14) !important;
-  box-shadow: inset 0 0 0 2px rgba(16, 185, 129, 0.7), 0 2px 12px rgba(16, 185, 129, 0.24) !important;
+  background: linear-gradient(90deg, rgba(16, 185, 129, 0.12) 0%, rgba(16, 185, 129, 0.28) 50%, rgba(16, 185, 129, 0.12) 100%) !important;
+  background-size: 200% 100% !important;
+  box-shadow: inset 0 0 0 2px rgba(52, 211, 153, 0.85), 0 0 22px rgba(16, 185, 129, 0.35) !important;
   color: #f8fafc;
 }
 
@@ -1988,30 +2025,48 @@ table.current-day-5 .day-cell-5 {
 
 .status-bar {
   position: fixed;
-  bottom: 20px;
+  bottom: 22px;
   left: 50%;
   transform: translateX(-50%);
-  width: 90%;
-  max-width: 900px;
-  background: var(--bg-card);
+  width: auto;
+  min-width: 320px;
+  max-width: 90%;
+  background: var(--bg-glass);
   color: var(--text-main);
-  padding: 10px 20px;
-  font-size: 0.88em;
+  padding: 8px 18px;
+  font-size: 0.82rem;
+  font-weight: 600;
   display: flex;
   align-items: center;
-  gap: 15px;
+  justify-content: center;
+  gap: 12px;
   z-index: 1000;
-  backdrop-filter: blur(16px);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
   border: 1px solid var(--border-color);
-  border-radius: 40px;
+  border-radius: 9999px;
   box-sizing: border-box;
-  box-shadow: var(--shadow-lg);
-  transition: all 0.3s ease;
+  box-shadow: 0 16px 36px -4px rgba(15, 23, 42, 0.16), 0 4px 12px -2px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.dark-theme .status-bar {
+  background: rgba(15, 23, 42, 0.88);
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 20px 40px -4px rgba(0, 0, 0, 0.65), 0 4px 16px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.status-bar:hover {
+  transform: translateX(-50%) translateY(-2px) scale(1.01);
+  box-shadow: 0 20px 40px -4px rgba(15, 23, 42, 0.22), 0 6px 16px -2px rgba(79, 70, 229, 0.25);
 }
 
 .status-item {
   border-right: 1px solid var(--border-color);
   padding-right: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2283,7 +2338,7 @@ th[title] {
     height: auto; /* Permite que as células expandam para preencher o espaço */
   }
 
-  th:first-child, tr:not(.recreio) td:first-child {
+  thead tr:first-child th:first-child, tr:not(.recreio) td:first-child {
     background-color: #eee !important;
     font-weight: bold;
     width: 100px !important;
@@ -3159,7 +3214,7 @@ body.drag-over::after {
   }
 
   /* Coluna fixa de Horário ajustada para telas touch */
-  th:first-child,
+  thead tr:first-child th:first-child,
   tr:not(.recreio) td:first-child {
     width: calc(105px * var(--table-zoom)) !important;
     min-width: calc(105px * var(--table-zoom)) !important;
@@ -3310,7 +3365,7 @@ body.drag-over::after {
     padding: 6px 8px;
   }
 
-  th:first-child,
+  thead tr:first-child th:first-child,
   tr:not(.recreio) td:first-child {
     width: 92px !important;
     min-width: 92px !important;
@@ -3826,4 +3881,181 @@ kbd.kbd-key {
 .dark-theme .crosshair-target {
   background-color: #1e293b !important;
   box-shadow: 0 0 0 2px #818cf8, 0 0 20px rgba(129, 140, 248, 0.4) !important;
+}
+
+/* ==========================================================================
+   🎨 1. Identificação Visual de Turmas por Ano Letivo (Pills Estilizados)
+   ========================================================================== */
+td[contenteditable="true"].grade-1,
+td[role="textbox"].grade-1,
+.chip-lesson-card.grade-1 {
+  background: linear-gradient(135deg, rgba(224, 242, 254, 0.95), rgba(186, 230, 253, 0.8)) !important;
+  color: #0369a1 !important;
+  border: 1px solid #7dd3fc !important;
+  box-shadow: 0 1px 3px rgba(2, 132, 199, 0.1);
+}
+.dark-theme td[contenteditable="true"].grade-1,
+.dark-theme td[role="textbox"].grade-1,
+.dark-theme .chip-lesson-card.grade-1 {
+  background: linear-gradient(135deg, rgba(3, 105, 161, 0.35), rgba(7, 89, 133, 0.22)) !important;
+  color: #bae6fd !important;
+  border-color: rgba(56, 189, 248, 0.4) !important;
+}
+
+td[contenteditable="true"].grade-2,
+td[role="textbox"].grade-2,
+.chip-lesson-card.grade-2 {
+  background: linear-gradient(135deg, rgba(220, 252, 231, 0.95), rgba(187, 247, 208, 0.8)) !important;
+  color: #15803d !important;
+  border: 1px solid #86efac !important;
+  box-shadow: 0 1px 3px rgba(22, 163, 74, 0.1);
+}
+.dark-theme td[contenteditable="true"].grade-2,
+.dark-theme td[role="textbox"].grade-2,
+.dark-theme .chip-lesson-card.grade-2 {
+  background: linear-gradient(135deg, rgba(21, 128, 61, 0.35), rgba(20, 83, 45, 0.22)) !important;
+  color: #bbf7d0 !important;
+  border-color: rgba(74, 222, 128, 0.4) !important;
+}
+
+td[contenteditable="true"].grade-3,
+td[role="textbox"].grade-3,
+.chip-lesson-card.grade-3 {
+  background: linear-gradient(135deg, rgba(254, 243, 199, 0.95), rgba(253, 230, 138, 0.8)) !important;
+  color: #b45309 !important;
+  border: 1px solid #fde047 !important;
+  box-shadow: 0 1px 3px rgba(217, 119, 6, 0.1);
+}
+.dark-theme td[contenteditable="true"].grade-3,
+.dark-theme td[role="textbox"].grade-3,
+.dark-theme .chip-lesson-card.grade-3 {
+  background: linear-gradient(135deg, rgba(180, 83, 9, 0.35), rgba(120, 53, 15, 0.22)) !important;
+  color: #fef08a !important;
+  border-color: rgba(250, 204, 21, 0.4) !important;
+}
+
+td[contenteditable="true"].grade-4,
+td[role="textbox"].grade-4,
+.chip-lesson-card.grade-4 {
+  background: linear-gradient(135deg, rgba(243, 232, 255, 0.95), rgba(233, 213, 255, 0.8)) !important;
+  color: #7e22ce !important;
+  border: 1px solid #d8b4fe !important;
+  box-shadow: 0 1px 3px rgba(147, 51, 234, 0.1);
+}
+.dark-theme td[contenteditable="true"].grade-4,
+.dark-theme td[role="textbox"].grade-4,
+.dark-theme .chip-lesson-card.grade-4 {
+  background: linear-gradient(135deg, rgba(126, 34, 206, 0.35), rgba(88, 28, 135, 0.22)) !important;
+  color: #e9d5ff !important;
+  border-color: rgba(192, 132, 252, 0.4) !important;
+}
+
+td[contenteditable="true"].grade-5,
+td[role="textbox"].grade-5,
+.chip-lesson-card.grade-5 {
+  background: linear-gradient(135deg, rgba(255, 228, 230, 0.95), rgba(254, 205, 211, 0.8)) !important;
+  color: #be123c !important;
+  border: 1px solid #fda4af !important;
+  box-shadow: 0 1px 3px rgba(225, 29, 72, 0.1);
+}
+.dark-theme td[contenteditable="true"].grade-5,
+.dark-theme td[role="textbox"].grade-5,
+.dark-theme .chip-lesson-card.grade-5 {
+  background: linear-gradient(135deg, rgba(190, 18, 60, 0.35), rgba(136, 19, 55, 0.22)) !important;
+  color: #fecdd3 !important;
+  border-color: rgba(251, 113, 133, 0.4) !important;
+}
+
+td[contenteditable="true"].special-pi,
+td[role="textbox"].special-pi,
+.chip-lesson-card.special-pi {
+  background: linear-gradient(135deg, rgba(204, 251, 241, 0.95), rgba(153, 246, 228, 0.8)) !important;
+  color: #0f766e !important;
+  border: 1px solid #5eead4 !important;
+  box-shadow: 0 1px 3px rgba(13, 148, 136, 0.1);
+}
+.dark-theme td[contenteditable="true"].special-pi,
+.dark-theme td[role="textbox"].special-pi,
+.dark-theme .chip-lesson-card.special-pi {
+  background: linear-gradient(135deg, rgba(15, 118, 110, 0.35), rgba(19, 78, 74, 0.22)) !important;
+  color: #99f6e4 !important;
+  border-color: rgba(45, 212, 191, 0.4) !important;
+}
+
+td[contenteditable="true"].special-teatro,
+td[role="textbox"].special-teatro,
+.chip-lesson-card.special-teatro {
+  background: linear-gradient(135deg, rgba(255, 237, 213, 0.95), rgba(254, 215, 170, 0.8)) !important;
+  color: #c2410c !important;
+  border: 1px solid #fdba74 !important;
+  box-shadow: 0 1px 3px rgba(234, 88, 12, 0.1);
+}
+.dark-theme td[contenteditable="true"].special-teatro,
+.dark-theme td[role="textbox"].special-teatro,
+.dark-theme .chip-lesson-card.special-teatro {
+  background: linear-gradient(135deg, rgba(194, 65, 12, 0.35), rgba(124, 45, 18, 0.22)) !important;
+  color: #fed7aa !important;
+  border-color: rgba(251, 146, 60, 0.4) !important;
+}
+
+/* ==========================================================================
+   🌟 2. Micro-ícones Temáticos para Cabeçalhos dos Especialistas
+   ========================================================================== */
+thead tr:nth-child(2) th[title*="Artes"]::before { content: '🎨 '; font-size: 0.85em; }
+thead tr:nth-child(2) th[title*="Física"]::before { content: '⚽ '; font-size: 0.85em; }
+thead tr:nth-child(2) th[title*="Composta"]::before { content: '💻 '; font-size: 0.85em; }
+thead tr:nth-child(2) th.el::before { content: '🐘 '; font-size: 0.85em; }
+thead tr:nth-child(2) th.mtf::before { content: '🔢 '; font-size: 0.85em; }
+thead tr:nth-child(2) th.pd::before { content: '📐 '; font-size: 0.85em; }
+
+/* ==========================================================================
+   🔦 3. Efeito Spotlight (Rastreamento Interativo de Turmas)
+   ========================================================================== */
+.spotlight-active td[contenteditable="true"]:not(.spotlight-match):not(:hover),
+.spotlight-active td[role="textbox"]:not(.spotlight-match):not(:hover) {
+  opacity: 0.38 !important;
+  filter: grayscale(40%) !important;
+  transform: scale(0.97) !important;
+  transition: opacity 0.2s ease, filter 0.2s ease, transform 0.2s ease !important;
+}
+
+td[contenteditable="true"].spotlight-match,
+td[role="textbox"].spotlight-match {
+  position: relative !important;
+  z-index: 85 !important;
+  transform: translateY(-3px) scale(1.08) !important;
+  box-shadow: 0 0 0 2px var(--primary), 0 8px 24px -2px rgba(79, 70, 229, 0.45) !important;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease !important;
+}
+
+.dark-theme td[contenteditable="true"].spotlight-match,
+.dark-theme td[role="textbox"].spotlight-match {
+  box-shadow: 0 0 0 2px #818cf8, 0 8px 28px -2px rgba(129, 140, 248, 0.55) !important;
+}
+
+/* ==========================================================================
+   📅 7. Divisórias de Dias da Semana com Gradientes Elegantes
+   ========================================================================== */
+thead tr:first-child th.day-divider,
+thead tr:first-child th:not(.day-divider):not([rowspan]) {
+  background: linear-gradient(180deg, rgba(79, 70, 229, 0.08) 0%, rgba(248, 250, 252, 0.95) 100%);
+  border-bottom: 2px solid #cbd5e1;
+  letter-spacing: 0.04em;
+}
+
+.dark-theme thead tr:first-child th.day-divider,
+.dark-theme thead tr:first-child th:not(.day-divider):not([rowspan]) {
+  background: linear-gradient(180deg, rgba(99, 102, 241, 0.16) 0%, rgba(15, 23, 42, 0.95) 100%);
+  border-bottom: 2px solid #475569;
+}
+
+table tr th.day-divider,
+table tr td.day-divider {
+  border-right: 2.5px solid rgba(79, 70, 229, 0.32) !important;
+  position: relative;
+}
+
+.dark-theme table tr th.day-divider,
+.dark-theme table tr td.day-divider {
+  border-right: 2.5px solid rgba(129, 140, 248, 0.45) !important;
 }

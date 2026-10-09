@@ -1587,6 +1587,42 @@ function initDragAndDrop() {
   });
 }
 
+/**
+ * Inicializa o Efeito Spotlight para rastreamento interativo de turmas e disciplinas.
+ */
+function initSpotlightEffect() {
+  document.addEventListener('mouseover', (e) => {
+    const cell = e.target.closest('[contenteditable="true"], [role="textbox"]');
+    if (!cell) return;
+    const text = cell.textContent.trim().toUpperCase();
+    if (!text || text === '*' || text === '') return;
+
+    const table = cell.closest('table');
+    if (!table) return;
+
+    table.classList.add('spotlight-active');
+    const cells = table.querySelectorAll('[contenteditable="true"], [role="textbox"]');
+    cells.forEach(c => {
+      const cText = c.textContent.trim().toUpperCase();
+      if (cText === text) {
+        c.classList.add('spotlight-match');
+      } else {
+        c.classList.remove('spotlight-match');
+      }
+    });
+  });
+
+  document.addEventListener('mouseout', (e) => {
+    const cell = e.target.closest('[contenteditable="true"], [role="textbox"]');
+    if (!cell) return;
+    const table = cell.closest('table');
+    if (!table) return;
+
+    table.classList.remove('spotlight-active');
+    table.querySelectorAll('.spotlight-match').forEach(c => c.classList.remove('spotlight-match'));
+  });
+}
+
 // ==========================================================================
 // 🎯 EFEITO DE MIRA / DESTAQUE CRUZADO (CROSSHAIR HIGHLIGHT)
 // ==========================================================================
@@ -2764,6 +2800,7 @@ function initApp() {
   initScrollToNow();
   initScrollEffect();
   initDragAndDrop();
+  initSpotlightEffect();
   updateSoundButtonUI();
   updateDesktopNotifyButtonUI();
   updateAriaStatus(); 

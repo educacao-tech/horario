@@ -43,4 +43,14 @@ Baseado no `TODO-PLANEJAMENTO.md`
 - [x] **Banners Hero Cards com Estatísticas e Accordion**: Banners modernos com Sunrise Glow (Manhã) e Sunset Glow (Tarde), contadores de turmas/especialistas e botão recolher/expandir.
 - [x] **Abertura Inteligente (Foco no Dia e Período Atual)**: Ao carregar a página, seleciona automaticamente o dia da semana atual e expande exclusivamente o período correspondente (Manhã antes das 12h30, Tarde a partir das 12h30), mantendo o outro período recolhido.
 
+### 9. Visual Aesthetics & Design System V3 (UI/UX)
+- [x] **Pills Coloridos por Ano Escolar (1º ao 5º Ano)**: Gradientes modernos e sutis identificando cada série letiva (1º Azul, 2º Esmeralda, 3º Âmbar, 4º Roxo, 5º Coral, PI e Teatro).
+- [x] **Micro-ícones Temáticos nos Especialistas**: Ícones ilustrativos no cabeçalho (🎨 Artes, ⚽ Ed. Física, 💻 Composta/TI, 🐘 Elefante Letrado, 🔢 Matific, 📐 EDM/PD).
+- [x] **Efeito Spotlight (Rastreamento Interativo de Turmas)**: Ao passar o mouse em qualquer célula, todas as outras ocorrências da mesma turma na semana brilham em destaque (*glow*) e as demais são atenuadas suavemente.
+- [x] **Faixa de Recreio Estilizada (Glassmorphic Diagonal Ribbon)**: Padrão listrado diagonal translúcido com bordas tracejadas suaves.
+- [x] **Linha Ativa com Laser Glow / Shimmer**: Feixe de luz em tempo real fluindo nas células do horário escolar atual.
+- [x] **Barra de Status em Ilha Dinâmica (Dynamic Island)**: Rodapé flutuante em formato pill com vidro fosco de alta dispersão (*24px blur*).
+- [x] **Divisórias de Dias com Gradientes e Linhas de Luz**: Separação visual luminosa entre os dias da semana.
+
+
 
