@@ -50,7 +50,9 @@ Baseado no `TODO-PLANEJAMENTO.md`
 - [x] **Faixa de Recreio Estilizada (Glassmorphic Diagonal Ribbon)**: Padrão listrado diagonal translúcido com bordas tracejadas suaves.
 - [x] **Linha Ativa com Laser Glow / Shimmer**: Feixe de luz em tempo real fluindo nas células do horário escolar atual.
 - [x] **Barra de Status em Ilha Dinâmica (Dynamic Island)**: Rodapé flutuante em formato pill com vidro fosco de alta dispersão (*24px blur*).
-- [x] **Divisórias de Dias com Gradientes e Linhas de Luz**: Separação visual luminosa entre os dias da semana.
+### 10. Template & Layout Enhancements
+- [x] **Navegador Rápido de Períodos no Topo (Period Quick-Tabs)**: Seletores rápidos `☀️ Manhã` e `🌅 Tarde` com rolagem suave automática, expansão inteligente da seção e atualização em tempo real via scroll watcher.
+
 
 
 

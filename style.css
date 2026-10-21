@@ -11,8 +11,8 @@
   --border-segmented: rgba(15, 23, 42, 0.08);
   --text-main: #0f172a;
   --text-muted: #64748b;
-  --border-color: #e2e8f0;
-  --header-border: rgba(226, 232, 240, 0.85);
+  --border-color: #cbd5e1;
+  --header-border: #94a3b8;
   --hl-color: #f1f5f9; 
   --pd-color: #e0f2fe; 
   --el-color: #dcfce7; 
@@ -122,20 +122,9 @@
   box-shadow: 0 4px 24px -2px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
-/* Estado encolhido ao rolar a página */
+/* Estado com sombra suave ao rolar a página */
 .top-area-sticky-wrapper.scrolled {
-  padding-top: 4px;
-  padding-bottom: 4px;
   box-shadow: var(--shadow-md);
-}
-
-.top-area-sticky-wrapper.scrolled .header-logo {
-  width: 26px;
-  height: 26px;
-}
-
-.top-area-sticky-wrapper.scrolled .header-titles h1 {
-  font-size: 0.95rem;
 }
 
 /* Transição fluida universal entre temas (Dark/Light) */
@@ -282,7 +271,7 @@ h1, h2, h3, h4, .header-titles h1 {
   padding: 0;
   background: var(--bg-card);
   border-radius: 18px;
-  border: 1px solid var(--border-color);
+  border: 1.5px solid var(--border-color);
   box-shadow: var(--shadow-md);
   display: block;
   font-size: calc(1rem * var(--table-zoom));
@@ -589,7 +578,8 @@ tr:not(.recreio) td:first-child {
   left: 0;
   z-index: 20;
   background-color: var(--bg-sticky-col);
-  border-right: 2px solid #cbd5e1;
+  border-left: 1.5px solid var(--border-color); /* Borda Externa Esquerda */
+  border-right: 2px solid var(--border-color);  /* Borda Interna Divisória */
   border-bottom: 1px solid var(--border-color);
   font-weight: 700;
   color: var(--text-main);
@@ -604,8 +594,10 @@ tr:not(.recreio) td:first-child {
 /* Cabeçalho da coluna Horário no Tema Claro */
 thead tr:first-child th:first-child {
   background-color: #f1f5f9 !important;
-  border-right: 2px solid #cbd5e1 !important;
-  border-bottom: 2px solid #cbd5e1 !important;
+  border-top: 1.5px solid var(--border-color) !important;
+  border-left: 1.5px solid var(--border-color) !important;
+  border-right: 2px solid var(--border-color) !important;
+  border-bottom: 2px solid var(--border-color) !important;
   color: var(--text-main) !important;
   z-index: 50 !important;
 }
@@ -614,6 +606,7 @@ thead tr:first-child th:first-child {
 .dark-theme thead tr:first-child th:first-child, 
 .dark-theme tr:not(.recreio) td:first-child {
   background-color: #172033;
+  border-left: 1.5px solid #475569;
   border-right: 2px solid #475569;
   border-bottom: 1px solid #334155;
   color: #f8fafc;
@@ -622,6 +615,8 @@ thead tr:first-child th:first-child {
 
 .dark-theme thead tr:first-child th:first-child {
   background-color: #1e293b !important;
+  border-top: 1.5px solid #475569 !important;
+  border-left: 1.5px solid #475569 !important;
   border-right: 2px solid #475569 !important;
   border-bottom: 2px solid #475569 !important;
   color: #ffffff !important;
@@ -639,14 +634,10 @@ thead tr:first-child th:first-child {
 thead th, 
 th {
   background-color: var(--bg-header);
-  backdrop-filter: blur(8px);
   font-weight: 700;
   font-size: 0.88em;
   text-transform: uppercase;
   color: var(--text-muted);
-  position: sticky;
-  top: 0;
-  z-index: 25;
   border-bottom: 2px solid var(--border-color);
   transition: all 0.25s ease;
 }
@@ -656,10 +647,6 @@ th {
   border-bottom: 2px solid #475569;
   color: #cbd5e1;
 }
-
-thead tr:nth-child(1) th { top: 0; z-index: 31; } 
-thead tr:nth-child(2) th { top: var(--header-height); z-index: 30; }
-tr:nth-child(1) th:first-child { z-index: 40; }
 
 /* Zebra Striping sutil */
 tr:nth-child(even) td:not(:first-child) {
@@ -4058,4 +4045,77 @@ table tr td.day-divider {
 .dark-theme table tr th.day-divider,
 .dark-theme table tr td.day-divider {
   border-right: 2.5px solid rgba(129, 140, 248, 0.45) !important;
+}
+
+/* ==========================================================================
+   🧭 Navegador Rápido de Períodos no Topo (Period Quick-Tabs)
+   ========================================================================== */
+.period-nav-segmented {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: var(--bg-segmented);
+  border: 1px solid var(--border-segmented);
+  border-radius: 12px;
+  padding: 2px;
+  flex-shrink: 0;
+}
+
+.period-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  font-family: var(--font-main);
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  white-space: nowrap;
+}
+
+.period-nav-btn:hover {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.dark-theme .period-nav-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.period-nav-btn.active#nav-period-morning {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  color: #92400e;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.25);
+}
+
+.dark-theme .period-nav-btn.active#nav-period-morning {
+  background: linear-gradient(135deg, #78350f 0%, #92400e 100%);
+  color: #fef3c7;
+  box-shadow: 0 2px 10px rgba(245, 158, 11, 0.3);
+}
+
+.period-nav-btn.active#nav-period-afternoon {
+  background: linear-gradient(135deg, #ffedd5 0%, #fed7aa 100%);
+  color: #9a3412;
+  box-shadow: 0 2px 8px rgba(234, 88, 12, 0.25);
+}
+
+.dark-theme .period-nav-btn.active#nav-period-afternoon {
+  background: linear-gradient(135deg, #7c2d12 0%, #9a3412 100%);
+  color: #ffedd5;
+  box-shadow: 0 2px 10px rgba(234, 88, 12, 0.3);
+}
+
+.period-nav-icon {
+  font-size: 0.92rem;
+  transition: transform 0.2s ease;
+}
+
+.period-nav-btn:hover .period-nav-icon {
+  transform: scale(1.15) rotate(6deg);
 }

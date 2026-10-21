@@ -2668,14 +2668,104 @@ function initAutoPeriodAndDay() {
 
       afternoonSection.classList.remove('collapsed');
       afternoonSection.querySelector('.period-hero-banner')?.setAttribute('aria-expanded', 'true');
+      updatePeriodNavActiveTab('afternoon');
     } else {
       morningSection.classList.remove('collapsed');
       morningSection.querySelector('.period-hero-banner')?.setAttribute('aria-expanded', 'true');
 
       afternoonSection.classList.add('collapsed');
       afternoonSection.querySelector('.period-hero-banner')?.setAttribute('aria-expanded', 'false');
+      updatePeriodNavActiveTab('morning');
     }
   }
+}
+
+let _isPeriodNavLock = false;
+let _periodNavLockTimeout = null;
+
+/**
+ * Rola suavemente até a seção do período indicado e assegura que ela esteja aberta.
+ * @param {'morning'|'afternoon'} period
+ */
+function scrollToPeriodSection(period) {
+  const targetId = period === 'morning' ? 'section-morning' : 'section-afternoon';
+  const section = document.getElementById(targetId);
+  if (!section) return;
+
+  // Ativa trava para impedir que o watcher de scroll fique alternando as abas durante a animação
+  _isPeriodNavLock = true;
+  if (_periodNavLockTimeout) clearTimeout(_periodNavLockTimeout);
+
+  // Garante que a seção alvo esteja expandida
+  if (section.classList.contains('collapsed')) {
+    toggleSectionCollapse(period, true);
+  }
+
+  // Atualiza imediatamente o estado visual da aba clicada
+  updatePeriodNavActiveTab(period);
+
+  // Rola suavemente considerando a altura da barra sticky
+  const headerOffset = document.querySelector('.top-area-sticky-wrapper')?.offsetHeight || 60;
+  const elementPosition = section.getBoundingClientRect().top + window.pageYOffset;
+  const offsetPosition = Math.max(0, elementPosition - headerOffset - 10);
+
+  window.scrollTo({
+    top: offsetPosition,
+    behavior: 'smooth'
+  });
+
+  // Libera a trava após o término da animação de scroll
+  _periodNavLockTimeout = setTimeout(() => {
+    _isPeriodNavLock = false;
+  }, 850);
+}
+
+/**
+ * Atualiza o estado visual das abas de período no topo sem causar reflow desnecessário.
+ * @param {'morning'|'afternoon'} period
+ */
+function updatePeriodNavActiveTab(period) {
+  const morningBtn = document.getElementById('nav-period-morning');
+  const afternoonBtn = document.getElementById('nav-period-afternoon');
+  const isMorning = period === 'morning';
+  const isAfternoon = period === 'afternoon';
+
+  if (morningBtn && morningBtn.classList.contains('active') !== isMorning) {
+    morningBtn.classList.toggle('active', isMorning);
+    morningBtn.setAttribute('aria-selected', String(isMorning));
+  }
+  if (afternoonBtn && afternoonBtn.classList.contains('active') !== isAfternoon) {
+    afternoonBtn.classList.toggle('active', isAfternoon);
+    afternoonBtn.setAttribute('aria-selected', String(isAfternoon));
+  }
+}
+
+/**
+ * Observa o scroll da página para atualizar a aba de período ativa dinamicamente.
+ */
+function initPeriodScrollWatcher() {
+  let scrollTicking = false;
+  window.addEventListener('scroll', () => {
+    if (_isPeriodNavLock) return; // Ignora eventos de scroll durante o clique programático
+
+    if (!scrollTicking) {
+      window.requestAnimationFrame(() => {
+        const afternoonSection = document.getElementById('section-afternoon');
+        if (afternoonSection) {
+          const scrollPos = window.scrollY + 180;
+          const afternoonTop = afternoonSection.offsetTop;
+
+          if (scrollPos >= afternoonTop && !afternoonSection.classList.contains('collapsed')) {
+            updatePeriodNavActiveTab('afternoon');
+          } else {
+            updatePeriodNavActiveTab('morning');
+          }
+        }
+        scrollTicking = false;
+      });
+      scrollTicking = true;
+    }
+  }, { passive: true });
 }
 
 // --- SISTEMA DE ZOOM & NAVEGAÇÃO SEGMENTADA ---
@@ -2801,6 +2891,7 @@ function initApp() {
   initScrollEffect();
   initDragAndDrop();
   initSpotlightEffect();
+  initPeriodScrollWatcher();
   updateSoundButtonUI();
   updateDesktopNotifyButtonUI();
   updateAriaStatus(); 

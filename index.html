@@ -52,6 +52,20 @@
       </div>
     </div>
 
+    <!-- Grupo Segmentado: Navegador Rápido de Períodos (Manhã / Tarde) -->
+    <div class="segmented-control period-nav-segmented" role="tablist" aria-label="Navegador rápido de turnos">
+      <button type="button" class="segmented-btn period-nav-btn active" id="nav-period-morning"
+        onclick="scrollToPeriodSection('morning')" title="Ir para o Horário da Manhã (7h05 às 12h00)" role="tab"
+        aria-selected="true">
+        <span class="period-nav-icon">☀️</span> <span class="period-nav-text">Manhã</span>
+      </button>
+      <button type="button" class="segmented-btn period-nav-btn" id="nav-period-afternoon"
+        onclick="scrollToPeriodSection('afternoon')" title="Ir para o Horário da Tarde (12h35 às 17h30)" role="tab"
+        aria-selected="false">
+        <span class="period-nav-icon">🌅</span> <span class="period-nav-text">Tarde</span>
+      </button>
+    </div>
+
     <!-- Grupo Segmentado 1: Busca & Filtro de Dias -->
     <div class="segmented-control search-filter-segmented" role="search" aria-label="Pesquisa e filtros">
       <div class="search-wrapper">
