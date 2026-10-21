@@ -3313,42 +3313,159 @@ body.drag-over::after {
     min-height: 36px;
   }
 
-  /* Modais em telas móveis */
+  /* Modais em Telas Móveis: Bottom Sheet / Fullscreen fluido */
   .modal-overlay {
-    padding: 12px;
+    padding: 0 !important;
+    align-items: flex-end !important;
+    background: rgba(0, 0, 0, 0.65) !important;
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
     box-sizing: border-box;
   }
 
   .modal {
-    width: 100%;
-    max-width: 100%;
-    max-height: 90vh;
-    padding: 16px;
-    gap: 12px;
-    border-radius: 16px;
-    box-sizing: border-box;
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: 92dvh !important;
+    height: auto !important;
+    min-height: 45vh !important;
+    border-radius: 24px 24px 0 0 !important;
+    margin: 0 !important;
+    padding: 16px 18px calc(24px + env(safe-area-inset-bottom, 0px)) 18px !important;
+    gap: 12px !important;
+    border: 1px solid var(--border-color) !important;
+    border-bottom: none !important;
+    box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.35) !important;
+    animation: modalSlideUp 0.3s cubic-bezier(0.32, 0.72, 0, 1) !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  /* Puxador da Mobile Sheet */
+  .modal::before {
+    content: '';
+    display: block;
+    width: 44px;
+    height: 5px;
+    background: var(--border-color);
+    border-radius: 3px;
+    margin: 0 auto 8px auto;
+    flex-shrink: 0;
+  }
+
+  .modal h2 {
+    font-size: 1.15rem !important;
+    font-family: var(--font-title);
+    margin: 0 0 4px 0;
+    text-align: center;
+  }
+
+  /* Listas e grades internas com rolagem independente */
+  .teacher-list-container,
+  .shortcuts-grid,
+  .history-list-container,
+  .workload-table-wrapper {
+    flex: 1 1 auto !important;
+    max-height: 48vh !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    border-radius: 12px !important;
+  }
+
+  .teacher-item {
+    padding: 12px 10px !important;
+    min-height: 48px !important;
+  }
+
+  .teacher-nome {
+    font-size: 0.95rem !important;
   }
 
   .modal-form {
-    grid-template-columns: 1fr;
-    gap: 8px;
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+    padding-top: 10px !important;
   }
 
   .modal-form input,
   .modal-form select,
   .modal-form .btn-primary {
-    font-size: 16px; /* Evita auto-zoom do browser mobile */
-    height: 44px; /* Touch target adequado */
+    font-size: 16px !important; /* CRÍTICO: Previne auto-zoom no iOS Safari */
+    min-height: 44px !important;
+    height: 44px !important;
+    border-radius: 10px !important;
   }
 
   .modal-footer {
-    flex-wrap: wrap;
+    display: flex !important;
+    flex-direction: column-reverse !important; /* Ação principal em cima, cancelar embaixo */
+    gap: 8px !important;
+    margin-top: 8px !important;
+    width: 100% !important;
   }
 
   .modal-footer .btn {
-    flex: 1 1 auto;
-    justify-content: center;
-    min-height: 44px;
+    width: 100% !important;
+    min-height: 44px !important;
+    justify-content: center !important;
+    font-size: 0.95rem !important;
+    border-radius: 12px !important;
+  }
+
+  /* Diálogos (Confirm & Prompt) no mobile */
+  .dialog-overlay {
+    padding: 12px !important;
+    align-items: flex-end !important;
+  }
+
+  .dialog-card {
+    border-radius: 22px 22px 0 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    padding: 18px 18px calc(20px + env(safe-area-inset-bottom, 0px)) 18px !important;
+    box-sizing: border-box !important;
+  }
+
+  .dialog-actions {
+    flex-direction: column-reverse !important;
+    gap: 8px !important;
+  }
+
+  .dialog-actions .btn {
+    width: 100% !important;
+    min-height: 44px !important;
+    justify-content: center !important;
+  }
+
+  .dialog-input {
+    font-size: 16px !important;
+    min-height: 44px !important;
+  }
+
+  /* Popup de autocompletar adaptado para toque no mobile */
+  .cell-autocomplete-popup {
+    border-radius: 14px !important;
+    padding: 6px !important;
+    max-height: 250px !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35) !important;
+  }
+
+  .cell-autocomplete-item {
+    padding: 8px 12px !important;
+    min-height: 44px !important; /* Touch target ergonômico */
+    border-radius: 8px !important;
+    gap: 10px !important;
+  }
+
+  .cell-autocomplete-badge {
+    font-size: 0.88rem !important;
+    min-width: 38px !important;
+    padding: 3px 6px !important;
+  }
+
+  .cell-autocomplete-name {
+    font-size: 0.88rem !important;
   }
 
   /* Toasts no Mobile */
@@ -3400,6 +3517,123 @@ body.drag-over::after {
   .status-item {
     border-right: none;
     padding-right: 0;
+  }
+}
+
+/* ==========================================================================
+   ORIENTAÇÃO INTELIGENTE: MODO HORIZONTAL (LANDSCAPE EM SMARTPHONES/TABLETS)
+   ========================================================================== */
+@media screen and (orientation: landscape) and (max-height: 520px) {
+  /* Cabeçalho ultra-compacto na horizontal para maximizar a área da grade */
+  .top-area-sticky-wrapper {
+    padding: 3px 12px calc(3px + env(safe-area-inset-top, 0px)) 12px !important;
+    gap: 4px !important;
+  }
+
+  .header-brand .header-logo {
+    width: 26px !important;
+    height: 26px !important;
+    font-size: 1rem !important;
+  }
+
+  .header-titles h1 {
+    font-size: 0.88rem !important;
+  }
+
+  .header-titles .year-badge {
+    padding: 1px 6px !important;
+    font-size: 0.65rem !important;
+  }
+
+  .period-nav-btn {
+    padding: 3px 8px !important;
+    min-height: 28px !important;
+    font-size: 0.74rem !important;
+  }
+
+  .mobile-quick-view-btn {
+    padding: 3px 8px !important;
+    font-size: 0.74rem !important;
+  }
+
+  .btn-menu-trigger {
+    padding: 3px 10px !important;
+    height: 28px !important;
+    font-size: 0.78rem !important;
+  }
+
+  /* Abas de dias compactas na horizontal */
+  .mobile-day-tabs {
+    gap: 4px !important;
+    padding: 2px 0 1px 0 !important;
+    margin-top: 0 !important;
+  }
+
+  .mobile-day-tab {
+    height: 28px !important;
+    min-width: 44px !important;
+    font-size: 0.75rem !important;
+    border-radius: 14px !important;
+  }
+
+  .search-filter-segmented {
+    margin-top: 0 !important;
+  }
+
+  .search-field {
+    height: 30px !important;
+    font-size: 14px !important;
+  }
+
+  /* Barra de status e rodapé com altura mínima para não roubar espaço */
+  body {
+    padding-bottom: calc(50px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  .status-bar {
+    padding: 4px 10px !important;
+    font-size: 0.72rem !important;
+    bottom: calc(4px + env(safe-area-inset-bottom, 0px)) !important;
+    border-radius: 10px !important;
+  }
+
+  /* Células da tabela otimizadas para visão panorâmica */
+  th, td {
+    padding: 4px 3px !important;
+    font-size: 0.74rem !important;
+  }
+
+  thead tr:first-child th:first-child,
+  tr:not(.recreio) td:first-child {
+    width: 85px !important;
+    min-width: 85px !important;
+    font-size: 0.72rem !important;
+  }
+
+  /* Banners de período slim na horizontal */
+  .period-hero-banner {
+    padding: 8px 12px !important;
+    margin: 8px 0 !important;
+    border-radius: 10px !important;
+  }
+
+  .hero-icon-wrapper {
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 1rem !important;
+  }
+
+  .hero-title-row h2 {
+    font-size: 0.95rem !important;
+  }
+
+  .hero-stats {
+    gap: 4px !important;
+  }
+
+  .hero-stat-pill {
+    font-size: 0.68rem !important;
+    padding: 1px 6px !important;
   }
 }
 

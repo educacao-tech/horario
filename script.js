@@ -1402,6 +1402,10 @@ function initSwipeGestures() {
 
   document.addEventListener('touchend', (e) => {
     if (e.changedTouches.length === 1) {
+      // Se estiver no modo tabela e o toque for dentro da área com scroll da tabela, permite scroll nativo
+      if (!document.body.classList.contains('view-cards') && e.target.closest('.table-container')) {
+        return;
+      }
       const touchEndX = e.changedTouches[0].clientX;
       const touchEndY = e.changedTouches[0].clientY;
       const deltaX = touchEndX - touchStartX;
@@ -2913,6 +2917,32 @@ function initScrollEffect() {
   }, { passive: true });
 }
 
+/**
+ * Registra o Service Worker para suporte a Progressive Web App (PWA) e funcionamento 100% offline.
+ */
+function initPWA() {
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then((reg) => {
+          reg.onupdatefound = () => {
+            const installing = reg.installing;
+            if (installing) {
+              installing.onstatechange = () => {
+                if (installing.state === 'installed' && navigator.serviceWorker.controller) {
+                  showToast('Nova versão do sistema disponível! Atualize a página quando desejar.', 'info', 4500);
+                }
+              };
+            }
+          };
+        })
+        .catch((err) => {
+          console.warn('Registro do Service Worker falhou:', err);
+        });
+    });
+  }
+}
+
 // Inicialização e intervalos
 function initApp() {
   window.scrollTo(0, 0);
@@ -2935,6 +2965,7 @@ function initApp() {
   updateAriaStatus(); 
   updateStatusBar();
   fetchGitHubUpdateInfo();
+  initPWA();
 
   window.addEventListener('beforeprint', () => {
     const dateEl = document.getElementById('print-date');
@@ -3113,22 +3144,33 @@ function closeModal(overlay) {
  * @param {HTMLElement} overlay - Elemento overlay do modal.
  */
 function setupFocusTrap(overlay) {
-  const focusableElements = overlay.querySelectorAll('button, input, [tabindex]:not([tabindex="-1"])');
+  const focusableElements = overlay.querySelectorAll('button, input, select, textarea, [tabindex]:not([tabindex="-1"])');
   const firstElement = focusableElements[0];
   const lastElement = focusableElements[focusableElements.length - 1];
 
   overlay.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      closeModal(overlay);
+      return;
+    }
     if (e.key !== 'Tab') return;
     if (e.shiftKey) {
       if (document.activeElement === firstElement) {
         e.preventDefault();
-        lastElement.focus();
+        lastElement?.focus();
       }
     } else {
       if (document.activeElement === lastElement) {
         e.preventDefault();
-        firstElement.focus();
+        firstElement?.focus();
       }
+    }
+  });
+
+  // Fecha o modal ao tocar no backdrop
+  overlay.addEventListener('pointerdown', (e) => {
+    if (e.target === overlay) {
+      closeModal(overlay);
     }
   });
 }
@@ -3792,19 +3834,26 @@ function showCellAutocomplete(cell) {
   const rect = cell.getBoundingClientRect();
   const scrollY = window.scrollY || window.pageYOffset;
   const scrollX = window.scrollX || window.pageXOffset;
+  const isMobile = window.innerWidth <= 768;
+  const popupWidth = isMobile ? Math.min(280, window.innerWidth - 24) : 230;
+
+  let left = rect.left + scrollX;
+  if (left + popupWidth > window.innerWidth - 12) {
+    left = window.innerWidth - popupWidth - 12;
+  }
+  left = Math.max(12, left);
 
   let top = rect.bottom + scrollY + 4;
-  let left = rect.left + scrollX;
-
-  if (left + 230 > window.innerWidth) {
-    left = window.innerWidth - 240;
-  }
-  if (rect.bottom + 230 > window.innerHeight && rect.top > 230) {
-    top = rect.top + scrollY - 225;
+  // Suporte a visualViewport para evitar que o teclado móvel cubra as opções
+  const vv = window.visualViewport;
+  const availableBottom = vv ? (vv.offsetTop + vv.height) : window.innerHeight;
+  if (rect.bottom + 210 > availableBottom && rect.top > 210) {
+    top = rect.top + scrollY - 215;
   }
 
   _cellAutocompleteEl.style.top = `${top}px`;
-  _cellAutocompleteEl.style.left = `${Math.max(8, left)}px`;
+  _cellAutocompleteEl.style.left = `${left}px`;
+  _cellAutocompleteEl.style.width = isMobile ? `${popupWidth}px` : '230px';
   _cellAutocompleteEl.style.display = 'flex';
 
   _selectedAutocompleteIdx = 0;
@@ -3812,7 +3861,7 @@ function showCellAutocomplete(cell) {
 }
 
 /**
- * Renderiza os itens dentro do popup de autocompletar.
+ * Renderiza os itens dentro do popup de autocompletar com suporte a toque rápido (pointerdown).
  * @param {Array<{code: string, name: string}>} options
  */
 function renderAutocompleteItems(options) {
@@ -3826,13 +3875,18 @@ function renderAutocompleteItems(options) {
         <span class="cell-autocomplete-name">${opt.name}</span>
       </div>
     `;
-  }).join('') + '<div class="cell-autocomplete-hint">Pressione Enter ou clique para aplicar</div>';
+  }).join('') + '<div class="cell-autocomplete-hint">Toque ou Enter para aplicar</div>';
 
   _cellAutocompleteEl.querySelectorAll('.cell-autocomplete-item').forEach(item => {
-    item.addEventListener('mousedown', (e) => {
+    const handleSelect = (e) => {
       e.preventDefault();
+      e.stopPropagation();
       applyAutocompleteOption(item.getAttribute('data-code'));
-    });
+    };
+    // Prioriza pointerdown e touchstart para resposta instantânea no mobile sem sofrer blur de foco
+    item.addEventListener('pointerdown', handleSelect);
+    item.addEventListener('touchstart', handleSelect, { passive: false });
+    item.addEventListener('mousedown', handleSelect);
   });
 }
 

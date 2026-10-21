@@ -1,0 +1,31 @@
+{
+  "name": "Horário Escolar 2026 - EMEB Profa. Anna Bonagura",
+  "short_name": "Horário 2026",
+  "description": "Sistema de gestão e visualização de horário escolar editável com suporte a múltiplos períodos e professores.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#090d16",
+  "theme_color": "#4f46e5",
+  "orientation": "any",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "icons": [
+    {
+      "src": "eaba.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "eaba.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": [
+    "education",
+    "productivity"
+  ]
+}
