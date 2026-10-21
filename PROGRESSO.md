@@ -58,3 +58,15 @@ Baseado no `TODO-PLANEJAMENTO.md`
 - [x] **Botão Rápido de Alternância (`mobile-quick-view-btn`)**: Pílula direta no cabeçalho mobile `[📱 Cards / 📊 Grade]` para troca instantânea de visualização.
 - [x] **Cards View 2.0 Aprimorado**: Suporte a recolher/expandir períodos com chevron animado, destaque de aula atual com borda luminosa e touch targets ergonômicos com fonte `16px` para eliminar o auto-zoom compulsório do iOS Safari.
 - [x] **Menu como Bottom Sheet**: Transformação do menu dropdown em gaveta inferior deslizante com puxador (*drag handle*), cantos arredondados de 24px e backdrop suave.
+
+### 12. Reformulação Integral de Layout & Design (V4)
+- [x] **Header Fixo em 2 Níveis (2-Tier Command Bar)**: Separação em linha principal (`header-main-bar`: Marca + Turnos + Ações/Status) e linha de filtros contextuais (`header-filter-bar`: Busca + Seletor de Dia + Legenda + Zoom), eliminando a superlotação horizontal e cortes em telas de 1280px e 1366px.
+- [x] **Identidade Visual por Dia da Semana**: Cabeçalhos estilizados com acentos cromáticos sutis e bordas superiores temáticas (`day-header-seg` Índigo, `day-header-ter` Esmeralda, `day-header-qua` Âmbar, `day-header-qui` Violeta e `day-header-sex` Coral) com suporte completo a Dark Mode.
+- [x] **Impressão A4 Perfeita por Turno**: Adicionado `break-after: page;` no turno matutino e `break-before: page;` no vespertino, garantindo que a Manhã saia na Página 1 e a Tarde na Página 2, sem cortes verticais nem quebras desordenadas.
+- [x] **Auto-Ocultamento da Dynamic Island (Status Bar)**: Transição suave de recolhimento (`translateY(160%)`) ao rolar rapidamente a página para baixo e reaparecimento instantâneo ao parar ou selecionar uma célula.
+- [x] **Empty State Elegante nos Cards Mobile**: Ilustração e botão de ação rápida quando não houver aulas para o dia ou busca selecionada.
+- [x] **Limpeza de Código Duplicado**: Removida a implementação redundante legada de `openShortcutsModal` no `script.js`.
+- [x] **Abertura Inteligente Adaptativa por Dispositivo**:
+  - **No Celular (Mobile $\le 768px$):** Abre no **Modo Cards**, focado dinamicamente no **dia de hoje** (com identificador visual na aba) e no **turno em andamento** (Manhã antes das 12h30, Tarde depois).
+  - **No Computador (Desktop $> 768px$):** Abre no **Modo Tabela Tradicional** (grade completa com todas as turmas e especialistas), com **"Todos os Dias"** ativos para ver a semana de uma vez só e **ambos os turnos expandidos**.
+

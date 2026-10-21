@@ -45,132 +45,146 @@
   </div>
 
   <div class="top-area-sticky-wrapper">
-    <div class="header-brand" title="EMEB Professora Anna Bonagura de Andrade • Ano Letivo 2026">
-      <div class="header-logo">📚</div>
-      <div class="header-titles">
-        <h1>
-          Horário <span class="year-badge">2026</span>
-        </h1>
+    <!-- Linha Principal Superior: Identidade, Navegação de Turnos e Ações Globais -->
+    <div class="header-main-bar">
+      <div class="header-main-left">
+        <div class="header-brand" title="EMEB Professora Anna Bonagura de Andrade • Ano Letivo 2026">
+          <div class="header-logo">📚</div>
+          <div class="header-titles">
+            <h1>
+              Horário <span class="year-badge">2026</span>
+            </h1>
+          </div>
+        </div>
+
+        <!-- Grupo Segmentado: Navegador Rápido de Períodos (Manhã / Tarde) -->
+        <div class="segmented-control period-nav-segmented" role="tablist" aria-label="Navegador rápido de turnos">
+          <button type="button" class="segmented-btn period-nav-btn active" id="nav-period-morning"
+            onclick="scrollToPeriodSection('morning')" title="Ir para o Horário da Manhã (7h05 às 12h00)" role="tab"
+            aria-selected="true">
+            <span class="period-nav-icon">☀️</span> <span class="period-nav-text">Manhã</span>
+          </button>
+          <button type="button" class="segmented-btn period-nav-btn" id="nav-period-afternoon"
+            onclick="scrollToPeriodSection('afternoon')" title="Ir para o Horário da Tarde (12h35 às 17h30)" role="tab"
+            aria-selected="false">
+            <span class="period-nav-icon">🌅</span> <span class="period-nav-text">Tarde</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Grupo de Ações, Notificações e Menu -->
+      <div class="header-main-right">
+        <div class="toolbar">
+          <div id="global-conflict-container"></div>
+          <div class="segmented-control actions-segmented">
+            <button type="button" class="segmented-btn btn-now" id="scroll-to-now-btn" onclick="scrollToCurrentPeriod()"
+              title="Rolar até a aula atual">📍 Agora</button>
+            <button type="button" class="segmented-btn btn-sound" id="sound-toggle-btn" onclick="toggleSoundAlerts()"
+              title="Alertas Sonoros: Ativado" aria-label="Alternar alertas sonoros">🔔</button>
+            <button type="button" class="segmented-btn btn-theme-toggle" id="quick-theme-btn" onclick="toggleTheme()"
+              title="Alternar Tema (Claro / Escuro)" aria-label="Alternar tema">
+              <span class="theme-icon-animated" id="theme-icon-indicator">🌙</span>
+            </button>
+          </div>
+          <span id="time-counter" class="time-counter"></span>
+          <div id="current-date-time" class="current-date-time" title="Horário Atual"></div>
+          <span id="save-indicator">✅ Salvo</span>
+
+          <!-- Grupo Segmentado: Menu Dropdown Principal -->
+          <div class="menu-dropdown-wrapper">
+            <!-- Botão Rápido de Alternância de Visualização Mobile (Cards / Tabela) -->
+            <button type="button" class="segmented-btn mobile-quick-view-btn" id="mobile-quick-view-btn" onclick="toggleViewMode()" title="Alternar entre Cards e Tabela" aria-label="Alternar modo de visualização">
+              <span id="mobile-quick-view-icon">📱</span>
+              <span class="mobile-quick-view-text">Cards</span>
+            </button>
+            <button type="button" class="btn btn-primary btn-menu-trigger" id="main-menu-btn"
+              onclick="toggleMainMenu(event)" aria-haspopup="true" aria-expanded="false">
+              <span class="menu-hamburger-icon">☰</span> <span>Menu</span>
+            </button>
+            <div id="main-menu-dropdown" class="menu-dropdown">
+              <button type="button" class="btn-menu-item" onclick="openTeacherManager()">⚙️ Gerenciar Professores</button>
+              <button type="button" class="btn-menu-item" onclick="openSettingsModal()">🎨 Personalizar Cores</button>
+              <button type="button" class="btn-menu-item" onclick="showConflictInspector()">🔍 Inspecionar
+                Conflitos</button>
+              <button type="button" class="btn-menu-item" onclick="openShortcutsModal()">⌨️ Atalhos de Teclado</button>
+              <button type="button" class="btn-menu-item" onclick="openDuplicateDayModal()">📋 Duplicar Dia</button>
+              <button type="button" class="btn-menu-item" onclick="openExportICSModal()">📅 Exportar Calendário
+                (.ics)</button>
+              <button type="button" class="btn-menu-item" onclick="showWorkloadModal()">📊 Carga Horária</button>
+              <button type="button" class="btn-menu-item" onclick="window.print()">🖨️ Imprimir Horário</button>
+              <button type="button" class="btn-menu-item" onclick="showBackupHistoryModal()">📦 Histórico de
+                Backups</button>
+              <button type="button" class="btn-menu-item" onclick="exportBackupJSON()">💾 Exportar Backup Total</button>
+              <button type="button" class="btn-menu-item" onclick="importBackupJSON()">📂 Importar Backup Total</button>
+              <button type="button" id="sound-menu-item" class="btn-menu-item" onclick="toggleSoundAlerts()">🔔 Alertas
+                Sonoros: Ligado</button>
+              <button type="button" id="desktop-notify-btn" class="btn-menu-item" onclick="toggleDesktopNotifications()">📢
+                Notificações na Área de Trabalho</button>
+              <button type="button" id="view-mode-btn" class="btn-menu-item" onclick="toggleViewMode()">📱 Modo Cards
+                (Mobile)</button>
+              <button type="button" id="compact-toggle-btn" class="btn-menu-item" onclick="toggleCompactMode()">↔️ Modo
+                Compacto</button>
+              <button type="button" id="theme-toggle" class="btn-menu-item" onclick="toggleTheme()">🌙 Alternar
+                Tema</button>
+              <button type="button" id="lock-btn" class="btn-menu-item" onclick="toggleLockMode()">🔒 Modo Leitura</button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- Grupo Segmentado: Navegador Rápido de Períodos (Manhã / Tarde) -->
-    <div class="segmented-control period-nav-segmented" role="tablist" aria-label="Navegador rápido de turnos">
-      <button type="button" class="segmented-btn period-nav-btn active" id="nav-period-morning"
-        onclick="scrollToPeriodSection('morning')" title="Ir para o Horário da Manhã (7h05 às 12h00)" role="tab"
-        aria-selected="true">
-        <span class="period-nav-icon">☀️</span> <span class="period-nav-text">Manhã</span>
-      </button>
-      <button type="button" class="segmented-btn period-nav-btn" id="nav-period-afternoon"
-        onclick="scrollToPeriodSection('afternoon')" title="Ir para o Horário da Tarde (12h35 às 17h30)" role="tab"
-        aria-selected="false">
-        <span class="period-nav-icon">🌅</span> <span class="period-nav-text">Tarde</span>
-      </button>
-    </div>
-
-    <!-- Grupo Segmentado 1: Busca & Filtro de Dias -->
-    <div class="segmented-control search-filter-segmented" role="search" aria-label="Pesquisa e filtros">
-      <div class="search-wrapper">
-        <input type="text" id="search-input" class="search-field" placeholder="🔍 Buscar turma, prof..."
-          autocomplete="off">
-        <button type="button" class="clear-search-btn" onclick="clearSearch()" aria-label="Limpar pesquisa">✖</button>
-        <div id="search-suggestions" class="search-suggestions"></div>
+    <!-- Linha Secundária: Filtros Contextuais, Pesquisa, Legenda e Zoom -->
+    <div class="header-filter-bar">
+      <div class="header-filter-left">
+        <!-- Grupo Segmentado 1: Busca & Filtro de Dias -->
+        <div class="segmented-control search-filter-segmented" role="search" aria-label="Pesquisa e filtros">
+          <div class="search-wrapper">
+            <input type="text" id="search-input" class="search-field" placeholder="🔍 Buscar turma, prof..."
+              autocomplete="off">
+            <button type="button" class="clear-search-btn" onclick="clearSearch()" aria-label="Limpar pesquisa">✖</button>
+            <div id="search-suggestions" class="search-suggestions"></div>
+          </div>
+          <div class="day-filter-wrapper">
+            <select id="day-filter-select" class="day-filter-select" onchange="filterByDay(this.value)"
+              title="Filtrar por dia da semana" aria-label="Filtrar por dia da semana">
+              <option value="0">📅 Todos os Dias</option>
+              <option value="1">Segunda-feira</option>
+              <option value="2">Terça-feira</option>
+              <option value="3">Quarta-feira</option>
+              <option value="4">Quinta-feira</option>
+              <option value="5">Sexta-feira</option>
+            </select>
+          </div>
+        </div>
       </div>
-      <div class="day-filter-wrapper">
-        <select id="day-filter-select" class="day-filter-select" title="Filtrar por dia da semana"
-          aria-label="Filtrar por dia da semana">
-          <option value="0">📅 Todos os Dias</option>
-          <option value="1">Segunda-feira</option>
-          <option value="2">Terça-feira</option>
-          <option value="3">Quarta-feira</option>
-          <option value="4">Quinta-feira</option>
-          <option value="5">Sexta-feira</option>
-        </select>
-      </div>
-    </div>
 
-    <!-- Grupo Segmentado 2: Legenda Rápida de Categorias -->
-    <div class="segmented-control legend-segmented" role="group" aria-label="Filtrar por categoria">
-      <button type="button" class="segmented-btn legend-item" onclick="toggleCategory('hl')" title="Horário Livre (HL)">
-        <div class="box hl"></div> <span>HL</span>
-      </button>
-      <button type="button" class="segmented-btn legend-item" onclick="toggleCategory('pd')"
-        title="Plantão de Dúvidas (PD)">
-        <div class="box pd"></div> <span>PD</span>
-      </button>
-      <button type="button" class="segmented-btn legend-item" onclick="toggleCategory('el')"
-        title="Elefante Letrado (EL)">
-        <div class="box el"></div> <span>EL</span>
-      </button>
-      <button type="button" class="segmented-btn legend-item" onclick="toggleCategory('mtf')" title="Matific (MTF)">
-        <div class="box mtf"></div> <span>MTF</span>
-      </button>
-    </div>
+      <div class="header-filter-right">
+        <!-- Grupo Segmentado 2: Legenda Rápida de Categorias -->
+        <div class="segmented-control legend-segmented" role="group" aria-label="Filtrar por categoria">
+          <button type="button" class="segmented-btn legend-item" onclick="toggleCategory('hl')" title="Horário Livre (HL)">
+            <div class="box hl"></div> <span>HL</span>
+          </button>
+          <button type="button" class="segmented-btn legend-item" onclick="toggleCategory('pd')"
+            title="Plantão de Dúvidas (PD)">
+            <div class="box pd"></div> <span>PD</span>
+          </button>
+          <button type="button" class="segmented-btn legend-item" onclick="toggleCategory('el')"
+            title="Elefante Letrado (EL)">
+            <div class="box el"></div> <span>EL</span>
+          </button>
+          <button type="button" class="segmented-btn legend-item" onclick="toggleCategory('mtf')" title="Matific (MTF)">
+            <div class="box mtf"></div> <span>MTF</span>
+          </button>
+        </div>
 
-    <!-- Grupo Segmentado 3: Zoom da Grade -->
-    <div class="segmented-control zoom-segmented" role="group" aria-label="Controle de zoom">
-      <button type="button" class="segmented-btn zoom-btn" onclick="adjustZoom(-0.1)" title="Diminuir Zoom"
-        aria-label="Diminuir nível de zoom">➖</button>
-      <button type="button" class="segmented-btn zoom-display-btn" onclick="applyZoom(1)"
-        title="Redefinir Zoom para 100%"><span id="zoom-display">100%</span></button>
-      <button type="button" class="segmented-btn zoom-btn" onclick="adjustZoom(0.1)" title="Aumentar Zoom"
-        aria-label="Aumentar nível de zoom">➕</button>
-    </div>
-
-    <!-- Grupo Segmentado 4: Status, Alertas e Ações Rápidas -->
-    <div class="toolbar">
-      <div id="global-conflict-container"></div>
-      <div class="segmented-control actions-segmented">
-        <button type="button" class="segmented-btn btn-now" id="scroll-to-now-btn" onclick="scrollToCurrentPeriod()"
-          title="Rolar até a aula atual">📍 Agora</button>
-        <button type="button" class="segmented-btn btn-sound" id="sound-toggle-btn" onclick="toggleSoundAlerts()"
-          title="Alertas Sonoros: Ativado" aria-label="Alternar alertas sonoros">🔔</button>
-        <button type="button" class="segmented-btn btn-theme-toggle" id="quick-theme-btn" onclick="toggleTheme()"
-          title="Alternar Tema (Claro / Escuro)" aria-label="Alternar tema">
-          <span class="theme-icon-animated" id="theme-icon-indicator">🌙</span>
-        </button>
-      </div>
-      <span id="time-counter" class="time-counter"></span>
-      <div id="current-date-time" class="current-date-time" title="Horário Atual"></div>
-      <span id="save-indicator">✅ Salvo</span>
-
-      <!-- Grupo Segmentado 5: Menu Dropdown Principal -->
-      <div class="menu-dropdown-wrapper">
-        <!-- Botão Rápido de Alternância de Visualização Mobile (Cards / Tabela) -->
-        <button type="button" class="segmented-btn mobile-quick-view-btn" id="mobile-quick-view-btn" onclick="toggleViewMode()" title="Alternar entre Cards e Tabela" aria-label="Alternar modo de visualização">
-          <span id="mobile-quick-view-icon">📱</span>
-          <span class="mobile-quick-view-text">Cards</span>
-        </button>
-        <button type="button" class="btn btn-primary btn-menu-trigger" id="main-menu-btn"
-          onclick="toggleMainMenu(event)" aria-haspopup="true" aria-expanded="false">
-          <span class="menu-hamburger-icon">☰</span> <span>Menu</span>
-        </button>
-        <div id="main-menu-dropdown" class="menu-dropdown">
-          <button type="button" class="btn-menu-item" onclick="openTeacherManager()">⚙️ Gerenciar Professores</button>
-          <button type="button" class="btn-menu-item" onclick="openSettingsModal()">🎨 Personalizar Cores</button>
-          <button type="button" class="btn-menu-item" onclick="showConflictInspector()">🔍 Inspecionar
-            Conflitos</button>
-          <button type="button" class="btn-menu-item" onclick="openShortcutsModal()">⌨️ Atalhos de Teclado</button>
-          <button type="button" class="btn-menu-item" onclick="openDuplicateDayModal()">📋 Duplicar Dia</button>
-          <button type="button" class="btn-menu-item" onclick="openExportICSModal()">📅 Exportar Calendário
-            (.ics)</button>
-          <button type="button" class="btn-menu-item" onclick="showWorkloadModal()">📊 Carga Horária</button>
-          <button type="button" class="btn-menu-item" onclick="window.print()">🖨️ Imprimir Horário</button>
-          <button type="button" class="btn-menu-item" onclick="showBackupHistoryModal()">📦 Histórico de
-            Backups</button>
-          <button type="button" class="btn-menu-item" onclick="exportBackupJSON()">💾 Exportar Backup Total</button>
-          <button type="button" class="btn-menu-item" onclick="importBackupJSON()">📂 Importar Backup Total</button>
-          <button type="button" id="sound-menu-item" class="btn-menu-item" onclick="toggleSoundAlerts()">🔔 Alertas
-            Sonoros: Ligado</button>
-          <button type="button" id="desktop-notify-btn" class="btn-menu-item" onclick="toggleDesktopNotifications()">📢
-            Notificações na Área de Trabalho</button>
-          <button type="button" id="view-mode-btn" class="btn-menu-item" onclick="toggleViewMode()">📱 Modo Cards
-            (Mobile)</button>
-          <button type="button" id="compact-toggle-btn" class="btn-menu-item" onclick="toggleCompactMode()">↔️ Modo
-            Compacto</button>
-          <button type="button" id="theme-toggle" class="btn-menu-item" onclick="toggleTheme()">🌙 Alternar
-            Tema</button>
-          <button type="button" id="lock-btn" class="btn-menu-item" onclick="toggleLockMode()">🔒 Modo Leitura</button>
+        <!-- Grupo Segmentado 3: Zoom da Grade -->
+        <div class="segmented-control zoom-segmented" role="group" aria-label="Controle de zoom">
+          <button type="button" class="segmented-btn zoom-btn" onclick="adjustZoom(-0.1)" title="Diminuir Zoom"
+            aria-label="Diminuir nível de zoom">➖</button>
+          <button type="button" class="segmented-btn zoom-display-btn" onclick="applyZoom(1)"
+            title="Redefinir Zoom para 100%"><span id="zoom-display">100%</span></button>
+          <button type="button" class="segmented-btn zoom-btn" onclick="adjustZoom(0.1)" title="Aumentar Zoom"
+            aria-label="Aumentar nível de zoom">➕</button>
         </div>
       </div>
     </div>
@@ -235,11 +249,11 @@
           <thead>
             <tr>
               <th rowspan="2">Horário</th>
-              <th colspan="6" class="day-divider">Segunda</th>
-              <th colspan="5" class="day-divider">Terça</th>
-              <th colspan="4" class="day-divider">Quarta</th>
-              <th colspan="4" class="day-divider">Quinta</th>
-              <th colspan="5">Sexta</th>
+              <th colspan="6" class="day-divider day-header-seg">Segunda</th>
+              <th colspan="5" class="day-divider day-header-ter">Terça</th>
+              <th colspan="4" class="day-divider day-header-qua">Quarta</th>
+              <th colspan="4" class="day-divider day-header-qui">Quinta</th>
+              <th colspan="5" class="day-header-sex">Sexta</th>
             </tr>
             <tr>
               <th title="Artes - Silvia">A(S)</th>
@@ -497,11 +511,11 @@
           <thead>
             <tr>
               <th rowspan="2">Horário</th>
-              <th colspan="5" class="day-divider">Segunda</th>
-              <th colspan="4" class="day-divider">Terça</th>
-              <th colspan="4" class="day-divider">Quarta</th>
-              <th colspan="5" class="day-divider">Quinta</th>
-              <th colspan="4">Sexta</th>
+              <th colspan="5" class="day-divider day-header-seg">Segunda</th>
+              <th colspan="4" class="day-divider day-header-ter">Terça</th>
+              <th colspan="4" class="day-divider day-header-qua">Quarta</th>
+              <th colspan="5" class="day-divider day-header-qui">Quinta</th>
+              <th colspan="4" class="day-header-sex">Sexta</th>
             </tr>
             <tr>
               <th title="Artes - Silvia">A(S)</th>

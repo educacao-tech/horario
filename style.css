@@ -95,13 +95,13 @@
   box-shadow: inset 0 0 0 2px #6366f1 !important;
 }
 
-/* Wrapper para a área superior fixa com Glassmorphism Avançado (Header Slim) */
+/* Wrapper para a área superior fixa com Glassmorphism Avançado (Header 2-Tier Moderno) */
 .top-area-sticky-wrapper {
   position: sticky;
   top: 0;
   z-index: 1000;
   background: var(--bg-header);
-  padding: 6px 16px;
+  padding: 8px 16px;
   box-sizing: border-box;
   width: 100%;
   left: 0;
@@ -109,17 +109,60 @@
   box-shadow: 0 4px 24px -2px rgba(15, 23, 42, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.6);
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
   gap: 8px;
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
-  flex-wrap: nowrap;
 }
 
 .dark-theme .top-area-sticky-wrapper {
   box-shadow: 0 4px 24px -2px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* Linha Superior: Marca, Navegador de Turnos e Ações Principais */
+.header-main-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 12px;
+}
+
+.header-main-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-shrink: 0;
+}
+
+.header-main-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+/* Linha Secundária: Filtros Contextuais, Pesquisa, Legenda e Zoom */
+.header-filter-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 12px;
+}
+
+.header-filter-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+
+.header-filter-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
 }
 
 /* Estado com sombra suave ao rolar a página */
@@ -2012,7 +2055,7 @@ table.current-day-5 .day-cell-5 {
 
 .status-bar {
   position: fixed;
-  bottom: 22px;
+  bottom: calc(22px + env(safe-area-inset-bottom, 0px));
   left: 50%;
   transform: translateX(-50%);
   width: auto;
@@ -2034,7 +2077,13 @@ table.current-day-5 .day-cell-5 {
   border-radius: 9999px;
   box-sizing: border-box;
   box-shadow: 0 16px 36px -4px rgba(15, 23, 42, 0.16), 0 4px 12px -2px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.7);
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease, box-shadow 0.3s ease;
+}
+
+.status-bar.status-bar-hidden {
+  transform: translateX(-50%) translateY(160%);
+  opacity: 0;
+  pointer-events: none;
 }
 
 .dark-theme .status-bar {
@@ -2230,7 +2279,15 @@ th[title] {
     margin-bottom: 20px;
   }
 
-  #section-morning { page-break-after: always; }
+  #section-morning {
+    break-after: page !important;
+    page-break-after: always !important;
+  }
+
+  #section-afternoon {
+    break-before: page !important;
+    page-break-before: always !important;
+  }
 
   thead {
     display: table-header-group !important;
@@ -2969,21 +3026,26 @@ body.drag-over::after {
 /* Telas Médias e Tablets (max-width: 1024px) */
 @media screen and (max-width: 1024px) {
   .top-area-sticky-wrapper {
-    grid-template-areas:
-      "header legend"
-      "toolbar toolbar";
-    grid-template-columns: 1fr auto;
-    padding: 10px 14px;
-    gap: 8px 12px;
+    padding: 8px 12px;
+    gap: 6px;
   }
 
-  .toolbar {
-    flex-wrap: wrap;
+  .header-main-bar {
     gap: 8px;
   }
 
+  .header-filter-bar {
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .toolbar {
+    flex-wrap: nowrap;
+    gap: 6px;
+  }
+
   .search-field {
-    width: 160px;
+    width: 180px;
   }
 }
 
@@ -3083,16 +3145,42 @@ body.drag-over::after {
 
 /* Dispositivos Móveis - Smartphones e Tablets Pequenos (max-width: 768px) */
 @media screen and (max-width: 768px) {
-  /* Layout do Topo Sticky no Mobile (Header Slim Moderno) */
+  /* Layout do Topo Sticky no Mobile (Header 2-Tier Slim Moderno) */
   .top-area-sticky-wrapper {
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 6px;
+    flex-direction: column;
     padding: 6px 10px calc(6px + env(safe-area-inset-top, 0px)) 10px;
+    gap: 5px;
     background: var(--bg-header);
     border-bottom: 1px solid var(--border-color);
+  }
+
+  .header-main-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 6px;
+  }
+
+  .header-main-left {
+    gap: 6px;
+  }
+
+  .header-filter-bar {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    gap: 6px;
+  }
+
+  .header-filter-left {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .header-filter-right {
+    display: none !important; /* Zoom e Legendas em chips ficam ocultos no mobile para despoluir */
   }
 
   .header-brand {
@@ -3141,9 +3229,8 @@ body.drag-over::after {
   }
 
   .search-filter-segmented {
-    order: 12;
     width: 100%;
-    margin-top: 2px;
+    margin-top: 0;
   }
 
   .search-wrapper {
@@ -4261,4 +4348,174 @@ table tr td.day-divider {
 
 .period-nav-btn:hover .period-nav-icon {
   transform: scale(1.15) rotate(6deg);
+}
+
+/* ==========================================================================
+   📅 Identidade Visual Elegante por Dia da Semana (Cabeçalhos da Tabela)
+   ========================================================================== */
+th.day-header-seg {
+  background: linear-gradient(180deg, rgba(99, 102, 241, 0.12), rgba(99, 102, 241, 0.04)) !important;
+  color: #3730a3 !important;
+  border-top: 3.5px solid #6366f1 !important;
+  letter-spacing: 0.04em;
+}
+th.day-header-ter {
+  background: linear-gradient(180deg, rgba(16, 185, 129, 0.12), rgba(16, 185, 129, 0.04)) !important;
+  color: #065f46 !important;
+  border-top: 3.5px solid #10b981 !important;
+  letter-spacing: 0.04em;
+}
+th.day-header-qua {
+  background: linear-gradient(180deg, rgba(245, 158, 11, 0.12), rgba(245, 158, 11, 0.04)) !important;
+  color: #92400e !important;
+  border-top: 3.5px solid #f59e0b !important;
+  letter-spacing: 0.04em;
+}
+th.day-header-qui {
+  background: linear-gradient(180deg, rgba(168, 85, 247, 0.12), rgba(168, 85, 247, 0.04)) !important;
+  color: #6b21a8 !important;
+  border-top: 3.5px solid #a855f7 !important;
+  letter-spacing: 0.04em;
+}
+th.day-header-sex {
+  background: linear-gradient(180deg, rgba(244, 63, 94, 0.12), rgba(244, 63, 94, 0.04)) !important;
+  color: #9f1239 !important;
+  border-top: 3.5px solid #f43f5e !important;
+  letter-spacing: 0.04em;
+}
+
+.dark-theme th.day-header-seg {
+  background: linear-gradient(180deg, rgba(99, 102, 241, 0.28), rgba(99, 102, 241, 0.1)) !important;
+  color: #c7d2fe !important;
+  border-top-color: #818cf8 !important;
+}
+.dark-theme th.day-header-ter {
+  background: linear-gradient(180deg, rgba(16, 185, 129, 0.28), rgba(16, 185, 129, 0.1)) !important;
+  color: #a7f3d0 !important;
+  border-top-color: #34d399 !important;
+}
+.dark-theme th.day-header-qua {
+  background: linear-gradient(180deg, rgba(245, 158, 11, 0.28), rgba(245, 158, 11, 0.1)) !important;
+  color: #fde68a !important;
+  border-top-color: #fbbf24 !important;
+}
+.dark-theme th.day-header-qui {
+  background: linear-gradient(180deg, rgba(168, 85, 247, 0.28), rgba(168, 85, 247, 0.1)) !important;
+  color: #e9d5ff !important;
+  border-top-color: #c084fc !important;
+}
+.dark-theme th.day-header-sex {
+  background: linear-gradient(180deg, rgba(244, 63, 94, 0.28), rgba(244, 63, 94, 0.1)) !important;
+  color: #fecdd3 !important;
+  border-top-color: #fb7185 !important;
+}
+
+/* ==========================================================================
+   📱 Layout dos Cards Mobile & Empty State
+   ========================================================================== */
+.card-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  background: var(--bg-card);
+  border: 1.5px dashed var(--border-color);
+  border-radius: 16px;
+  margin: 16px 0;
+  text-align: center;
+  color: var(--text-muted);
+  box-shadow: var(--shadow-sm);
+}
+
+.card-empty-state-icon {
+  font-size: 2.2rem;
+  margin-bottom: 10px;
+}
+
+.card-empty-state-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 4px;
+}
+
+.card-empty-state-desc {
+  font-size: 0.88rem;
+  max-width: 280px;
+  margin-bottom: 16px;
+}
+
+/* Divisores de Dia no Modo Cards (quando 'Todos os Dias' está selecionado) */
+.card-day-divider {
+  display: flex;
+  align-items: center;
+  margin: 22px 0 12px 0;
+  padding: 6px 0;
+  border-bottom: 2px dashed var(--border-color);
+}
+
+.card-day-divider-pill {
+  font-family: var(--font-title);
+  font-weight: 800;
+  font-size: 0.95rem;
+  padding: 5px 16px;
+  border-radius: 20px;
+  background: var(--bg-card);
+  border: 1.5px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+  color: var(--text-main);
+  letter-spacing: 0.02em;
+}
+
+.card-day-divider.day-header-seg .card-day-divider-pill {
+  border-color: #6366f1;
+  color: #4338ca;
+  background: rgba(99, 102, 241, 0.1);
+}
+.card-day-divider.day-header-ter .card-day-divider-pill {
+  border-color: #10b981;
+  color: #065f46;
+  background: rgba(16, 185, 129, 0.1);
+}
+.card-day-divider.day-header-qua .card-day-divider-pill {
+  border-color: #f59e0b;
+  color: #92400e;
+  background: rgba(245, 158, 11, 0.1);
+}
+.card-day-divider.day-header-qui .card-day-divider-pill {
+  border-color: #a855f7;
+  color: #6b21a8;
+  background: rgba(168, 85, 247, 0.1);
+}
+.card-day-divider.day-header-sex .card-day-divider-pill {
+  border-color: #f43f5e;
+  color: #9f1239;
+  background: rgba(244, 63, 94, 0.1);
+}
+
+.dark-theme .card-day-divider.day-header-seg .card-day-divider-pill {
+  border-color: #818cf8;
+  color: #c7d2fe;
+  background: rgba(99, 102, 241, 0.25);
+}
+.dark-theme .card-day-divider.day-header-ter .card-day-divider-pill {
+  border-color: #34d399;
+  color: #a7f3d0;
+  background: rgba(16, 185, 129, 0.25);
+}
+.dark-theme .card-day-divider.day-header-qua .card-day-divider-pill {
+  border-color: #fbbf24;
+  color: #fde68a;
+  background: rgba(245, 158, 11, 0.25);
+}
+.dark-theme .card-day-divider.day-header-qui .card-day-divider-pill {
+  border-color: #c084fc;
+  color: #e9d5ff;
+  background: rgba(168, 85, 247, 0.25);
+}
+.dark-theme .card-day-divider.day-header-sex .card-day-divider-pill {
+  border-color: #fb7185;
+  color: #fecdd3;
+  background: rgba(244, 63, 94, 0.25);
 }

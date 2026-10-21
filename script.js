@@ -1079,9 +1079,11 @@ function getDayAndColIndices(cell) {
  * Esconde colunas de outros dias e ajusta o layout da tabela.
  * @param {number|string} selectedDayIndex - 0 para todos, 1-5 para dias.
  */
-function filterByDay(selectedDayIndex) {
+function filterByDay(selectedDayIndex, silent = false) {
+  const isMobile = window.innerWidth <= 768;
+  _storage.save(isMobile ? 'school_mobile_day_v1' : CONFIG.FILTER_DAY_KEY, selectedDayIndex);
   _storage.save(CONFIG.FILTER_DAY_KEY, selectedDayIndex);
-  const selectedDay = parseInt(selectedDayIndex);
+  const selectedDay = parseInt(selectedDayIndex, 10) || 0;
   const dayNames = ['', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira'];
 
   const daySelect = _dom.dayFilter();
@@ -1090,7 +1092,11 @@ function filterByDay(selectedDayIndex) {
   }
 
   if (document.body.classList.contains('view-cards')) {
-    renderCardsView();
+    renderCardsView(selectedDay);
+  }
+
+  if (!silent) {
+    showToast(selectedDay === 0 ? "📅 Exibindo a semana completa (Todos os Dias)" : `📅 Filtrado por: ${dayNames[selectedDay]}`, "info", 1800);
   }
 
   _dom.tables().forEach(table => {
@@ -1177,6 +1183,8 @@ function updateViewModeButtonsUI(isCards) {
  */
 function toggleViewMode() {
   const isCards = document.body.classList.toggle('view-cards');
+  const isMobile = window.innerWidth <= 768;
+  localStorage.setItem(isMobile ? 'school_mobile_view_mode' : 'school_desktop_view_mode', isCards ? 'cards' : 'table');
   localStorage.setItem('school_view_mode', isCards ? 'cards' : 'table');
 
   updateViewModeButtonsUI(isCards);
@@ -1185,7 +1193,7 @@ function toggleViewMode() {
     renderCardsView();
     showToast("Visualização em Cards ativada!", "info");
   } else {
-    showToast("Visualização em Tabela ativada!", "info");
+    showToast("Visualização tradicional em Tabela ativada!", "info");
   }
 }
 
@@ -1218,19 +1226,17 @@ function applyDynamicStylesToEditor(editor, text) {
 
 /**
  * Renderiza a grade em formato de Cards Verticais 2.0 para dispositivos móveis.
+ * Suporta visualização de um dia individual ou de TODOS OS DIAS da semana agrupados.
+ * @param {number} [forcedDay=null]
  */
-function renderCardsView() {
+function renderCardsView(forcedDay = null) {
   const wrapper = document.getElementById('cards-view-wrapper');
   if (!wrapper) return;
 
-  const currentDay = parseInt(localStorage.getItem(CONFIG.FILTER_DAY_KEY) || '0');
+  const savedDay = localStorage.getItem(CONFIG.FILTER_DAY_KEY);
+  const currentDay = forcedDay !== null ? forcedDay : parseInt(savedDay !== null ? savedDay : '0', 10);
   const dayNames = ['', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira'];
-
-  // Se estiver em "Todos os dias" no modo cards, exibe o dia de hoje ou Segunda por padrão
-  const activeDay = (currentDay === 0) 
-    ? (new Date().getDay() >= 1 && new Date().getDay() <= 5 ? new Date().getDay() : 1) 
-    : currentDay;
-  const dayName = dayNames[activeDay] || 'Segunda-feira';
+  const dayClasses = ['', 'seg', 'ter', 'qua', 'qui', 'sex'];
 
   wrapper.innerHTML = '';
 
@@ -1240,6 +1246,10 @@ function renderCardsView() {
   ];
 
   const nowMinutes = new Date().getHours() * 60 + new Date().getMinutes();
+  const todayDayNum = new Date().getDay();
+
+  // Se currentDay === 0, renderiza todos os 5 dias letivos. Caso contrário, renderiza apenas o dia selecionado.
+  const daysToRender = (currentDay === 0) ? [1, 2, 3, 4, 5] : [currentDay];
 
   sections.forEach(sec => {
     const secEl = document.getElementById(sec.id);
@@ -1261,7 +1271,7 @@ function renderCardsView() {
     header.innerHTML = `
       <h2>${sec.title}</h2>
       <div class="card-section-header-right">
-        <span class="card-day-title-badge">${dayName}</span>
+        <span class="card-day-title-badge">${currentDay === 0 ? '📅 Semana Completa' : dayNames[currentDay]}</span>
         <span class="card-accordion-chevron">▲</span>
       </div>
     `;
@@ -1271,84 +1281,110 @@ function renderCardsView() {
     group.appendChild(header);
 
     const layout = sec.layout;
-    let colStart = 1;
-    for (let d = 0; d < activeDay - 1; d++) {
-      colStart += layout[d];
-    }
-    const colsInActiveDay = layout[activeDay - 1];
 
-    for (let r = 2; r < table.rows.length; r++) {
-      const row = table.rows[r];
-      const isRecreio = row.classList.contains('recreio');
-      const isCurrentActive = row.classList.contains('current-active');
+    daysToRender.forEach(activeDay => {
+      const dayName = dayNames[activeDay];
 
-      const card = document.createElement('div');
-      card.className = `schedule-card ${isRecreio ? 'card-recreio' : ''} ${isCurrentActive ? 'current-active' : ''}`;
-
-      if (isRecreio) {
-        card.innerHTML = `
-          <div class="card-recreio-text">
-            🥪 ${row.textContent.trim()}
-          </div>
-        `;
-      } else {
-        const timeText = row.cells[0]?.textContent.trim() || '';
-        const timeRow = document.createElement('div');
-        timeRow.className = 'card-time-row';
-        timeRow.innerHTML = `
-          <div class="card-time-badge">⏰ ${timeText}</div>
-          ${isCurrentActive ? '<span class="card-status-pill">🟢 Aula Atual</span>' : ''}
-        `;
-        card.appendChild(timeRow);
-
-        const lessonsGrid = document.createElement('div');
-        lessonsGrid.className = 'card-lessons-grid';
-
-        for (let c = 0; c < colsInActiveDay; c++) {
-          const colIndex = colStart + c;
-          const targetCell = row.cells[colIndex];
-          if (!targetCell) continue;
-
-          const specialistTh = table.rows[1]?.cells[colIndex - 1];
-          const specialistSigla = specialistTh?.textContent.trim() || `Espec. ${c + 1}`;
-          const specialistTitle = specialistTh?.getAttribute('title') || specialistSigla;
-
-          const cellValue = targetCell.textContent.trim();
-          const chip = document.createElement('div');
-          chip.className = 'card-lesson-chip';
-
-          const chipInfo = document.createElement('div');
-          chipInfo.className = 'chip-specialist-info';
-          chipInfo.innerHTML = `
-            <span class="chip-sigla">${specialistSigla}</span>
-            <span class="chip-teacher-name" title="${specialistTitle}">${specialistTitle}</span>
-          `;
-
-          const editor = document.createElement('div');
-          editor.className = 'chip-cell-editor';
-          editor.contentEditable = !document.body.classList.contains('readonly');
-          editor.textContent = cellValue;
-          applyDynamicStylesToEditor(editor, cellValue);
-
-          // Sincronização bidirecional em tempo real
-          editor.addEventListener('input', () => {
-            const newVal = editor.textContent.trim().toUpperCase();
-            targetCell.textContent = newVal;
-            applyDynamicStyles(targetCell);
-            applyDynamicStylesToEditor(editor, newVal);
-            checkConflicts(targetCell);
-            saveContent(getCellKey(targetCell), newVal);
-          });
-
-          chip.append(chipInfo, editor);
-          lessonsGrid.appendChild(chip);
-        }
-        card.appendChild(lessonsGrid);
+      // Se estiver visualizando a semana inteira, adiciona um belo divisor indicando o dia
+      if (currentDay === 0) {
+        const dayDivider = document.createElement('div');
+        dayDivider.className = `card-day-divider day-header-${dayClasses[activeDay]}`;
+        dayDivider.innerHTML = `<span class="card-day-divider-pill">${dayName}</span>`;
+        group.appendChild(dayDivider);
       }
-      group.appendChild(card);
-    }
+
+      let colStart = 1;
+      for (let d = 0; d < activeDay - 1; d++) {
+        colStart += layout[d];
+      }
+      const colsInActiveDay = layout[activeDay - 1];
+
+      for (let r = 2; r < table.rows.length; r++) {
+        const row = table.rows[r];
+        const isRecreio = row.classList.contains('recreio');
+        const isCurrentActive = row.classList.contains('current-active') && (todayDayNum === activeDay);
+
+        const card = document.createElement('div');
+        card.className = `schedule-card ${isRecreio ? 'card-recreio' : ''} ${isCurrentActive ? 'current-active' : ''}`;
+
+        if (isRecreio) {
+          card.innerHTML = `
+            <div class="card-recreio-text">
+              🥪 ${row.textContent.trim()}
+            </div>
+          `;
+        } else {
+          const timeText = row.cells[0]?.textContent.trim() || '';
+          const timeRow = document.createElement('div');
+          timeRow.className = 'card-time-row';
+          timeRow.innerHTML = `
+            <div class="card-time-badge">⏰ ${timeText}</div>
+            ${isCurrentActive ? '<span class="card-status-pill">🟢 Aula Atual</span>' : ''}
+          `;
+          card.appendChild(timeRow);
+
+          const lessonsGrid = document.createElement('div');
+          lessonsGrid.className = 'card-lessons-grid';
+
+          for (let c = 0; c < colsInActiveDay; c++) {
+            const colIndex = colStart + c;
+            const targetCell = row.cells[colIndex];
+            if (!targetCell) continue;
+
+            const specialistTh = table.rows[1]?.cells[colIndex - 1];
+            const specialistSigla = specialistTh?.textContent.trim() || `Espec. ${c + 1}`;
+            const specialistTitle = specialistTh?.getAttribute('title') || specialistSigla;
+
+            const cellValue = targetCell.textContent.trim();
+            const chip = document.createElement('div');
+            chip.className = 'card-lesson-chip';
+
+            const chipInfo = document.createElement('div');
+            chipInfo.className = 'chip-specialist-info';
+            chipInfo.innerHTML = `
+              <span class="chip-sigla">${specialistSigla}</span>
+              <span class="chip-teacher-name" title="${specialistTitle}">${specialistTitle}</span>
+            `;
+
+            const editor = document.createElement('div');
+            editor.className = 'chip-cell-editor';
+            editor.contentEditable = !document.body.classList.contains('readonly');
+            editor.textContent = cellValue;
+            applyDynamicStylesToEditor(editor, cellValue);
+
+            // Sincronização bidirecional em tempo real
+            editor.addEventListener('input', () => {
+              const newVal = editor.textContent.trim().toUpperCase();
+              targetCell.textContent = newVal;
+              applyDynamicStyles(targetCell);
+              applyDynamicStylesToEditor(editor, newVal);
+              checkConflicts(targetCell);
+              saveContent(getCellKey(targetCell), newVal);
+            });
+
+            chip.append(chipInfo, editor);
+            lessonsGrid.appendChild(chip);
+          }
+          card.appendChild(lessonsGrid);
+        }
+        group.appendChild(card);
+      }
+    });
+
     wrapper.appendChild(group);
   });
+
+  if (!wrapper.hasChildNodes() || wrapper.querySelectorAll('.schedule-card').length === 0) {
+    const emptyState = document.createElement('div');
+    emptyState.className = 'card-empty-state';
+    emptyState.innerHTML = `
+      <div class="card-empty-state-icon">📋</div>
+      <div class="card-empty-state-title">Nenhum horário disponível</div>
+      <div class="card-empty-state-desc">Não encontramos aulas para o dia ou turno selecionado.</div>
+      <button type="button" class="btn btn-primary" onclick="filterByDay(0); clearSearch();">Exibir Todos os Dias</button>
+    `;
+    wrapper.appendChild(emptyState);
+  }
 }
 
 /**
@@ -2704,9 +2740,20 @@ function initAutoPeriodAndDay() {
   const now = new Date();
   const day = now.getDay(); // 0 = Domingo, 1 = Segunda, ..., 5 = Sexta, 6 = Sábado
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const isMobile = window.innerWidth <= 768;
 
-  // 1. Filtro do dia atual: se for dia letivo (1 a 5), seleciona hoje. Caso seja fim de semana (0 ou 6), abre na Segunda-feira (1).
-  const targetDay = (day >= 1 && day <= 5) ? day : 1;
+  // Lógica inteligente de abertura por dispositivo:
+  // - No Celular (<= 768px): abre focado no dia de hoje (1 a 5, ou Segunda se fim de semana).
+  // - No Desktop (> 768px): abre no visual tradicional com '0' (Todos os Dias) para ver a semana inteira.
+  // Respeita preferência salva especificamente se já houver.
+  const savedDay = localStorage.getItem(isMobile ? 'school_mobile_day_v1' : CONFIG.FILTER_DAY_KEY);
+  let targetDay;
+  if (savedDay !== null) {
+    targetDay = parseInt(savedDay, 10);
+  } else {
+    targetDay = isMobile ? ((day >= 1 && day <= 5) ? day : 1) : 0;
+  }
+
   const daySelect = _dom.dayFilter();
   if (daySelect) {
     daySelect.value = targetDay.toString();
@@ -2717,31 +2764,57 @@ function initAutoPeriodAndDay() {
       daySelect._hasChangeListener = true;
     }
   }
-  filterByDay(targetDay);
+  filterByDay(targetDay, true);
   initTodayIndicatorOnTabs();
   updateMobileDayTabsUI(targetDay);
-  // Manhã: 7h05 às 12h00 (ponto de virada para a tarde: 12h30)
-  // Antes de 12h30: Manhã visível / Tarde recolhida
-  // A partir de 12h30: Tarde visível / Manhã recolhida
+
+  // Turnos (Manhã / Tarde):
+  // - No Celular: recolhe o turno oposto para focar no turno atual.
+  // - No Desktop: visual tradicional com ambos os turnos expandidos por padrão.
   const isAfternoon = currentMinutes >= (12 * 60 + 30);
   const morningSection = document.getElementById('section-morning');
   const afternoonSection = document.getElementById('section-afternoon');
 
   if (morningSection && afternoonSection) {
-    if (isAfternoon) {
-      morningSection.classList.add('collapsed');
-      morningSection.querySelector('.period-hero-banner')?.setAttribute('aria-expanded', 'false');
+    const savedMorningCollapsed = localStorage.getItem('school_section_morning_collapsed');
+    const savedAfternoonCollapsed = localStorage.getItem('school_section_afternoon_collapsed');
 
-      afternoonSection.classList.remove('collapsed');
-      afternoonSection.querySelector('.period-hero-banner')?.setAttribute('aria-expanded', 'true');
-      updatePeriodNavActiveTab('afternoon');
+    if (savedMorningCollapsed !== null && savedAfternoonCollapsed !== null) {
+      const isMorningCollapsed = savedMorningCollapsed === 'true';
+      const isAfternoonCollapsed = savedAfternoonCollapsed === 'true';
+
+      morningSection.classList.toggle('collapsed', isMorningCollapsed);
+      morningSection.querySelector('.period-hero-banner')?.setAttribute('aria-expanded', String(!isMorningCollapsed));
+
+      afternoonSection.classList.toggle('collapsed', isAfternoonCollapsed);
+      afternoonSection.querySelector('.period-hero-banner')?.setAttribute('aria-expanded', String(!isAfternoonCollapsed));
+
+      updatePeriodNavActiveTab(isMorningCollapsed ? 'afternoon' : 'morning');
+    } else if (isMobile) {
+      // Celular: foca no turno atual
+      if (isAfternoon) {
+        morningSection.classList.add('collapsed');
+        morningSection.querySelector('.period-hero-banner')?.setAttribute('aria-expanded', 'false');
+
+        afternoonSection.classList.remove('collapsed');
+        afternoonSection.querySelector('.period-hero-banner')?.setAttribute('aria-expanded', 'true');
+        updatePeriodNavActiveTab('afternoon');
+      } else {
+        morningSection.classList.remove('collapsed');
+        morningSection.querySelector('.period-hero-banner')?.setAttribute('aria-expanded', 'true');
+
+        afternoonSection.classList.add('collapsed');
+        afternoonSection.querySelector('.period-hero-banner')?.setAttribute('aria-expanded', 'false');
+        updatePeriodNavActiveTab('morning');
+      }
     } else {
+      // Desktop: ambos os turnos expandidos (visual tradicional completo)
       morningSection.classList.remove('collapsed');
       morningSection.querySelector('.period-hero-banner')?.setAttribute('aria-expanded', 'true');
 
-      afternoonSection.classList.add('collapsed');
-      afternoonSection.querySelector('.period-hero-banner')?.setAttribute('aria-expanded', 'false');
-      updatePeriodNavActiveTab('morning');
+      afternoonSection.classList.remove('collapsed');
+      afternoonSection.querySelector('.period-hero-banner')?.setAttribute('aria-expanded', 'true');
+      updatePeriodNavActiveTab(isAfternoon ? 'afternoon' : 'morning');
     }
   }
 }
@@ -2898,18 +2971,39 @@ function toggleCompactMode() {
 }
 
 /**
- * Inicializa o efeito de encolhimento do cabeçalho ao rolar a página.
+ * Inicializa o efeito de encolhimento do cabeçalho e auto-ocultamento da barra de status ao rolar.
  */
 function initScrollEffect() {
   const wrapper = document.querySelector('.top-area-sticky-wrapper');
-  if (!wrapper) return;
+  const statusBar = document.getElementById('statusBar');
+  let lastScrollY = window.scrollY;
+  let scrollTimeout = null;
 
   window.addEventListener('scroll', () => {
-    if (window.scrollY > 20) {
-      wrapper.classList.add('scrolled');
+    const currentScrollY = window.scrollY;
+
+    // Sombra do cabeçalho sticky
+    if (currentScrollY > 15) {
+      wrapper?.classList.add('scrolled');
     } else {
-      wrapper.classList.remove('scrolled');
+      wrapper?.classList.remove('scrolled');
     }
+
+    // Auto-ocultamento sutil da Dynamic Island (Status Bar) ao rolar para baixo rapidamente
+    if (statusBar) {
+      if (currentScrollY > lastScrollY && currentScrollY > 70) {
+        statusBar.classList.add('status-bar-hidden');
+      } else {
+        statusBar.classList.remove('status-bar-hidden');
+      }
+
+      clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(() => {
+        statusBar.classList.remove('status-bar-hidden');
+      }, 350);
+    }
+
+    lastScrollY = currentScrollY;
   }, { passive: true });
 }
 
@@ -2963,15 +3057,19 @@ function initApp() {
 
   initSwipeGestures();
 
-  // Detecção inteligente: define Cards View por padrão no mobile (< 768px) se não houver preferência salva
-  const savedViewMode = localStorage.getItem('school_view_mode');
+  // Detecção inteligente: define Cards View por padrão no mobile (<= 768px) e Modo Tabela Tradicional no desktop
   const isMobile = window.innerWidth <= 768;
-  const isCards = savedViewMode === 'cards' || (savedViewMode === null && isMobile);
+  const savedDeviceMode = localStorage.getItem(isMobile ? 'school_mobile_view_mode' : 'school_desktop_view_mode');
+  const isCards = isMobile
+    ? (savedDeviceMode !== 'table') // No celular: padrão é o novo Modo Cards
+    : (savedDeviceMode === 'cards'); // No computador: padrão é o Modo Tabela Tradicional
+
   if (isCards) {
     document.body.classList.add('view-cards');
     updateViewModeButtonsUI(true);
     renderCardsView();
   } else {
+    document.body.classList.remove('view-cards');
     updateViewModeButtonsUI(false);
   }
 
@@ -3251,47 +3349,6 @@ function refreshTableUI() {
   });
 }
 
-/**
- * Abre o modal de atalhos de teclado.
- */
-function openShortcutsModal() {
-  const shortcuts = [
-    { key: 'Enter / ↓', desc: 'Ir para a aula de baixo' },
-    { key: '↑', desc: 'Ir para a aula de cima' },
-    { key: '← / →', desc: 'Navegação horizontal' },
-    { key: 'Ctrl + D', desc: 'Copiar aula de cima (Fill Down)' },
-    { key: 'Ctrl + C / V', desc: 'Copiar e colar conteúdo' },
-    { key: 'Ctrl + Z / Y', desc: 'Desfazer e Refazer' }
-  ];
-
-  const overlay = Object.assign(document.createElement('div'), { className: 'modal-overlay' });
-  overlay.style.display = 'flex';
-
-  const modal = Object.assign(document.createElement('div'), { className: 'modal' });
-  const title = Object.assign(document.createElement('h2'), { textContent: '⌨️ Atalhos de Teclado' });
-  
-  const list = Object.assign(document.createElement('div'), { className: 'shortcut-list' });
-  
-  shortcuts.forEach(s => {
-    const item = Object.assign(document.createElement('div'), { className: 'shortcut-item' });
-    item.innerHTML = `<span class="shortcut-desc">${s.desc}</span><span class="shortcut-key">${s.key}</span>`;
-    list.appendChild(item);
-  });
-
-  const footer = Object.assign(document.createElement('div'), { className: 'modal-footer' });
-  const closeBtn = Object.assign(document.createElement('button'), { 
-    type: 'button',
-    className: 'btn btn-primary', 
-    textContent: 'Entendido',
-    onclick: () => overlay.remove() 
-  });
-
-  footer.appendChild(closeBtn);
-  modal.append(title, list, footer);
-  overlay.appendChild(modal);
-  document.body.appendChild(overlay);
-  setupFocusTrap(overlay);
-}
 
 const COLOR_PRESETS = [
   {
