@@ -3,7 +3,9 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="description"
     content="Sistema de gestão e visualização de horário escolar editável com suporte a múltiplos períodos e professores.">
   <meta name="theme-color" content="#4f46e5">
@@ -134,6 +136,11 @@
 
       <!-- Grupo Segmentado 5: Menu Dropdown Principal -->
       <div class="menu-dropdown-wrapper">
+        <!-- Botão Rápido de Alternância de Visualização Mobile (Cards / Tabela) -->
+        <button type="button" class="segmented-btn mobile-quick-view-btn" id="mobile-quick-view-btn" onclick="toggleViewMode()" title="Alternar entre Cards e Tabela" aria-label="Alternar modo de visualização">
+          <span id="mobile-quick-view-icon">📱</span>
+          <span class="mobile-quick-view-text">Cards</span>
+        </button>
         <button type="button" class="btn btn-primary btn-menu-trigger" id="main-menu-btn"
           onclick="toggleMainMenu(event)" aria-haspopup="true" aria-expanded="false">
           <span class="menu-hamburger-icon">☰</span> <span>Menu</span>
@@ -166,6 +173,33 @@
           <button type="button" id="lock-btn" class="btn-menu-item" onclick="toggleLockMode()">🔒 Modo Leitura</button>
         </div>
       </div>
+    </div>
+
+    <!-- Barra de Abas Rápidas por Dia (Mobile Day Tabs) -->
+    <div id="mobile-day-tabs" class="mobile-day-tabs" role="tablist" aria-label="Filtrar por dia da semana">
+      <button type="button" class="mobile-day-tab active" data-day="1" onclick="filterByDay(1)" role="tab" aria-selected="true">
+        <span class="tab-label">Seg</span>
+        <span class="tab-dot" id="tab-dot-1"></span>
+      </button>
+      <button type="button" class="mobile-day-tab" data-day="2" onclick="filterByDay(2)" role="tab" aria-selected="false">
+        <span class="tab-label">Ter</span>
+        <span class="tab-dot" id="tab-dot-2"></span>
+      </button>
+      <button type="button" class="mobile-day-tab" data-day="3" onclick="filterByDay(3)" role="tab" aria-selected="false">
+        <span class="tab-label">Qua</span>
+        <span class="tab-dot" id="tab-dot-3"></span>
+      </button>
+      <button type="button" class="mobile-day-tab" data-day="4" onclick="filterByDay(4)" role="tab" aria-selected="false">
+        <span class="tab-label">Qui</span>
+        <span class="tab-dot" id="tab-dot-4"></span>
+      </button>
+      <button type="button" class="mobile-day-tab" data-day="5" onclick="filterByDay(5)" role="tab" aria-selected="false">
+        <span class="tab-label">Sex</span>
+        <span class="tab-dot" id="tab-dot-5"></span>
+      </button>
+      <button type="button" class="mobile-day-tab" data-day="0" onclick="filterByDay(0)" role="tab" aria-selected="false">
+        <span class="tab-label">Todos</span>
+      </button>
     </div>
   </div>
 

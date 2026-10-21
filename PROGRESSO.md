@@ -50,9 +50,11 @@ Baseado no `TODO-PLANEJAMENTO.md`
 - [x] **Faixa de Recreio Estilizada (Glassmorphic Diagonal Ribbon)**: Padrão listrado diagonal translúcido com bordas tracejadas suaves.
 - [x] **Linha Ativa com Laser Glow / Shimmer**: Feixe de luz em tempo real fluindo nas células do horário escolar atual.
 - [x] **Barra de Status em Ilha Dinâmica (Dynamic Island)**: Rodapé flutuante em formato pill com vidro fosco de alta dispersão (*24px blur*).
-### 10. Template & Layout Enhancements
-- [x] **Navegador Rápido de Períodos no Topo (Period Quick-Tabs)**: Seletores rápidos `☀️ Manhã` e `🌅 Tarde` com rolagem suave automática, expansão inteligente da seção e atualização em tempo real via scroll watcher.
-
-
-
-
+### 11. Otimização Mobile First (Fases 1 & 2 Concluídas)
+- [x] **Viewport & Meta Tags Mobile Modernas**: Adicionado `viewport-fit=cover`, `apple-mobile-web-app-capable` e `maximum-scale=5.0` para suporte completo à Dynamic Island e entalhes de smartphones.
+- [x] **Header Slim Mobile (< 768px)**: Compactação do topo fixo, reduzindo a ocupação vertical em mais de 60%. Ocultados controles de desktop desnecessários em telas touch (zoom com botões, legendas extensas) e remoção do menu mobile legado redundante.
+- [x] **Barra de Abas Rápidas por Dia (Mobile Day Tabs)**: Pílulas horizontais deslizáveis (`Seg`, `Ter`, `Qua`, `Qui`, `Sex`, `Todos`) com toque instantâneo em 1 clique, indicador luminoso do dia de hoje (`tab-dot.is-today`) e sincronização bidirecional com os gestos de swipe.
+- [x] **Cards View 2.0 com Detecção Automática**: Em smartphones/telas $\le 768px$, o sistema abre diretamente no Modo Cards de forma inteligente (salvo preferência prévia).
+- [x] **Botão Rápido de Alternância (`mobile-quick-view-btn`)**: Pílula direta no cabeçalho mobile `[📱 Cards / 📊 Grade]` para troca instantânea de visualização.
+- [x] **Cards View 2.0 Aprimorado**: Suporte a recolher/expandir períodos com chevron animado, destaque de aula atual com borda luminosa e touch targets ergonômicos com fonte `16px` para eliminar o auto-zoom compulsório do iOS Safari.
+- [x] **Menu como Bottom Sheet**: Transformação do menu dropdown em gaveta inferior deslizante com puxador (*drag handle*), cantos arredondados de 24px e backdrop suave.

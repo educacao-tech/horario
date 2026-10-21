@@ -1149,7 +1149,27 @@ function filterByDay(selectedDayIndex) {
       td.colSpan = visibleColCount;
     });
   });
+  updateMobileDayTabsUI(selectedDay);
   updateHighlights();
+}
+
+/**
+ * Atualiza os botões de alternância de modo (menu e header) em tempo real.
+ * @param {boolean} isCards
+ */
+function updateViewModeButtonsUI(isCards) {
+  const menuBtn = document.getElementById('view-mode-btn');
+  if (menuBtn) {
+    menuBtn.innerHTML = isCards ? '📊 Modo Tabela' : '📱 Modo Cards (Mobile)';
+  }
+  const quickBtn = document.getElementById('mobile-quick-view-btn');
+  if (quickBtn) {
+    const icon = document.getElementById('mobile-quick-view-icon');
+    const text = quickBtn.querySelector('.mobile-quick-view-text');
+    if (icon) icon.textContent = isCards ? '📊' : '📱';
+    if (text) text.textContent = isCards ? 'Grade' : 'Cards';
+    quickBtn.title = isCards ? 'Alternar para Modo Tabela (Grade)' : 'Alternar para Modo Cards (Mobile)';
+  }
 }
 
 /**
@@ -1159,10 +1179,7 @@ function toggleViewMode() {
   const isCards = document.body.classList.toggle('view-cards');
   localStorage.setItem('school_view_mode', isCards ? 'cards' : 'table');
 
-  const btn = document.getElementById('view-mode-btn');
-  if (btn) {
-    btn.innerHTML = isCards ? '📊 Modo Tabela' : '📱 Modo Cards (Mobile)';
-  }
+  updateViewModeButtonsUI(isCards);
 
   if (isCards) {
     renderCardsView();
@@ -1200,7 +1217,7 @@ function applyDynamicStylesToEditor(editor, text) {
 }
 
 /**
- * Renderiza a grade em formato de Cards Verticais para dispositivos móveis.
+ * Renderiza a grade em formato de Cards Verticais 2.0 para dispositivos móveis.
  */
 function renderCardsView() {
   const wrapper = document.getElementById('cards-view-wrapper');
@@ -1222,21 +1239,35 @@ function renderCardsView() {
     { id: 'section-afternoon', title: '🌤️ Horário da Tarde', layout: CONFIG.LAYOUTS.afternoon }
   ];
 
+  const nowMinutes = new Date().getHours() * 60 + new Date().getMinutes();
+
   sections.forEach(sec => {
     const secEl = document.getElementById(sec.id);
     if (!secEl) return;
     const table = secEl.querySelector('table');
     if (!table) return;
 
+    // Seção recolhida por padrão de acordo com o turno do momento (Manhã após 12h30 ou Tarde antes de 12h30)
+    const isMorning = sec.id === 'section-morning';
+    const shouldCollapse = isMorning ? nowMinutes >= (12 * 60 + 30) : nowMinutes < (12 * 60 + 30);
+
     const group = document.createElement('div');
-    group.className = 'card-section-group';
+    group.className = `card-section-group ${shouldCollapse ? 'collapsed' : ''}`;
+    group.id = `card-group-${sec.id}`;
 
     const header = document.createElement('div');
     header.className = 'card-section-header';
+    header.title = 'Toque para recolher ou expandir período';
     header.innerHTML = `
       <h2>${sec.title}</h2>
-      <span class="card-day-title-badge">${dayName}</span>
+      <div class="card-section-header-right">
+        <span class="card-day-title-badge">${dayName}</span>
+        <span class="card-accordion-chevron">▲</span>
+      </div>
     `;
+    header.addEventListener('click', () => {
+      group.classList.toggle('collapsed');
+    });
     group.appendChild(header);
 
     const layout = sec.layout;
@@ -1266,7 +1297,7 @@ function renderCardsView() {
         timeRow.className = 'card-time-row';
         timeRow.innerHTML = `
           <div class="card-time-badge">⏰ ${timeText}</div>
-          ${isCurrentActive ? '<span class="card-status-pill">🟢 Em andamento</span>' : ''}
+          ${isCurrentActive ? '<span class="card-status-pill">🟢 Aula Atual</span>' : ''}
         `;
         card.appendChild(timeRow);
 
@@ -1299,7 +1330,7 @@ function renderCardsView() {
           editor.textContent = cellValue;
           applyDynamicStylesToEditor(editor, cellValue);
 
-          // Sincronização bidirecional
+          // Sincronização bidirecional em tempo real
           editor.addEventListener('input', () => {
             const newVal = editor.textContent.trim().toUpperCase();
             targetCell.textContent = newVal;
@@ -1318,6 +1349,41 @@ function renderCardsView() {
     }
     wrapper.appendChild(group);
   });
+}
+
+/**
+ * Atualiza o estado visual das abas de dias no cabeçalho mobile.
+ * @param {number} selectedDay
+ */
+function updateMobileDayTabsUI(selectedDay) {
+  const tabs = document.querySelectorAll('.mobile-day-tab');
+  tabs.forEach(tab => {
+    const tabDay = parseInt(tab.getAttribute('data-day') || '0');
+    const isActive = tabDay === selectedDay;
+    tab.classList.toggle('active', isActive);
+    tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    if (isActive) {
+      try {
+        tab.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      } catch (err) {}
+    }
+  });
+}
+
+/**
+ * Ativa o indicador luminoso (dot) no dia atual da semana nas abas móveis.
+ */
+function initTodayIndicatorOnTabs() {
+  const today = new Date().getDay(); // 1 a 5
+  for (let d = 1; d <= 5; d++) {
+    const dot = document.getElementById(`tab-dot-${d}`);
+    if (dot) {
+      dot.classList.toggle('is-today', d === today);
+      if (d === today) {
+        dot.setAttribute('title', 'Hoje');
+      }
+    }
+  }
 }
 
 /**
@@ -2652,8 +2718,8 @@ function initAutoPeriodAndDay() {
     }
   }
   filterByDay(targetDay);
-
-  // 2. Período atual exclusivo:
+  initTodayIndicatorOnTabs();
+  updateMobileDayTabsUI(targetDay);
   // Manhã: 7h05 às 12h00 (ponto de virada para a tarde: 12h30)
   // Antes de 12h30: Manhã visível / Tarde recolhida
   // A partir de 12h30: Tarde visível / Manhã recolhida
@@ -2819,34 +2885,6 @@ function initScrollToNow() {
 }
 
 /**
- * Inicializa o menu hambúrguer para dispositivos móveis.
- */
-function initMobileMenu() {
-  const toolbar = document.querySelector('.toolbar');
-  if (!toolbar) return;
-
-  const menuBtn = document.createElement('button');
-  menuBtn.type = 'button';
-  menuBtn.className = 'btn mobile-menu-btn';
-  menuBtn.innerHTML = '☰';
-  menuBtn.title = 'Menu de opções';
-  
-  menuBtn.onclick = (e) => {
-    e.stopPropagation();
-    toolbar.classList.toggle('menu-open');
-  };
-
-  toolbar.appendChild(menuBtn);
-
-  // Fecha o menu ao clicar fora
-  document.addEventListener('click', (e) => {
-    if (!toolbar.contains(e.target) && toolbar.classList.contains('menu-open')) {
-      toolbar.classList.remove('menu-open');
-    }
-  });
-}
-
-/**
  * Alterna entre o modo de visualização normal e compacto.
  */
 function toggleCompactMode() {
@@ -2925,12 +2963,16 @@ function initApp() {
 
   initSwipeGestures();
 
-  const isCardsSaved = localStorage.getItem('school_view_mode') === 'cards';
-  if (isCardsSaved) {
+  // Detecção inteligente: define Cards View por padrão no mobile (< 768px) se não houver preferência salva
+  const savedViewMode = localStorage.getItem('school_view_mode');
+  const isMobile = window.innerWidth <= 768;
+  const isCards = savedViewMode === 'cards' || (savedViewMode === null && isMobile);
+  if (isCards) {
     document.body.classList.add('view-cards');
-    const viewBtn = document.getElementById('view-mode-btn');
-    if (viewBtn) viewBtn.innerHTML = '📊 Modo Tabela';
+    updateViewModeButtonsUI(true);
     renderCardsView();
+  } else {
+    updateViewModeButtonsUI(false);
   }
 
   const isCompactSaved = localStorage.getItem('school_compact_mode') === 'true';

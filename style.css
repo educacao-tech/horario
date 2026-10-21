@@ -2073,86 +2073,9 @@ table.current-day-5 .day-cell-5 {
   cursor: help;
 }
 
-/* Ajustes para Telas Pequenas (Mobile) */
-@media (max-width: 768px) {
-  .top-area-sticky-wrapper {
-    padding: 6px 10px;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-  
-  div[id^="section-"] {
-    padding: 0 10px;
-  }
-
-  .header-titles h1 {
-    font-size: 0.95rem;
-  }
-
-  .legend-compact {
-    display: none; /* Oculta legendas na barra superior no mobile para priorizar ações */
-  }
-
-  .toolbar {
-    gap: 4px;
-    padding: 0;
-  }
-
-  .btn {
-    padding: 4px 8px; /* Botões mais baixos e estreitos */
-    font-size: 0.75rem; /* Texto menor para economizar largura */
-    gap: 4px; /* Espaço menor entre o emoji e o texto do botão */
-  }
-
-  /* Menu Mobile (Hambúrguer) */
-  .mobile-menu-btn {
-    display: flex !important;
-    background: var(--primary);
-    color: white;
-    order: 99; /* Garante que fique no final da toolbar */
-    margin-left: auto;
-  }
-
-  .toolbar.menu-open .time-counter,
-  .toolbar.menu-open .current-date-time,
-  .toolbar.menu-open #theme-toggle {
-    display: flex !important;
-    position: absolute;
-    right: 0;
-    z-index: 2000;
-    width: 220px;
-    box-shadow: var(--shadow-md);
-    border: 1px solid var(--border-color);
-  }
-
-  .toolbar.menu-open .current-date-time { top: 60px; }
-  .toolbar.menu-open .time-counter { top: 105px; }
-  .toolbar.menu-open #theme-toggle { 
-    top: 150px; 
-    background: var(--bg-card) !important;
-    color: var(--text-main) !important;
-  }
-
-  /* Esconde por padrão no mobile se o menu não estiver aberto */
-  .toolbar:not(.menu-open) .time-counter,
-  .toolbar:not(.menu-open) .current-date-time,
-  .toolbar:not(.menu-open) #theme-toggle {
-    display: none !important;
-  }
-
-  /* Ajusta o campo de busca para ocupar mais espaço se os outros elementos forem ocultados */
-  .search-field {
-    width: 100%;
-  }
-}
-
 .header-highlight {
   background-color: var(--primary) !important;
   color: white !important;
-}
-
-.mobile-menu-btn {
-  display: none; /* Escondido no desktop */
 }
 th[title] {
   cursor: help;
@@ -3064,93 +2987,257 @@ body.drag-over::after {
   }
 }
 
+/* ==========================================================================
+   ELEMENTOS DE INTERFACE MÓVEL (MOBILE UI CONTROLS)
+   ========================================================================== */
+.mobile-quick-view-btn {
+  display: none; /* Oculto no desktop */
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 20px;
+  background: var(--bg-segmented);
+  color: var(--text-main);
+  border: 1px solid var(--border-segmented);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+}
+.mobile-quick-view-btn:active {
+  transform: scale(0.95);
+}
+
+.mobile-day-tabs {
+  display: none; /* Oculto no desktop */
+  width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  gap: 6px;
+  padding: 4px 2px 2px 2px;
+  -webkit-overflow-scrolling: touch;
+  align-items: center;
+}
+.mobile-day-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.mobile-day-tab {
+  flex: 1 1 0px;
+  min-width: 48px;
+  height: 36px;
+  border-radius: 18px;
+  border: 1px solid var(--border-segmented);
+  background: var(--bg-segmented);
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+  font-family: var(--font-title);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  padding: 0 4px;
+}
+
+.mobile-day-tab:hover {
+  color: var(--text-main);
+  background: rgba(79, 70, 229, 0.08);
+}
+
+.mobile-day-tab:active {
+  transform: scale(0.95);
+}
+
+.mobile-day-tab.active {
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  color: #ffffff;
+  border-color: transparent;
+  box-shadow: 0 3px 12px rgba(79, 70, 229, 0.35);
+}
+
+.tab-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: none;
+}
+
+.tab-dot.is-today {
+  display: inline-block;
+  background-color: #10b981;
+  box-shadow: 0 0 6px #10b981;
+}
+
+.mobile-day-tab.active .tab-dot.is-today {
+  background-color: #ffffff;
+  box-shadow: 0 0 6px #ffffff;
+}
+
 /* Dispositivos Móveis - Smartphones e Tablets Pequenos (max-width: 768px) */
 @media screen and (max-width: 768px) {
-  /* Layout do Topo Sticky no Mobile/Tablet */
+  /* Layout do Topo Sticky no Mobile (Header Slim Moderno) */
   .top-area-sticky-wrapper {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
-    padding: 8px 10px;
+    gap: 6px;
+    padding: 6px 10px calc(6px + env(safe-area-inset-top, 0px)) 10px;
+    background: var(--bg-header);
+    border-bottom: 1px solid var(--border-color);
   }
 
   .header-brand {
     flex: 0 0 auto;
+    gap: 6px;
   }
 
   .header-titles h1 {
-    font-size: 1.05rem;
+    font-size: 0.95rem;
+  }
+  .header-titles .year-badge {
+    padding: 2px 7px;
+    font-size: 0.68rem;
   }
 
-  .segmented-control {
-    flex-wrap: nowrap;
+  /* Exibe o alternador rápido de Cards no mobile */
+  .mobile-quick-view-btn {
+    display: inline-flex !important;
   }
 
-  .search-filter-segmented {
-    flex: 1 1 200px;
-    display: flex;
+  /* Exibe a barra de abas de dias no mobile */
+  .mobile-day-tabs {
+    display: flex !important;
+    order: 10;
     width: 100%;
+    margin-top: 2px;
   }
 
-  .search-wrapper {
-    flex: 1 1 auto;
-    width: 100%;
-  }
-
-  .search-field {
-    width: 100%;
-    font-size: 15px;
-    box-sizing: border-box;
-  }
-
+  /* Oculta seletores redundantes e controles não essenciais no cabeçalho mobile */
   .day-filter-wrapper {
-    flex: 0 0 auto;
+    display: none !important; /* Substituído pelas abas .mobile-day-tabs */
   }
 
-  .day-filter-select {
-    font-size: 14px;
-    padding: 5px 8px;
+  .legend-segmented {
+    display: none !important; /* Oculta as 4 pílulas de legenda no topo */
   }
 
-  /* Toolbar responsiva */
-  .toolbar {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 6px;
-    padding: 2px 0;
+  .zoom-segmented {
+    display: none !important; /* Zoom não aplicável em telas touch */
   }
 
   .time-counter,
   .current-date-time,
   #save-indicator {
+    display: none !important; /* Oculta do topo para despoluir (visível na barra de status) */
+  }
+
+  .search-filter-segmented {
+    order: 12;
+    width: 100%;
+    margin-top: 2px;
+  }
+
+  .search-wrapper {
+    width: 100%;
+  }
+
+  .search-field {
+    width: 100%;
+    height: 38px;
+    font-size: 16px !important; /* CRÍTICO: Previne auto-zoom no iOS Safari */
+    box-sizing: border-box;
+    border-radius: 12px;
+  }
+
+  .toolbar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0;
+    flex-wrap: nowrap;
+  }
+
+  .period-nav-segmented {
+    padding: 2px;
+    gap: 2px;
+  }
+  .period-nav-btn {
+    padding: 5px 8px;
     font-size: 0.78rem;
-    padding: 4px 8px;
+    min-height: 32px;
+  }
+  .period-nav-icon {
+    font-size: 0.9rem;
   }
 
-  #save-indicator {
-    margin-left: 0;
+  .actions-segmented {
+    padding: 2px;
+    gap: 2px;
+  }
+  .actions-segmented .segmented-btn {
+    padding: 5px 8px;
+    min-height: 32px;
   }
 
-  /* Menu Dropdown responsivo fixo/flutuante */
+  .btn-menu-trigger {
+    padding: 6px 12px;
+    height: 34px;
+    border-radius: 10px;
+    font-size: 0.85rem;
+  }
+
+  /* Menu Dropdown como Bottom Sheet moderna no mobile */
   .menu-dropdown {
-    position: fixed;
-    top: 60px;
-    left: 10px;
-    right: 10px;
-    width: auto;
-    max-height: 75vh;
-    overflow-y: auto;
-    z-index: 12000;
-    box-shadow: var(--shadow-lg);
-    border-radius: 14px;
+    position: fixed !important;
+    top: auto !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    max-height: 80vh !important;
+    overflow-y: auto !important;
+    border-radius: 24px 24px 0 0 !important;
+    border: 1px solid var(--border-color) !important;
+    border-bottom: none !important;
+    box-shadow: 0 -12px 36px rgba(0, 0, 0, 0.3) !important;
+    padding: 14px 14px calc(24px + env(safe-area-inset-bottom, 0px)) 14px !important;
+    z-index: 15000 !important;
+    transform: translateY(105%);
+    transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+    background: var(--bg-card);
+    visibility: hidden;
+  }
+
+  .menu-dropdown.active {
+    transform: translateY(0);
+    visibility: visible;
+  }
+
+  /* Puxador da Bottom Sheet */
+  .menu-dropdown::before {
+    content: '';
+    display: block;
+    width: 42px;
+    height: 5px;
+    background: var(--border-color);
+    border-radius: 3px;
+    margin: 0 auto 12px auto;
   }
 
   .btn-menu-item {
-    padding: 12px 16px;
-    font-size: 0.95rem;
+    padding: 12px 14px;
+    font-size: 0.92rem;
+    border-radius: 10px;
+    min-height: 44px; /* Touch target ergonômico */
   }
 
   /* Seções e Tabelas no Mobile */
@@ -3387,22 +3474,37 @@ body.drag-over::after {
 }
 
 /* ==========================================================================
-   VISUALIZAÇÃO EM CARDS VERTICAIS (MOBILE CARDS VIEW)
+   VISUALIZAÇÃO EM CARDS VERTICAIS 2.0 (MOBILE CARDS VIEW)
    ========================================================================== */
 .cards-view-wrapper {
-  padding: 16px 20px 40px 20px;
+  padding: 12px 14px 40px 14px;
   max-width: 900px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  animation: tableFadeIn 0.35s ease-out;
+  gap: 16px;
+  animation: cardSlideFade 0.3s ease-out;
+}
+
+@keyframes cardSlideFade {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .card-section-group {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
+}
+
+.card-section-group.collapsed .schedule-card {
+  display: none !important;
 }
 
 .card-section-header {
@@ -3410,11 +3512,19 @@ body.drag-over::after {
   align-items: center;
   justify-content: space-between;
   border-bottom: 2px solid var(--border-color);
-  padding-bottom: 6px;
+  padding: 8px 6px;
+  cursor: pointer;
+  user-select: none;
+  border-radius: 8px;
+  transition: background-color 0.2s;
+}
+
+.card-section-header:active {
+  background-color: var(--bg-segmented);
 }
 
 .card-section-header h2 {
-  font-size: 1.2rem;
+  font-size: 1.15rem;
   font-family: var(--font-title);
   margin: 0;
   color: var(--text-main);
@@ -3423,20 +3533,37 @@ body.drag-over::after {
   gap: 8px;
 }
 
+.card-section-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .card-day-title-badge {
   background: linear-gradient(135deg, var(--primary), var(--accent));
   color: white;
-  padding: 4px 12px;
+  padding: 3px 10px;
   border-radius: 12px;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 700;
+}
+
+.card-accordion-chevron {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-block;
+}
+
+.card-section-group.collapsed .card-accordion-chevron {
+  transform: rotate(-90deg);
 }
 
 .schedule-card {
   background: var(--bg-card);
-  border: 1.5px solid var(--border-color);
+  border: 1px solid var(--border-color);
   border-radius: 16px;
-  padding: 14px 16px;
+  padding: 12px 14px;
   box-shadow: var(--shadow-sm);
   display: flex;
   flex-direction: column;
@@ -3451,8 +3578,9 @@ body.drag-over::after {
 
 .schedule-card.current-active {
   border-color: var(--primary);
-  box-shadow: 0 0 0 2px var(--primary), 0 8px 20px rgba(79, 70, 229, 0.18);
-  background: linear-gradient(180deg, var(--bg-card) 0%, rgba(79, 70, 229, 0.03) 100%);
+  border-left: 5px solid var(--primary);
+  box-shadow: 0 4px 18px rgba(79, 70, 229, 0.2);
+  background: linear-gradient(180deg, var(--bg-card) 0%, rgba(79, 70, 229, 0.04) 100%);
 }
 
 .schedule-card.card-recreio {
@@ -3511,18 +3639,18 @@ body.drag-over::after {
 
 .card-lessons-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(135px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
   gap: 8px;
 }
 
 .card-lesson-chip {
   background: var(--bg-main);
   border: 1px solid var(--border-color);
-  border-radius: 10px;
+  border-radius: 12px;
   padding: 8px 10px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
   transition: all 0.15s ease;
 }
 
@@ -3542,6 +3670,7 @@ body.drag-over::after {
 .chip-sigla {
   font-weight: 800;
   color: var(--primary);
+  font-size: 0.8rem;
 }
 
 .chip-teacher-name {
@@ -3549,21 +3678,35 @@ body.drag-over::after {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 80px;
+  max-width: 85px;
 }
 
 .chip-cell-editor {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
-  border-radius: 6px;
-  padding: 4px 6px;
+  border-radius: 8px;
+  padding: 6px 8px;
   font-weight: 800;
-  font-size: 0.95rem;
+  font-size: 16px !important; /* CRÍTICO: Previne auto-zoom no iOS Safari */
   color: var(--text-main);
   text-align: center;
   outline: none;
-  min-height: 24px;
+  min-height: 38px; /* Touch target ergonômico */
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: text;
+  transition: all 0.15s ease;
+}
+
+.chip-cell-editor:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.25);
+}
+
+.chip-cell-editor.cell-empty {
+  border: 1.5px dashed var(--border-color);
+  color: var(--text-muted);
 }
 
 .chip-cell-editor.hl { background-color: var(--hl-color); }
