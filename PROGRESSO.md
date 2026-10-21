@@ -50,13 +50,11 @@ Baseado no `TODO-PLANEJAMENTO.md`
 - [x] **Faixa de Recreio Estilizada (Glassmorphic Diagonal Ribbon)**: Padrão listrado diagonal translúcido com bordas tracejadas suaves.
 - [x] **Linha Ativa com Laser Glow / Shimmer**: Feixe de luz em tempo real fluindo nas células do horário escolar atual.
 - [x] **Barra de Status em Ilha Dinâmica (Dynamic Island)**: Rodapé flutuante em formato pill com vidro fosco de alta dispersão (*24px blur*).
-### 11. Otimização Mobile First (Fases 1, 2, 3, 4 & 5 Concluídas)
-- [x] **Fase 1 - Header Slim Mobile (< 768px)**: Compactação do topo fixo, reduzindo a ocupação vertical em mais de 60%. Ocultados controles de desktop desnecessários em telas touch (zoom com botões, legendas extensas) e remoção do menu mobile legado redundante.
-- [x] **Fase 1 - Barra de Abas Rápidas por Dia (Mobile Day Tabs)**: Pílulas horizontais deslizáveis (`Seg`, `Ter`, `Qua`, `Qui`, `Sex`, `Todos`) com toque instantâneo em 1 clique, indicador luminoso do dia de hoje (`tab-dot.is-today`) e sincronização bidirecional com os gestos de swipe.
-- [x] **Fase 2 - Cards View 2.0 com Detecção Automática**: Em smartphones/telas $\le 768px$, o sistema abre diretamente no Modo Cards de forma inteligente (salvo preferência prévia).
-- [x] **Fase 2 - Botão Rápido de Alternância (`mobile-quick-view-btn`)**: Pílula direta no cabeçalho mobile `[📱 Cards / 📊 Grade]` para troca instantânea de visualização.
-- [x] **Fase 2 - Cards View 2.0 Aprimorado**: Suporte a recolher/expandir períodos com chevron animado, destaque de aula atual com borda luminosa e touch targets ergonômicos com fonte `16px` para eliminar o auto-zoom compulsório do iOS Safari.
-- [x] **Fase 3 - Autocomplete Touch-Refined**: Tratamento imediato de seleção por toque via eventos `pointerdown` e `touchstart` (impedindo atrasos de foco e perda de seleção ao esconder o teclado virtual), além de posicionamento adaptativo inteligente via `window.visualViewport` para evitar oclusão pelo teclado móvel.
-- [x] **Fase 4 - Modais & Diálogos em Mobile Bottom Sheet**: Todos os modais (`Gerenciar Professores`, `Personalizar Cores`, `Atalhos`, `Backups`, `Confirm/Prompt`) adaptados como gavetas inferiores (*bottom sheets*) ergonômicas de até `92dvh`, com puxador visual, rolagem independente de listas/tabelas, fechamento por toque no backdrop ou tecla `Escape`, e alvos de toque $\ge 44px$.
-- [x] **Fase 5 - Suporte a PWA & 100% Offline**: Criação do arquivo [manifest.json](file:///c:/Users/madsl/OneDrive/Documentos/GitHub/horario/manifest.json) com ícones de alta resolução em máscara (*maskable*) e modo `standalone`, além do Service Worker [sw.js](file:///c:/Users/madsl/OneDrive/Documentos/GitHub/horario/sw.js) com estratégia *Stale-While-Revalidate* para uso do aplicativo mesmo sem internet em sala de aula.
-
+### 11. Otimização Mobile First (Fases 1 & 2 Concluídas)
+- [x] **Viewport & Meta Tags Mobile Modernas**: Adicionado `viewport-fit=cover`, `apple-mobile-web-app-capable` e `maximum-scale=5.0` para suporte completo à Dynamic Island e entalhes de smartphones.
+- [x] **Header Slim Mobile (< 768px)**: Compactação do topo fixo, reduzindo a ocupação vertical em mais de 60%. Ocultados controles de desktop desnecessários em telas touch (zoom com botões, legendas extensas) e remoção do menu mobile legado redundante.
+- [x] **Barra de Abas Rápidas por Dia (Mobile Day Tabs)**: Pílulas horizontais deslizáveis (`Seg`, `Ter`, `Qua`, `Qui`, `Sex`, `Todos`) com toque instantâneo em 1 clique, indicador luminoso do dia de hoje (`tab-dot.is-today`) e sincronização bidirecional com os gestos de swipe.
+- [x] **Cards View 2.0 com Detecção Automática**: Em smartphones/telas $\le 768px$, o sistema abre diretamente no Modo Cards de forma inteligente (salvo preferência prévia).
+- [x] **Botão Rápido de Alternância (`mobile-quick-view-btn`)**: Pílula direta no cabeçalho mobile `[📱 Cards / 📊 Grade]` para troca instantânea de visualização.
+- [x] **Cards View 2.0 Aprimorado**: Suporte a recolher/expandir períodos com chevron animado, destaque de aula atual com borda luminosa e touch targets ergonômicos com fonte `16px` para eliminar o auto-zoom compulsório do iOS Safari.
+- [x] **Menu como Bottom Sheet**: Transformação do menu dropdown em gaveta inferior deslizante com puxador (*drag handle*), cantos arredondados de 24px e backdrop suave.
