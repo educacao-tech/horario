@@ -66,7 +66,9 @@ Baseado no `TODO-PLANEJAMENTO.md`
 - [x] **Auto-Ocultamento da Dynamic Island (Status Bar)**: Transição suave de recolhimento (`translateY(160%)`) ao rolar rapidamente a página para baixo e reaparecimento instantâneo ao parar ou selecionar uma célula.
 - [x] **Empty State Elegante nos Cards Mobile**: Ilustração e botão de ação rápida quando não houver aulas para o dia ou busca selecionada.
 - [x] **Limpeza de Código Duplicado**: Removida a implementação redundante legada de `openShortcutsModal` no `script.js`.
-- [x] **Abertura Inteligente Adaptativa por Dispositivo**:
-  - **No Celular (Mobile $\le 768px$):** Abre no **Modo Cards**, focado dinamicamente no **dia de hoje** (com identificador visual na aba) e no **turno em andamento** (Manhã antes das 12h30, Tarde depois).
-  - **No Computador (Desktop $> 768px$):** Abre no **Modo Tabela Tradicional** (grade completa com todas as turmas e especialistas), com **"Todos os Dias"** ativos para ver a semana de uma vez só e **ambos os turnos expandidos**.
+- [x] **Abertura Inteligente no Dia Atual**:
+  - **Em todos os dispositivos (Desktop e Mobile):** Ao carregar/iniciar a página, abre diretamente filtrado no **dia da semana atual** (Segunda a Sexta, ou Segunda se for fim de semana), sincronizando abas mobile, seletores e colunas/cards.
+  - **No Celular (Mobile $\le 768px$):** Abre no **Modo Cards** e com foco no **turno em andamento** (Manhã antes das 12h30, Tarde depois).
+  - **No Computador (Desktop $> 768px$):** Abre no **Modo Tabela Tradicional** com ambos os turnos visíveis e filtrado no dia da semana atual.
+
 

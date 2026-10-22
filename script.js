@@ -2734,7 +2734,7 @@ function toggleSectionCollapse(period, silent = false) {
 }
 
 /**
- * Inicializa a visualização focada exclusivamente no dia atual e no período em andamento.
+ * Inicializa a visualização focada diretamente no dia atual da semana e no período em andamento.
  */
 function initAutoPeriodAndDay() {
   const now = new Date();
@@ -2742,17 +2742,8 @@ function initAutoPeriodAndDay() {
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
   const isMobile = window.innerWidth <= 768;
 
-  // Lógica inteligente de abertura por dispositivo:
-  // - No Celular (<= 768px): abre focado no dia de hoje (1 a 5, ou Segunda se fim de semana).
-  // - No Desktop (> 768px): abre no visual tradicional com '0' (Todos os Dias) para ver a semana inteira.
-  // Respeita preferência salva especificamente se já houver.
-  const savedDay = localStorage.getItem(isMobile ? 'school_mobile_day_v1' : CONFIG.FILTER_DAY_KEY);
-  let targetDay;
-  if (savedDay !== null) {
-    targetDay = parseInt(savedDay, 10);
-  } else {
-    targetDay = isMobile ? ((day >= 1 && day <= 5) ? day : 1) : 0;
-  }
+  // Ao iniciar, vai direto para o dia da semana atual (1 a 5, ou Segunda se for fim de semana)
+  const targetDay = (day >= 1 && day <= 5) ? day : 1;
 
   const daySelect = _dom.dayFilter();
   if (daySelect) {
