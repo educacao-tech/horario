@@ -1248,6 +1248,9 @@ function renderCardsView(forcedDay = null) {
   const nowMinutes = new Date().getHours() * 60 + new Date().getMinutes();
   const todayDayNum = new Date().getDay();
 
+  // Inverte a ordem: após 12h30 mostra a Tarde primeiro, depois a Manhã
+  if (nowMinutes >= (12 * 60 + 30)) sections.reverse();
+
   // Se currentDay === 0, renderiza todos os 5 dias letivos. Caso contrário, renderiza apenas o dia selecionado.
   const daysToRender = (currentDay === 0) ? [1, 2, 3, 4, 5] : [currentDay];
 
@@ -4295,3 +4298,24 @@ function generateAndDownloadICS(targetTeacher, startDateStr, endDateStr) {
 
   showToast(`Arquivo ${filename} gerado com ${events.length} aulas!`, "success");
 }
+
+/**
+ * Inverte a ordem dos períodos na visão em tabela conforme o horário:
+ * a partir das 12h30 a Tarde aparece antes da Manhã.
+ */
+(function orderPeriodSectionsByTime() {
+  const apply = () => {
+    const wrapper = document.getElementById('schedule-wrapper');
+    const morning = document.getElementById('section-morning');
+    const afternoon = document.getElementById('section-afternoon');
+    if (!wrapper || !morning || !afternoon) return;
+    const now = new Date();
+    const isAfternoon = (now.getHours() * 60 + now.getMinutes()) >= (12 * 60 + 30);
+    wrapper.style.display = 'flex';
+    wrapper.style.flexDirection = 'column';
+    morning.style.order = isAfternoon ? '2' : '1';
+    afternoon.style.order = isAfternoon ? '1' : '2';
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', apply);
+  else apply();
+})();
