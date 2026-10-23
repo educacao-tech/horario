@@ -1879,15 +1879,37 @@ table.current-day-5 .day-cell-5 {
   font-weight: 800;
   color: #ffffff !important;
   background: linear-gradient(135deg, var(--primary), var(--primary-hover)) !important;
-  padding: 4px 9px;
+  padding: 4px 10px;
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
-  box-shadow: 0 2px 6px rgba(79, 70, 229, 0.2);
+  box-shadow: 0 2px 6px rgba(79, 70, 229, 0.25);
   display: inline-flex;
   align-items: center;
+  gap: 5px;
   flex-shrink: 0;
+  user-select: none;
+}
+
+.current-date-time .clock-sep {
+  opacity: 0.6;
+  font-weight: 400;
+  margin: 0 1px;
+}
+
+.current-date-time .clock-icon {
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+.current-date-time .clock-date {
+  font-weight: 700;
+}
+
+.current-date-time .clock-time {
+  font-weight: 800;
+  letter-spacing: 0.3px;
 }
 
 /* Barra de progresso da aula atual */
@@ -2137,6 +2159,34 @@ table.current-day-5 .day-cell-5 {
   white-space: nowrap;
   flex-shrink: 0;
   cursor: help;
+}
+
+.status-clock-item {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--primary);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.dark-theme .status-clock-item {
+  color: #a5b4fc;
+}
+
+.status-clock-item .status-clock-icon {
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+.status-clock-item .clock-sep {
+  opacity: 0.5;
+  margin: 0 1px;
+}
+
+.status-clock-item .status-clock-time {
+  font-weight: 800;
 }
 
 .header-highlight {

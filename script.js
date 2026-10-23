@@ -1878,10 +1878,12 @@ function renderStatusBar(data) {
   const barTitle = _gitHubFullTitle || `Versão v${CONFIG.SCHEMA_VERSION} | Atualizado em: ${CONFIG.LAST_UPDATE_DATE}`;
 
   statusContent += `
+    <div class="status-item status-clock-item" id="status-bar-clock"></div>
     <div class="status-info-right" id="github-update-info" title="${escapeHTML(barTitle)}">${barText}</div>
   `;
 
   sb.innerHTML = statusContent;
+  updateClock();
 }
 
 let _gitHubShortCache = null;
@@ -2701,18 +2703,44 @@ function updateTimeCounter() {
 }
 
 /**
- * Atualiza o relógio digital na interface com formato compacto e data no tooltip.
+ * Atualiza os relógios digitais na interface exibindo a data e hora atualizadas em tempo real.
  */
 function updateClock() {
-  const clockElement = document.getElementById('current-date-time');
-  if (!clockElement) return;
   const now = new Date();
-  clockElement.textContent = now.toLocaleTimeString('pt-BR', {
-    hour: '2-digit', minute: '2-digit', second: '2-digit'
+
+  // Formatação do dia da semana e data (ex: "Sex, 23/10")
+  const rawWeekday = now.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '');
+  const weekdayShort = rawWeekday.charAt(0).toUpperCase() + rawWeekday.slice(1);
+  const dateShort = now.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+
+  // Hora atual completa com segundos (ex: "11:45:20")
+  const timeStr = now.toLocaleTimeString('pt-BR', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
   });
-  clockElement.title = now.toLocaleDateString('pt-BR', {
-    weekday: 'long', day: '2-digit', month: 'long', year: 'numeric'
-  }).replace(/^\w/, (c) => c.toUpperCase());
+
+  // Título com data completa por extenso
+  const fullDateTitle = now.toLocaleDateString('pt-BR', {
+    weekday: 'long',
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric'
+  }).replace(/^\w/, (c) => c.toUpperCase()) + ` às ${timeStr}`;
+
+  // 1. Relógio principal no cabeçalho superior (Desktop / Toolbar)
+  const clockElement = document.getElementById('current-date-time');
+  if (clockElement) {
+    clockElement.innerHTML = `<span class="clock-icon">🕒</span> <span class="clock-date">${weekdayShort}, ${dateShort}</span><span class="clock-sep">•</span><span class="clock-time">${timeStr}</span>`;
+    clockElement.title = fullDateTitle;
+  }
+
+  // 2. Relógio complementar na barra de status flutuante (Dynamic Island / Mobile)
+  const statusClockElement = document.getElementById('status-bar-clock');
+  if (statusClockElement) {
+    statusClockElement.innerHTML = `<span class="status-clock-icon">🕒</span> <span>${weekdayShort}, ${dateShort}</span><span class="clock-sep">•</span><span class="status-clock-time">${timeStr}</span>`;
+    statusClockElement.title = fullDateTitle;
+  }
 }
 
 /**
