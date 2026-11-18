@@ -118,28 +118,27 @@
   box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
-/* Barra de Comando Única Horizontal (Desktop) */
+/* Barra Principal de Comando Única Horizontal (Single-Tier Header) */
 .header-main-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  gap: 12px;
+  gap: 10px;
 }
 
 .header-main-left {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   flex-shrink: 0;
 }
 
 .header-main-center {
   display: flex;
   align-items: center;
-  gap: 10px;
-  flex: 1;
-  justify-content: center;
+  gap: 8px;
+  flex: 0 1 auto;
   min-width: 0;
 }
 
@@ -148,6 +147,61 @@
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
+}
+
+.day-filter-wrapper {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.day-filter-select {
+  height: 32px;
+  padding: 4px 10px;
+  border-radius: 16px;
+  border: 1px solid var(--border-segmented);
+  background-color: var(--bg-segmented);
+  color: var(--text-main);
+  font-size: 0.82rem;
+  font-weight: 700;
+  font-family: var(--font-title);
+  cursor: pointer;
+  outline: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--shadow-sm);
+}
+
+.dark-theme .day-filter-select {
+  background-color: var(--bg-segmented);
+  border-color: var(--border-segmented);
+  color: var(--text-main);
+}
+
+.day-filter-select:hover {
+  border-color: var(--primary);
+  background-color: var(--bg-card);
+}
+
+.day-filter-select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+}
+
+/* Oculta as abas móveis no desktop (usamos a caixa de seleção na mesma linha) */
+.mobile-day-tabs {
+  display: none;
+}
+
+@media screen and (max-width: 1200px) {
+  .header-main-bar .time-counter {
+    display: none !important;
+  }
+}
+
+@media screen and (max-width: 1050px) {
+  .header-main-bar .current-date-time {
+    display: none !important;
+  }
 }
 
 /* Estado com sombra suave ao rolar a página */
@@ -1495,6 +1549,22 @@ table.current-day-5 .day-cell-5 {
   border-radius: 3px;
   border: 1px solid rgba(0,0,0,0.12);
   flex-shrink: 0;
+}
+
+/* Controle Segmentado de Dias no Menu */
+.day-segmented-menu {
+  display: flex;
+  gap: 3px;
+  width: 100%;
+}
+
+.day-segmented-menu .segmented-btn {
+  flex: 1;
+  padding: 4px 5px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-align: center;
+  justify-content: center;
 }
 
 /* Controle de Zoom Segmentado */
@@ -3002,16 +3072,88 @@ body.compact-mode td[data-teacher]::after {
 
 /* Estilização da etiqueta de dia ativo que aparece no topo da tabela */
 .filter-day-label {
-  opacity: 0; /* Garante que a etiqueta comece invisível durante o delay */
-  text-align: center;
+  opacity: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  margin-bottom: 12px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+  box-shadow: var(--shadow-sm);
+  animation: tableFadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.filter-day-label-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-title);
+  font-size: 0.9rem;
+}
+
+.filter-day-icon {
+  font-size: 1.1rem;
+}
+
+.filter-day-label .btn-show-all-days {
+  background: rgba(255, 255, 255, 0.24);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 20px;
+  padding: 5px 14px;
+  font-size: 0.78rem;
   font-weight: 800;
-  padding: 8px;
-  margin-bottom: 10px;
-  border-radius: 8px;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  font-size: 0.8rem;
-  animation: tableFadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(6px);
+  user-select: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+.filter-day-label .btn-show-all-days:hover {
+  background: rgba(255, 255, 255, 0.38);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.filter-day-label .btn-show-all-days:active {
+  transform: translateY(0);
+}
+
+/* Pílula de Mostrar Todos no Modo Cards */
+.card-show-all-pill {
+  background: rgba(255, 255, 255, 0.2);
+  color: var(--text-main);
+  border: 1px solid var(--border-segmented);
+  border-radius: 14px;
+  padding: 3px 10px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.dark-theme .card-show-all-pill {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+.card-show-all-pill:hover {
+  background: var(--primary);
+  color: #ffffff;
+  border-color: transparent;
 }
 
 /* Efeito de Stagger: Horário da Manhã aparece primeiro */
@@ -3195,11 +3337,6 @@ body.drag-over::after {
     gap: 8px;
   }
 
-  .header-filter-bar {
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-
   .toolbar {
     flex-wrap: nowrap;
     gap: 6px;
@@ -3233,29 +3370,21 @@ body.drag-over::after {
 }
 
 .mobile-day-tabs {
-  display: none; /* Oculto no desktop */
-  width: 100%;
-  overflow-x: auto;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  gap: 6px;
-  padding: 4px 2px 2px 2px;
-  -webkit-overflow-scrolling: touch;
-  align-items: center;
+  display: none !important;
 }
 .mobile-day-tabs::-webkit-scrollbar {
   display: none;
 }
 
 .mobile-day-tab {
-  flex: 1 1 0px;
-  min-width: 48px;
-  height: 36px;
-  border-radius: 18px;
-  border: 1px solid var(--border-segmented);
-  background: var(--bg-segmented);
+  flex: 0 0 auto;
+  min-width: 44px;
+  height: 30px;
+  border-radius: 15px;
+  border: 1px solid transparent;
+  background: transparent;
   color: var(--text-muted);
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   font-weight: 700;
   font-family: var(--font-title);
   cursor: pointer;
@@ -3267,7 +3396,7 @@ body.drag-over::after {
   position: relative;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
-  padding: 0 4px;
+  padding: 0 10px;
 }
 
 .mobile-day-tab:hover {
@@ -3283,7 +3412,7 @@ body.drag-over::after {
   background: linear-gradient(135deg, var(--primary), var(--accent));
   color: #ffffff;
   border-color: transparent;
-  box-shadow: 0 3px 12px rgba(79, 70, 229, 0.35);
+  box-shadow: 0 2px 10px rgba(79, 70, 229, 0.35);
 }
 
 .tab-dot {
@@ -3318,6 +3447,7 @@ body.drag-over::after {
 
   .header-main-bar {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
     width: 100%;
@@ -3328,20 +3458,16 @@ body.drag-over::after {
     gap: 6px;
   }
 
-  .header-filter-bar {
-    display: flex;
-    align-items: center;
+  .header-main-center {
+    order: 12;
     width: 100%;
-    gap: 6px;
+    display: flex;
+    margin-top: 2px;
   }
 
-  .header-filter-left {
+  .header-main-center .search-wrapper {
     width: 100%;
     max-width: 100%;
-  }
-
-  .header-filter-right {
-    display: none !important; /* Zoom e Legendas em chips ficam ocultos no mobile para despoluir */
   }
 
   .header-brand {
@@ -3362,17 +3488,19 @@ body.drag-over::after {
     display: inline-flex !important;
   }
 
-  /* Exibe a barra de abas de dias no mobile */
   .mobile-day-tabs {
-    display: flex !important;
-    order: 10;
-    width: 100%;
-    margin-top: 2px;
+    display: none !important;
   }
 
-  /* Oculta seletores redundantes e controles não essenciais no cabeçalho mobile */
   .day-filter-wrapper {
-    display: none !important; /* Substituído pelas abas .mobile-day-tabs */
+    display: flex !important;
+    flex-shrink: 0;
+  }
+
+  .day-filter-select {
+    height: 38px;
+    border-radius: 12px;
+    font-size: 0.85rem;
   }
 
   .legend-segmented {

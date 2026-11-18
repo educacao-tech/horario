@@ -95,4 +95,28 @@ Baseado no `TODO-PLANEJAMENTO.md`
   - Unificada a declaração consecutiva duplicada de `div[id^="section-"]` no `style.css`.
   - Verificada e mantida a integridade semântica e encoding UTF-8 do arquivo de estilos.
 
+### 15. Opções e Navegação pelos Dias da Semana (Concluída)
+- [x] **Abas Rápidas Unificadas (Desktop e Mobile)**:
+  - As abas de dias (`Seg`, `Ter`, `Qua`, `Qui`, `Sex` e `Todos`) agora estão visíveis e funcionais tanto no computador quanto em dispositivos móveis, com formato de barra segmentada compacta no desktop.
+- [x] **Botão Direto na Grade Filtrada**:
+  - Quando a visualização é filtrada em um dia específico, a etiqueta superior da tabela exibe um botão de ação proeminente: `[ 👁️ Mostrar Todos os Dias da Semana ]`, permitindo restaurar a semana completa com 1 clique.
+- [x] **Acesso Rápido no Menu Principal**:
+  - Adicionados botões segmentados de dias da semana no menu dropdown e opção direta: `📅 Mostrar Todos os Dias (Semana Completa)`.
+- [x] **Pílula de Ação no Modo Cards**:
+  - Adicionado chip de retorno `👁️ Todos os Dias` no cabeçalho dos períodos no Modo Cards.
+
+### 16. Caixa de Seleção de Dias Integrada na Linha Superior (Concluída)
+- [x] **Caixa de Seleção no Cabeçalho Único**:
+  - Implementada caixa de seleção suspensa estilizada (`<select id="day-filter-select">`) em `.header-main-center`, permitindo selecionar `📅 Todos os Dias`, `Segunda-feira`, `Terça-feira`, `Quarta-feira`, `Quinta-feira` ou `Sexta-feira`.
+  - Dimensão ultracompacta (~140px) com altura de 32px e cantos arredondados integrando perfeitamente ao lado do campo de pesquisa (`🔍 Buscar turma, prof...`).
+- [x] **Unificação na Mesma Linha Superior (Desktop)**:
+  - Todo o cabeçalho desktop agora cabe em **uma única linha** sem quebra nem sobreposição:
+    - **Esquerda**: Logotipo, Marca `Horário 2026` e Turnos (`☀️ Manhã / 🌅 Tarde`).
+    - **Centro**: Caixa de Seleção de Dia (`📅 Todos os Dias`) + Campo de Busca.
+    - **Direita**: Alertas de conflito, Botão `Agora`, Alertas, Tema, Contadores, Relógio e `Menu`.
+- [x] **Sincronização Bidirecional**:
+  - A caixa de seleção é sincronizada automaticamente com o `filterByDay()`, preservando suporte ao teclado, Modo Cards e armazenamento no `localStorage`.
+- [x] **Responsividade Móvel Otimizada**:
+  - No celular (≤ 768px), a caixa de seleção dá lugar às abas táteis (`.mobile-day-tabs`) para facilitar o toque com os polegares, enquanto no desktop a caixa de seleção mantém o topo super limpo e espaçoso.
+
 

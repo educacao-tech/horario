@@ -70,45 +70,19 @@
         </div>
       </div>
 
-      <!-- 2. Centro: Abas Rápidas de Dias da Semana + Campo de Busca -->
+      <!-- 2. Centro: Caixa de Seleção do Dia da Semana + Busca (Tudo na Mesma Linha) -->
       <div class="header-main-center">
-        <!-- Abas Rápidas por Dia (Unificadas Desktop e Mobile) -->
-        <div id="mobile-day-tabs" class="mobile-day-tabs day-tabs-nav" role="tablist" aria-label="Filtrar por dia da semana">
-          <button type="button" class="mobile-day-tab active" data-day="1" onclick="filterByDay(1)" role="tab" aria-selected="true">
-            <span class="tab-label">Seg</span>
-            <span class="tab-dot" id="tab-dot-1"></span>
-          </button>
-          <button type="button" class="mobile-day-tab" data-day="2" onclick="filterByDay(2)" role="tab" aria-selected="false">
-            <span class="tab-label">Ter</span>
-            <span class="tab-dot" id="tab-dot-2"></span>
-          </button>
-          <button type="button" class="mobile-day-tab" data-day="3" onclick="filterByDay(3)" role="tab" aria-selected="false">
-            <span class="tab-label">Qua</span>
-            <span class="tab-dot" id="tab-dot-3"></span>
-          </button>
-          <button type="button" class="mobile-day-tab" data-day="4" onclick="filterByDay(4)" role="tab" aria-selected="false">
-            <span class="tab-label">Qui</span>
-            <span class="tab-dot" id="tab-dot-4"></span>
-          </button>
-          <button type="button" class="mobile-day-tab" data-day="5" onclick="filterByDay(5)" role="tab" aria-selected="false">
-            <span class="tab-label">Sex</span>
-            <span class="tab-dot" id="tab-dot-5"></span>
-          </button>
-          <button type="button" class="mobile-day-tab" data-day="0" onclick="filterByDay(0)" role="tab" aria-selected="false">
-            <span class="tab-label">Todos</span>
-          </button>
+        <div class="day-filter-wrapper">
+          <select id="day-filter-select" class="day-filter-select" onchange="filterByDay(this.value)"
+            title="Filtrar por dia da semana" aria-label="Filtrar por dia da semana">
+            <option value="0">📅 Todos os Dias</option>
+            <option value="1">Segunda-feira</option>
+            <option value="2">Terça-feira</option>
+            <option value="3">Quarta-feira</option>
+            <option value="4">Quinta-feira</option>
+            <option value="5">Sexta-feira</option>
+          </select>
         </div>
-
-        <!-- Seletor nativo oculto para manter compatibilidade JS -->
-        <select id="day-filter-select" class="day-filter-select" onchange="filterByDay(this.value)"
-          style="display: none;" title="Filtrar por dia da semana" aria-label="Filtrar por dia da semana">
-          <option value="0">📅 Todos os Dias</option>
-          <option value="1">Segunda-feira</option>
-          <option value="2">Terça-feira</option>
-          <option value="3">Quarta-feira</option>
-          <option value="4">Quinta-feira</option>
-          <option value="5">Sexta-feira</option>
-        </select>
 
         <div class="search-wrapper">
           <input type="text" id="search-input" class="search-field" placeholder="🔍 Buscar turma, prof..." autocomplete="off" aria-label="Buscar turma ou professor">
@@ -166,7 +140,19 @@
                   <button type="button" class="segmented-btn legend-item" onclick="toggleCategory('mtf')" title="Matific (MTF)"><div class="box mtf"></div> <span>MTF</span></button>
                 </div>
               </div>
+              <div class="menu-quick-section">
+                <span class="menu-section-label">Visualizar Dia da Semana</span>
+                <div class="segmented-control legend-segmented day-segmented-menu" role="group" aria-label="Filtrar por dia da semana">
+                  <button type="button" class="segmented-btn" onclick="filterByDay(1)" title="Segunda-feira">Seg</button>
+                  <button type="button" class="segmented-btn" onclick="filterByDay(2)" title="Terça-feira">Ter</button>
+                  <button type="button" class="segmented-btn" onclick="filterByDay(3)" title="Quarta-feira">Qua</button>
+                  <button type="button" class="segmented-btn" onclick="filterByDay(4)" title="Quinta-feira">Qui</button>
+                  <button type="button" class="segmented-btn" onclick="filterByDay(5)" title="Sexta-feira">Sex</button>
+                  <button type="button" class="segmented-btn" onclick="filterByDay(0)" title="Semana Completa (Todos os Dias)">Todos</button>
+                </div>
+              </div>
               <hr class="menu-separator">
+              <button type="button" class="btn-menu-item" onclick="filterByDay(0)">📅 Mostrar Todos os Dias (Semana Completa)</button>
               <button type="button" class="btn-menu-item" onclick="openTeacherManager()">⚙️ Gerenciar Professores</button>
               <button type="button" class="btn-menu-item" onclick="openSettingsModal()">🎨 Personalizar Cores</button>
               <button type="button" class="btn-menu-item" onclick="showConflictInspector()">🔍 Inspecionar Conflitos</button>

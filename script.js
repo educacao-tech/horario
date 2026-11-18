@@ -1100,7 +1100,21 @@ function filterByDay(selectedDayIndex, silent = false) {
         container.prepend(label);
       }
       label.className = `filter-day-label day-color-${selectedDay}`;
-      label.textContent = dayNames[selectedDay] || '';
+      if (selectedDay !== 0) {
+        label.style.display = 'flex';
+        label.innerHTML = `
+          <div class="filter-day-label-content">
+            <span class="filter-day-icon">📅</span>
+            <span class="filter-day-text">Exibindo: <b>${dayNames[selectedDay]}</b></span>
+          </div>
+          <button type="button" class="btn-show-all-days" onclick="filterByDay(0)" title="Exibir a grade completa com todos os dias da semana">
+            <span>👁️ Mostrar Todos os Dias da Semana</span>
+          </button>
+        `;
+      } else {
+        label.style.display = 'none';
+        label.innerHTML = '';
+      }
 
       container.classList.toggle('single-day-active', selectedDay !== 0);
       container.scrollTo({ left: 0, behavior: 'smooth' });
@@ -1288,6 +1302,7 @@ function renderCardsView(forcedDay = null) {
       <h2>${sec.title}</h2>
       <div class="card-section-header-right">
         <span class="card-day-title-badge">${currentDay === 0 ? '📅 Semana Completa' : dayNames[currentDay]}</span>
+        ${currentDay !== 0 ? `<button type="button" class="card-show-all-pill" onclick="event.stopPropagation(); filterByDay(0);" title="Exibir a semana completa com todos os dias">👁️ Todos os Dias</button>` : ''}
         <span class="card-accordion-chevron">▲</span>
       </div>
     `;
@@ -1520,7 +1535,7 @@ function updateActiveFilters() {
     .filter(Boolean);
 
   container.replaceChildren();
-  const hasActiveFilters = selectedDay !== 0 || searchText || activeCategories.length > 0;
+  const hasActiveFilters = Boolean(searchText || activeCategories.length > 0);
   container.hidden = !hasActiveFilters;
   if (!hasActiveFilters) return;
 
@@ -1539,9 +1554,6 @@ function updateActiveFilters() {
     container.appendChild(chip);
   };
 
-  if (selectedDay !== 0) {
-    addFilterChip(`Dia: ${dayNames[selectedDay]} ×`, 'Exibir todos os dias', () => filterByDay(0));
-  }
   if (searchText) {
     addFilterChip(`Busca: ${searchText} ×`, 'Limpar busca', clearSearch);
   }
