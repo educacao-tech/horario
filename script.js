@@ -392,7 +392,6 @@ function showPromptDialog({
 
 let _teacherMapCache = getInitialTeacherMap(); // Inicializa o cache de professores
 let _clipboardText = null;
-let _gitHubInfoCache = null; // Cache para persistir os dados do GitHub
 let _activeSuggestionIndex = -1; // Rastreia o item focado via teclado no autocomplete
 let _saveIndicatorTimeout = null; // Controla o tempo de exibição do feedback de salvamento
 let _isSelecting = false;
@@ -765,18 +764,6 @@ function loadData() {
   });
   updateAriaStatus();
   updateGlobalConflictCount();
-}
-
-/**
- * Varre todas as células editáveis para validar conflitos globais.
- */
-function validateAllConflicts() {
-  const rows = new Set();
-  _dom.cells().forEach(c => rows.add(c.parentElement));
-  rows.forEach(row => {
-    const firstEditable = row.querySelector('[contenteditable="true"]');
-    if (firstEditable) checkConflicts(firstEditable);
-  });
 }
 
 /**
@@ -1157,6 +1144,7 @@ function filterByDay(selectedDayIndex, silent = false) {
   });
   updateMobileDayTabsUI(selectedDay);
   updateHighlights();
+  updateActiveFilters();
 }
 
 /**
@@ -1253,6 +1241,31 @@ function renderCardsView(forcedDay = null) {
 
   // Se currentDay === 0, renderiza todos os 5 dias letivos. Caso contrário, renderiza apenas o dia selecionado.
   const daysToRender = (currentDay === 0) ? [1, 2, 3, 4, 5] : [currentDay];
+
+  if (currentDay === 0) {
+    const dailyWorkload = calculateDailyWorkload();
+    const weekOverview = document.createElement('nav');
+    weekOverview.className = 'week-overview';
+    weekOverview.setAttribute('aria-label', 'Resumo e navegação da semana');
+
+    const overviewTitle = document.createElement('span');
+    overviewTitle.className = 'week-overview-title';
+    overviewTitle.textContent = 'Semana';
+    weekOverview.appendChild(overviewTitle);
+
+    const dayShortNames = ['', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex'];
+    daysToRender.forEach(day => {
+      const dayButton = document.createElement('button');
+      dayButton.type = 'button';
+      dayButton.className = `week-overview-day day-header-${dayClasses[day]}`;
+      dayButton.textContent = `${dayShortNames[day]} · ${dailyWorkload[day]}`;
+      dayButton.setAttribute('aria-label', `Exibir ${dayNames[day]}, ${dailyWorkload[day]} aulas preenchidas`);
+      dayButton.addEventListener('click', () => filterByDay(day));
+      weekOverview.appendChild(dayButton);
+    });
+
+    wrapper.appendChild(weekOverview);
+  }
 
   sections.forEach(sec => {
     const secEl = document.getElementById(sec.id);
@@ -1428,18 +1441,32 @@ function initTodayIndicatorOnTabs() {
 /**
  * Adiciona suporte a gestos de Swipe (arrastar para os lados) em dispositivos móveis.
  */
+/**
+ * Inicializa a detecção de gestos de swipe para navegação entre dias da semana no mobile.
+ * Restrito para toques iniciados fora da área com rolagem horizontal da tabela (.table-container).
+ */
 function initSwipeGestures() {
   let touchStartX = 0;
   let touchStartY = 0;
+  let isSwipeBlocked = false;
 
   document.addEventListener('touchstart', (e) => {
     if (e.touches.length === 1) {
+      const target = e.target;
+      // Impede o swipe de mudar de dia se o usuário estiver tocando na tabela com scroll horizontal
+      // ou dentro de modais, diálogos, menus ou inputs interativos
+      if (target && target.closest && target.closest('.table-container, .modal-overlay, .dialog-overlay, .menu-dropdown, input, textarea, select, button')) {
+        isSwipeBlocked = true;
+        return;
+      }
+      isSwipeBlocked = false;
       touchStartX = e.touches[0].clientX;
       touchStartY = e.touches[0].clientY;
     }
   }, { passive: true });
 
   document.addEventListener('touchend', (e) => {
+    if (isSwipeBlocked) return;
     if (e.changedTouches.length === 1) {
       const touchEndX = e.changedTouches[0].clientX;
       const touchEndY = e.changedTouches[0].clientY;
@@ -1470,10 +1497,76 @@ function initSwipeGestures() {
  */
 function clearSearch() {
   const searchInput = _dom.searchInput();
-  if (searchInput) { 
-    searchInput.value = ''; 
-    highlightOccurrences(''); 
+  if (searchInput) {
+    searchInput.value = '';
+    highlightOccurrences('');
     _dom.searchSuggestions().classList.remove('active');
+    searchInput.focus();
+  }
+}
+
+/**
+ * Mostra os filtros e destaques ativos e informa quando a busca não encontra resultados visíveis.
+ */
+function updateActiveFilters() {
+  const container = document.getElementById('active-view-filters');
+  if (!container) return;
+
+  const selectedDay = parseInt(localStorage.getItem(CONFIG.FILTER_DAY_KEY) || '0', 10) || 0;
+  const dayNames = ['', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira'];
+  const searchText = _dom.searchInput()?.value.trim() || '';
+  const activeCategories = Array.from(document.querySelectorAll('.legend-item.active .box'))
+    .map(box => Array.from(box.classList).find(className => ['hl', 'pd', 'el', 'mtf'].includes(className)))
+    .filter(Boolean);
+
+  container.replaceChildren();
+  const hasActiveFilters = selectedDay !== 0 || searchText || activeCategories.length > 0;
+  container.hidden = !hasActiveFilters;
+  if (!hasActiveFilters) return;
+
+  const label = document.createElement('span');
+  label.className = 'active-view-filters-label';
+  label.textContent = 'Em foco';
+  container.appendChild(label);
+
+  const addFilterChip = (text, accessibleLabel, onClick) => {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'active-filter-chip';
+    chip.textContent = text;
+    chip.setAttribute('aria-label', accessibleLabel);
+    chip.addEventListener('click', onClick);
+    container.appendChild(chip);
+  };
+
+  if (selectedDay !== 0) {
+    addFilterChip(`Dia: ${dayNames[selectedDay]} ×`, 'Exibir todos os dias', () => filterByDay(0));
+  }
+  if (searchText) {
+    addFilterChip(`Busca: ${searchText} ×`, 'Limpar busca', clearSearch);
+  }
+  activeCategories.forEach(category => {
+    addFilterChip(`Destaque: ${category.toUpperCase()} ×`, `Remover destaque ${category.toUpperCase()}`, () => toggleCategory(category));
+  });
+
+  if (searchText) {
+    const visibleMatches = Array.from(_dom.cells()).filter(cell =>
+      cell.classList.contains('match-highlight') && !cell.classList.contains('hidden-col')
+    ).length;
+
+    if (visibleMatches === 0) {
+      const emptyState = document.createElement('div');
+      emptyState.className = 'active-filter-empty-state';
+      emptyState.textContent = `Nenhuma correspondência encontrada${selectedDay ? ` em ${dayNames[selectedDay]}` : ''} para “${searchText}”.`;
+
+      const clearButton = document.createElement('button');
+      clearButton.type = 'button';
+      clearButton.className = 'active-filter-empty-action';
+      clearButton.textContent = 'Limpar busca';
+      clearButton.addEventListener('click', clearSearch);
+      emptyState.appendChild(clearButton);
+      container.appendChild(emptyState);
+    }
   }
 }
 
@@ -1608,6 +1701,7 @@ function highlightOccurrences(text) {
     if (isMatch) c.classList.add('match-highlight');
     else c.classList.remove('match-highlight');
   }
+  updateActiveFilters();
 }
 
 /**
@@ -1694,97 +1788,171 @@ function initDragAndDrop() {
 
 /**
  * Inicializa o Efeito Spotlight para rastreamento interativo de turmas e disciplinas.
+ * Otimizado com cache de correspondências e requestAnimationFrame para eliminar layout thrashing.
  */
+let _currentSpotlightText = null;
+let _activeSpotlightTable = null;
+let _activeSpotlightMatches = [];
+let _spotlightRAF = null;
+
+function clearSpotlightEffect() {
+  if (_spotlightRAF) {
+    cancelAnimationFrame(_spotlightRAF);
+    _spotlightRAF = null;
+  }
+  if (_activeSpotlightTable) {
+    _activeSpotlightTable.classList.remove('spotlight-active');
+    _activeSpotlightTable = null;
+  }
+  if (_activeSpotlightMatches.length > 0) {
+    _activeSpotlightMatches.forEach(c => c.classList.remove('spotlight-match'));
+    _activeSpotlightMatches = [];
+  }
+  _currentSpotlightText = null;
+}
+
 function initSpotlightEffect() {
   document.addEventListener('mouseover', (e) => {
     const cell = e.target.closest('[contenteditable="true"], [role="textbox"]');
-    if (!cell) return;
+    if (!cell) {
+      if (_currentSpotlightText !== null) clearSpotlightEffect();
+      return;
+    }
     const text = cell.textContent.trim().toUpperCase();
-    if (!text || text === '*' || text === '') return;
+    if (!text || text === '*' || text === '') {
+      if (_currentSpotlightText !== null) clearSpotlightEffect();
+      return;
+    }
 
     const table = cell.closest('table');
     if (!table) return;
 
-    table.classList.add('spotlight-active');
-    const cells = table.querySelectorAll('[contenteditable="true"], [role="textbox"]');
-    cells.forEach(c => {
-      const cText = c.textContent.trim().toUpperCase();
-      if (cText === text) {
-        c.classList.add('spotlight-match');
-      } else {
-        c.classList.remove('spotlight-match');
+    // Se o texto e a tabela forem os mesmos do spotlight atual, nenhuma alteração de DOM é necessária
+    if (text === _currentSpotlightText && table === _activeSpotlightTable) {
+      return;
+    }
+
+    if (_spotlightRAF) cancelAnimationFrame(_spotlightRAF);
+    _spotlightRAF = requestAnimationFrame(() => {
+      // Limpa os destaques anteriores de forma cirúrgica
+      if (_activeSpotlightMatches.length > 0) {
+        _activeSpotlightMatches.forEach(c => c.classList.remove('spotlight-match'));
+        _activeSpotlightMatches = [];
       }
+      if (_activeSpotlightTable && _activeSpotlightTable !== table) {
+        _activeSpotlightTable.classList.remove('spotlight-active');
+      }
+
+      _currentSpotlightText = text;
+      _activeSpotlightTable = table;
+      table.classList.add('spotlight-active');
+
+      const cells = table.querySelectorAll('[contenteditable="true"], [role="textbox"]');
+      cells.forEach(c => {
+        if (c.textContent.trim().toUpperCase() === text) {
+          c.classList.add('spotlight-match');
+          _activeSpotlightMatches.push(c);
+        }
+      });
+      _spotlightRAF = null;
     });
   });
 
   document.addEventListener('mouseout', (e) => {
-    const cell = e.target.closest('[contenteditable="true"], [role="textbox"]');
-    if (!cell) return;
-    const table = cell.closest('table');
-    if (!table) return;
-
-    table.classList.remove('spotlight-active');
-    table.querySelectorAll('.spotlight-match').forEach(c => c.classList.remove('spotlight-match'));
+    // Se o mouse saiu do documento ou foi para fora da tabela, limpa o spotlight
+    if (!e.relatedTarget || !e.relatedTarget.closest || !e.relatedTarget.closest('table')) {
+      clearSpotlightEffect();
+    }
   });
 }
 
 // ==========================================================================
 // 🎯 EFEITO DE MIRA / DESTAQUE CRUZADO (CROSSHAIR HIGHLIGHT)
+// Otimizado com rastreamento pontual de nós e requestAnimationFrame
 // ==========================================================================
 
 let _currentCrosshairCell = null;
+let _crosshairActiveElements = [];
+let _crosshairRAF = null;
 
 /**
- * Aplica o destaque cruzado na linha e coluna da célula informada.
+ * Remove todos os destaques de mira cruzada limpando apenas os nós rastreados.
+ */
+function clearCrosshairHighlight() {
+  if (_crosshairRAF) {
+    cancelAnimationFrame(_crosshairRAF);
+    _crosshairRAF = null;
+  }
+  if (_crosshairActiveElements.length > 0) {
+    _crosshairActiveElements.forEach(({ el, cls }) => el.classList.remove(cls));
+    _crosshairActiveElements = [];
+  }
+  _currentCrosshairCell = null;
+}
+
+/**
+ * Aplica o destaque cruzado na linha e coluna da célula informada usando rAF e cache de nós.
  * @param {HTMLElement} cell
  */
 function applyCrosshairHighlight(cell) {
   if (!cell || _currentCrosshairCell === cell) return;
   _currentCrosshairCell = cell;
 
-  const table = cell.closest('table');
-  const row = cell.parentElement;
-  const colIndex = cell.cellIndex;
-
-  clearCrosshairHighlight();
-
-  if (!table || !row || colIndex === undefined) return;
-
-  // Destaque da linha inteira
-  row.classList.add('crosshair-row');
-  if (row.cells[0]) row.cells[0].classList.add('crosshair-time-cell');
-
-  // Destaque da coluna inteira
-  if (colIndex > 0) {
-    const { dayIdx } = getDayAndColIndices(cell);
-    if (table.rows[0] && table.rows[0].cells[dayIdx]) {
-      table.rows[0].cells[dayIdx].classList.add('crosshair-day-header');
+  if (_crosshairRAF) cancelAnimationFrame(_crosshairRAF);
+  _crosshairRAF = requestAnimationFrame(() => {
+    // Limpa nós anteriores de forma cirúrgica sem varrer o documento
+    if (_crosshairActiveElements.length > 0) {
+      _crosshairActiveElements.forEach(({ el, cls }) => el.classList.remove(cls));
+      _crosshairActiveElements = [];
     }
-    if (table.rows[1] && table.rows[1].cells[colIndex - 1]) {
-      table.rows[1].cells[colIndex - 1].classList.add('crosshair-col-header');
-    }
-    for (let r = 2; r < table.rows.length; r++) {
-      const rowItem = table.rows[r];
-      if (rowItem.classList.contains('recreio')) continue;
-      const targetCell = rowItem.cells[colIndex];
-      if (targetCell) targetCell.classList.add('crosshair-col');
-    }
-  }
 
-  cell.classList.add('crosshair-target');
-}
+    if (!cell.isConnected) {
+      _currentCrosshairCell = null;
+      _crosshairRAF = null;
+      return;
+    }
 
-/**
- * Remove todos os destaques de mira cruzada.
- */
-function clearCrosshairHighlight() {
-  document.querySelectorAll('.crosshair-row').forEach(r => r.classList.remove('crosshair-row'));
-  document.querySelectorAll('.crosshair-col').forEach(c => c.classList.remove('crosshair-col'));
-  document.querySelectorAll('.crosshair-time-cell').forEach(c => c.classList.remove('crosshair-time-cell'));
-  document.querySelectorAll('.crosshair-day-header').forEach(h => h.classList.remove('crosshair-day-header'));
-  document.querySelectorAll('.crosshair-col-header').forEach(h => h.classList.remove('crosshair-col-header'));
-  document.querySelectorAll('.crosshair-target').forEach(c => c.classList.remove('crosshair-target'));
-  _currentCrosshairCell = null;
+    const table = cell.closest('table');
+    const row = cell.parentElement;
+    const colIndex = cell.cellIndex;
+
+    if (!table || !row || colIndex === undefined) {
+      _currentCrosshairCell = null;
+      _crosshairRAF = null;
+      return;
+    }
+
+    const track = (el, cls) => {
+      if (el) {
+        el.classList.add(cls);
+        _crosshairActiveElements.push({ el, cls });
+      }
+    };
+
+    // Destaque da linha inteira
+    track(row, 'crosshair-row');
+    if (row.cells[0]) track(row.cells[0], 'crosshair-time-cell');
+
+    // Destaque da coluna inteira
+    if (colIndex > 0) {
+      const { dayIdx } = getDayAndColIndices(cell);
+      if (table.rows[0] && table.rows[0].cells[dayIdx]) {
+        track(table.rows[0].cells[dayIdx], 'crosshair-day-header');
+      }
+      if (table.rows[1] && table.rows[1].cells[colIndex - 1]) {
+        track(table.rows[1].cells[colIndex - 1], 'crosshair-col-header');
+      }
+      for (let r = 2; r < table.rows.length; r++) {
+        const rowItem = table.rows[r];
+        if (rowItem.classList.contains('recreio')) continue;
+        const targetCell = rowItem.cells[colIndex];
+        if (targetCell) track(targetCell, 'crosshair-col');
+      }
+    }
+
+    track(cell, 'crosshair-target');
+    _crosshairRAF = null;
+  });
 }
 
 // --- FOCUS E STATUS BAR ---
@@ -2053,6 +2221,24 @@ function toggleLockMode() {
 }
 
 // --- EXPORTAÇÃO ---
+
+/**
+ * Realiza o download seguro de um arquivo Blob no navegador, garantindo
+ * a liberação de memória através de URL.revokeObjectURL.
+ * @param {Blob} blob - O objeto Blob a ser baixado.
+ * @param {string} filename - Nome sugerido para o arquivo salvo.
+ */
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
 function exportToCsv() {
   let csv = 'Período,Dia,Horário,Especialista,Turma\n';
   const days = ['', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'];
@@ -2088,16 +2274,14 @@ function exportToCsv() {
   });
 
   const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.setAttribute("download", `horario_escolar_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.csv`);
-  link.click();
+  const filename = `horario_escolar_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.csv`;
+  downloadBlob(blob, filename);
 }
 
 /**
  * Exporta todos os dados do sistema (Horários, Professores e Cores) em um único arquivo JSON.
  */
- function exportBackupJSON() {
+function exportBackupJSON() {
   const backup = {
     version: CONFIG.SCHEMA_VERSION,
     timestamp: new Date().toISOString(),
@@ -2107,10 +2291,8 @@ function exportToCsv() {
   };
 
   const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.download = `backup_horario_${new Date().toISOString().split('T')[0]}.json`;
-  link.click();
+  const filename = `backup_horario_${new Date().toISOString().split('T')[0]}.json`;
+  downloadBlob(blob, filename);
 }
 
 /**
@@ -2296,6 +2478,7 @@ function toggleCategory(category) {
       }
     });
   }
+  updateActiveFilters();
 }
 
 /**
@@ -2704,6 +2887,7 @@ function updateTimeCounter() {
 
 /**
  * Atualiza os relógios digitais na interface exibindo a data e hora atualizadas em tempo real.
+ * Otimizado para atualização pontual de textContent, eliminando reflows e re-parsing contínuos de innerHTML.
  */
 function updateClock() {
   const now = new Date();
@@ -2712,6 +2896,7 @@ function updateClock() {
   const rawWeekday = now.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '');
   const weekdayShort = rawWeekday.charAt(0).toUpperCase() + rawWeekday.slice(1);
   const dateShort = now.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+  const dateText = `${weekdayShort}, ${dateShort}`;
 
   // Hora atual completa com segundos (ex: "11:45:20")
   const timeStr = now.toLocaleTimeString('pt-BR', {
@@ -2731,15 +2916,63 @@ function updateClock() {
   // 1. Relógio principal no cabeçalho superior (Desktop / Toolbar)
   const clockElement = document.getElementById('current-date-time');
   if (clockElement) {
-    clockElement.innerHTML = `<span class="clock-icon">🕒</span> <span class="clock-date">${weekdayShort}, ${dateShort}</span><span class="clock-sep">•</span><span class="clock-time">${timeStr}</span>`;
-    clockElement.title = fullDateTitle;
+    let dateSpan = clockElement.querySelector('.clock-date');
+    let timeSpan = clockElement.querySelector('.clock-time');
+
+    if (!dateSpan || !timeSpan) {
+      clockElement.replaceChildren();
+
+      const iconSpan = document.createElement('span');
+      iconSpan.className = 'clock-icon';
+      iconSpan.textContent = '🕒';
+
+      dateSpan = document.createElement('span');
+      dateSpan.className = 'clock-date';
+
+      const sepSpan = document.createElement('span');
+      sepSpan.className = 'clock-sep';
+      sepSpan.textContent = '•';
+
+      timeSpan = document.createElement('span');
+      timeSpan.className = 'clock-time';
+
+      clockElement.append(iconSpan, ' ', dateSpan, sepSpan, timeSpan);
+    }
+
+    if (dateSpan.textContent !== dateText) dateSpan.textContent = dateText;
+    if (timeSpan.textContent !== timeStr) timeSpan.textContent = timeStr;
+    if (clockElement.title !== fullDateTitle) clockElement.title = fullDateTitle;
   }
 
   // 2. Relógio complementar na barra de status flutuante (Dynamic Island / Mobile)
   const statusClockElement = document.getElementById('status-bar-clock');
   if (statusClockElement) {
-    statusClockElement.innerHTML = `<span class="status-clock-icon">🕒</span> <span>${weekdayShort}, ${dateShort}</span><span class="clock-sep">•</span><span class="status-clock-time">${timeStr}</span>`;
-    statusClockElement.title = fullDateTitle;
+    let dateSpan = statusClockElement.querySelector('.status-clock-date');
+    let timeSpan = statusClockElement.querySelector('.status-clock-time');
+
+    if (!dateSpan || !timeSpan) {
+      statusClockElement.replaceChildren();
+
+      const iconSpan = document.createElement('span');
+      iconSpan.className = 'status-clock-icon';
+      iconSpan.textContent = '🕒';
+
+      dateSpan = document.createElement('span');
+      dateSpan.className = 'status-clock-date';
+
+      const sepSpan = document.createElement('span');
+      sepSpan.className = 'clock-sep';
+      sepSpan.textContent = '•';
+
+      timeSpan = document.createElement('span');
+      timeSpan.className = 'status-clock-time';
+
+      statusClockElement.append(iconSpan, ' ', dateSpan, sepSpan, timeSpan);
+    }
+
+    if (dateSpan.textContent !== dateText) dateSpan.textContent = dateText;
+    if (timeSpan.textContent !== timeStr) timeSpan.textContent = timeStr;
+    if (statusClockElement.title !== fullDateTitle) statusClockElement.title = fullDateTitle;
   }
 }
 
@@ -3124,19 +3357,24 @@ function initApp() {
         _dom.searchSuggestions().classList.remove('active');
     });
   }
+  updateActiveFilters();
 
   const wrapper = document.getElementById('schedule-wrapper');
   if (wrapper) {
     wrapper.addEventListener('mousedown', handleMouseDown);
+    let _lastHoveredCell = null;
     wrapper.addEventListener('mouseover', (e) => {
       handleMouseEnter(e);
       const cell = e.target.closest('td');
-      if (cell && cell.parentElement && !cell.parentElement.classList.contains('recreio')) {
+      if (!cell || cell === _lastHoveredCell) return;
+      _lastHoveredCell = cell;
+      if (cell.parentElement && !cell.parentElement.classList.contains('recreio')) {
         applyCrosshairHighlight(cell);
         updateStatusBar(cell);
       }
     });
     wrapper.addEventListener('mouseleave', () => {
+      _lastHoveredCell = null;
       clearCrosshairHighlight();
     });
     document.addEventListener('mouseup', () => {
@@ -3646,11 +3884,45 @@ function calculateWorkload() {
 }
 
 /**
+ * Conta as células preenchidas em cada dia, somando os dois turnos.
+ * @returns {number[]} Contagens indexadas pelo dia da semana (1-5).
+ */
+function calculateDailyWorkload() {
+  const totals = [0, 0, 0, 0, 0, 0];
+
+  _dom.tables().forEach(table => {
+    const layout = table.closest('#section-morning') ? CONFIG.LAYOUTS.morning : CONFIG.LAYOUTS.afternoon;
+    for (let rowIndex = 2; rowIndex < table.rows.length; rowIndex++) {
+      const row = table.rows[rowIndex];
+      if (row.classList.contains('recreio')) continue;
+
+      let columnStart = 1;
+      layout.forEach((columnsInDay, dayIndex) => {
+        for (let columnOffset = 0; columnOffset < columnsInDay; columnOffset++) {
+          const cell = row.cells[columnStart + columnOffset];
+          const value = cell?.textContent.trim();
+          if (value && value !== '*') totals[dayIndex + 1]++;
+        }
+        columnStart += columnsInDay;
+      });
+    }
+  });
+
+  return totals;
+}
+
+/**
  * Abre um modal exibindo a carga horária resumida de todos os professores/turmas.
  */
 function showWorkloadModal() {
   const workload = calculateWorkload();
   const teacherMap = getTeacherMap();
+  const dailyWorkload = calculateDailyWorkload();
+  const totalAssignments = Object.values(workload).reduce((total, count) => total + count, 0);
+  const mostFrequent = Object.entries(workload).sort((a, b) => b[1] - a[1])[0];
+  const dayNames = ['', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'];
+  const busiestDay = dailyWorkload.slice(1).reduce((bestDay, count, index) =>
+    count > dailyWorkload[bestDay] ? index + 1 : bestDay, 1);
 
   // Define um teto para a barra de progresso (ex: 25 aulas na semana é 100%)
   const maxBaseline = Math.max(...Object.values(workload), 25);
@@ -3662,6 +3934,68 @@ function showWorkloadModal() {
   const title = Object.assign(document.createElement('h2'), { textContent: '📊 Resumo de Carga Horária' });
   
   const container = Object.assign(document.createElement('div'), { className: 'teacher-list-container' });
+
+  const summaryGrid = document.createElement('div');
+  summaryGrid.className = 'workload-summary-grid';
+  const summaryItems = [
+    { label: 'Aulas preenchidas', value: totalAssignments, detail: 'na semana toda' },
+    {
+      label: 'Item mais frequente',
+      value: mostFrequent?.[0] || '—',
+      detail: mostFrequent ? `${mostFrequent[1]} aulas · ${teacherMap[mostFrequent[0]] || 'atribuição'}` : 'sem atribuições'
+    },
+    {
+      label: 'Dia mais ocupado',
+      value: dayNames[busiestDay],
+      detail: `${dailyWorkload[busiestDay]} aulas preenchidas`
+    }
+  ];
+
+  summaryItems.forEach(item => {
+    const card = document.createElement('div');
+    card.className = 'workload-summary-card';
+    const label = document.createElement('span');
+    label.className = 'workload-summary-label';
+    label.textContent = item.label;
+    const value = document.createElement('strong');
+    value.className = 'workload-summary-value';
+    value.textContent = item.value;
+    const detail = document.createElement('span');
+    detail.className = 'workload-summary-detail';
+    detail.textContent = item.detail;
+    card.append(label, value, detail);
+    summaryGrid.appendChild(card);
+  });
+
+  const dailyChart = document.createElement('section');
+  dailyChart.className = 'workload-daily-chart';
+  dailyChart.setAttribute('aria-label', 'Distribuição de aulas preenchidas por dia');
+  const dailyChartTitle = document.createElement('h3');
+  dailyChartTitle.textContent = 'Distribuição por dia';
+  dailyChart.appendChild(dailyChartTitle);
+  const dailyChartBars = document.createElement('div');
+  dailyChartBars.className = 'workload-daily-bars';
+  const maxDailyWorkload = Math.max(...dailyWorkload.slice(1), 1);
+  dayNames.slice(1).forEach((dayName, index) => {
+    const day = index + 1;
+    const barItem = document.createElement('div');
+    barItem.className = 'workload-daily-item';
+    const dayLabel = document.createElement('span');
+    dayLabel.className = 'workload-daily-label';
+    dayLabel.textContent = dayName;
+    const track = document.createElement('div');
+    track.className = 'workload-daily-track';
+    const fill = document.createElement('div');
+    fill.className = 'workload-daily-fill';
+    fill.style.width = `${(dailyWorkload[day] / maxDailyWorkload) * 100}%`;
+    track.appendChild(fill);
+    const count = document.createElement('strong');
+    count.className = 'workload-daily-count';
+    count.textContent = dailyWorkload[day];
+    barItem.append(dayLabel, track, count);
+    dailyChartBars.appendChild(barItem);
+  });
+  dailyChart.appendChild(dailyChartBars);
   
   const table = document.createElement('table');
   table.className = 'workload-table';
@@ -3699,7 +4033,7 @@ function showWorkloadModal() {
     className: 'btn btn-primary', textContent: 'Fechar', onclick: () => overlay.remove() 
   }));
 
-  container.appendChild(table);
+  container.append(summaryGrid, dailyChart, table);
   modal.append(title, container, footer);
   overlay.appendChild(modal);
   document.body.appendChild(overlay);
@@ -4311,18 +4645,11 @@ function generateAndDownloadICS(targetTeacher, startDateStr, endDateStr) {
   icsContent.push('END:VCALENDAR');
 
   const blob = new Blob([icsContent.join('\r\n')], { type: 'text/calendar;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
   const filename = targetTeacher 
     ? `horario-${targetTeacher.replace(/[^a-zA-Z0-9]/g, '_')}-2026.ics` 
     : 'horario-escolar-2026.ics';
   
-  link.setAttribute('href', url);
-  link.setAttribute('download', filename);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  downloadBlob(blob, filename);
 
   showToast(`Arquivo ${filename} gerado com ${events.length} aulas!`, "success");
 }

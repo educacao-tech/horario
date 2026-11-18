@@ -71,4 +71,28 @@ Baseado no `TODO-PLANEJAMENTO.md`
   - **No Celular (Mobile $\le 768px$):** Abre no **Modo Cards** e com foco no **turno em andamento** (Manhã antes das 12h30, Tarde depois).
   - **No Computador (Desktop $> 768px$):** Abre no **Modo Tabela Tradicional** com ambos os turnos visíveis e filtrado no dia da semana atual.
 
+### 13. Fase 3: Otimização de Performance e Recursos (Concluída)
+- [x] **Otimização de Eventos de Mouse na Grade**:
+  - Implementado `requestAnimationFrame` em `applyCrosshairHighlight` e `initSpotlightEffect`.
+  - Cache cirúrgico de elementos ativos (`_crosshairActiveElements` e `_activeSpotlightMatches`), eliminando dezenas de chamadas a `querySelectorAll` em todo o documento durante o movimento do mouse.
+  - Cache de célula prévia no `mouseover` do wrapper (`_lastHoveredCell`) para ignorar micro-movimentos internos dentro da mesma célula.
+- [x] **Sanar Vazamentos de Memória e Polling Destrutivo**:
+  - Criado helper universal `downloadBlob(blob, filename)` com garantia de revogação de memória via `URL.revokeObjectURL(url)` para todas as exportações (`CSV`, `JSON Backup`, `iCalendar ICS`).
+  - Refatorado o relógio digital (`updateClock`) para reutilizar nós estáticos e aplicar atualizações pontuais de `textContent`, eliminando o re-parsing contínuo de strings HTML via `innerHTML` a cada segundo.
+- [x] **Refinamento de Gestos de Toque Mobile**:
+  - Restrito o listener de swipe horizontal (`initSwipeGestures`) com flag `isSwipeBlocked`, garantindo que toques iniciados dentro da área de rolagem lateral da tabela (`.table-container`) não disparem a troca compulsória de dia.
+
+### 14. Fase 4: Refatoração Arquitetural e Limpeza (Concluída)
+- [x] **Remoção de Código Morto & Variáveis Órfãs**:
+  - Removida a variável não utilizada `_gitHubInfoCache` no `script.js`.
+  - Removida a função morta `validateAllConflicts()`, cuja lógica já havia sido incorporada em `loadData()`.
+- [x] **Conexão de Funcionalidades Órfãs no Menu Principal**:
+  - Adicionado botão de **Exportar para Planilha (.csv)** (`exportToCsv()`) no menu dropdown.
+  - Adicionado botão de **Redefinir Horários da Grade** (`clearAllScheduleData()`) com diálogo de dupla confirmação no menu dropdown.
+- [x] **Estabilização da Inicialização do DOM**:
+  - Inseridos os nós estáticos `#status-bar-clock` e `#github-update-info` no HTML da `#statusBar`, garantindo que o relógio e os dados do Git encontrem seus elementos imediatamente na inicialização antes do primeiro evento de foco/mouse.
+- [x] **Limpeza de Seletores Redundantes no CSS**:
+  - Unificada a declaração consecutiva duplicada de `div[id^="section-"]` no `style.css`.
+  - Verificada e mantida a integridade semântica e encoding UTF-8 do arquivo de estilos.
+
 
